@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -16,9 +17,14 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      return await this.prisma.user.create({
-        data: createUserDto,
+      const hashed = await bcrypt.hash(createUserDto.password, 10);
+      const created = await this.prisma.user.create({
+        data: { ...createUserDto, password: hashed },
       });
+      // remove password before returning
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...rest } = created as any;
+      return rest as unknown as User;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -33,10 +39,15 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     try {
-      return await this.prisma.user.findMany({
+      const users = await this.prisma.user.findMany({
         orderBy: {
           createdAt: 'desc',
         },
+      });
+      return users.map((u) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...rest } = u as any;
+        return rest as unknown as User;
       });
     } catch (error) {
       throw new BadRequestException('Failed to retrieve users');
@@ -56,7 +67,9 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...rest } = user as any;
+    return rest as unknown as User;
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
@@ -64,10 +77,13 @@ export class UsersService {
     await this.findOne(id);
 
     try {
-      return await this.prisma.user.update({
+      const updated = await this.prisma.user.update({
         where: { id },
         data: updateUserDto,
       });
+      // eslint-disable-next-line @typescript-eslint/no-unused_vars
+      const { password, ...rest } = updated as any;
+      return rest as unknown as User;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
