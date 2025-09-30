@@ -4,27 +4,38 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import { Prisma, User } from '@prisma/client';
+import bcryptJs from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Local typed wrapper avoids unsafe "any" from bcryptjs CJS typings.
+  private readonly bcrypt: {
+    hash(data: string, salt: string | number): Promise<string>;
+  } = bcryptJs as unknown as {
+    hash(data: string, salt: string | number): Promise<string>;
+  };
+
+  private sanitizeUser<T extends { password?: string | null }>(
+    user: T,
+  ): Omit<T, 'password'> {
+    const { password: _password, ...rest } = user;
+    void _password;
+    return rest;
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      const hashed = await bcrypt.hash(createUserDto.password, 10);
+      const hashed = await this.bcrypt.hash(createUserDto.password, 10);
       const created = await this.prisma.user.create({
         data: { ...createUserDto, password: hashed },
       });
-      // remove password before returning
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...rest } = created as any;
-      return rest as unknown as User;
+      return this.sanitizeUser(created) as unknown as User;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -44,12 +55,8 @@ export class UsersService {
           createdAt: 'desc',
         },
       });
-      return users.map((u) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...rest } = u as any;
-        return rest as unknown as User;
-      });
-    } catch (error) {
+      return users.map((u) => this.sanitizeUser(u) as unknown as User);
+    } catch {
       throw new BadRequestException('Failed to retrieve users');
     }
   }
@@ -67,9 +74,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...rest } = user as any;
-    return rest as unknown as User;
+    return this.sanitizeUser(user) as unknown as User;
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
@@ -81,9 +86,7 @@ export class UsersService {
         where: { id },
         data: updateUserDto,
       });
-      // eslint-disable-next-line @typescript-eslint/no-unused_vars
-      const { password, ...rest } = updated as any;
-      return rest as unknown as User;
+      return this.sanitizeUser(updated) as unknown as User;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -104,7 +107,7 @@ export class UsersService {
       await this.prisma.user.delete({
         where: { id },
       });
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Failed to delete user');
     }
   }
@@ -115,7 +118,7 @@ export class UsersService {
       throw new BadRequestException('Email is required');
     }
 
-    return await this.prisma.user.findUnique({
+    return this.prisma.user.findUnique({
       where: { email },
     });
   }

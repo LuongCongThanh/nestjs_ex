@@ -19,7 +19,7 @@ export const USER_VALIDATION_CONSTANTS = {
  * Regular expression patterns for user validation
  */
 export const USER_REGEX_PATTERNS = {
-  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
   PHONE: /^\+?[1-9]\d{1,14}$/,
 } as const;
 
