@@ -10,19 +10,86 @@ export class TodoService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createTodoDto: CreateTodoDto): Promise<Todo> {
+    // Kiểm tra user tồn tại
+    const userExists = await this.prisma.user.findUnique({
+      where: { id: createTodoDto.userId },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      throw new NotFoundException(
+        `User with id ${createTodoDto.userId} not found`,
+      );
+    }
+
     return this.prisma.todo.create({
       data: this.mapCreateDto(createTodoDto),
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
     });
   }
 
   async findAll(): Promise<Todo[]> {
     return this.prisma.todo.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findAllByUser(userId: number): Promise<Todo[]> {
+    // Kiểm tra user tồn tại
+    const userExists = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+
+    return this.prisma.todo.findMany({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: number): Promise<Todo> {
-    const todo = await this.prisma.todo.findUnique({ where: { id } });
+    const todo = await this.prisma.todo.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+    });
 
     if (!todo) {
       throw new NotFoundException(`Todo with id ${id} not found`);
@@ -37,6 +104,15 @@ export class TodoService {
     return this.prisma.todo.update({
       where: { id },
       data: this.mapUpdateDto(updateTodoDto),
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
     });
   }
 
@@ -46,11 +122,12 @@ export class TodoService {
     return this.prisma.todo.delete({ where: { id } });
   }
 
-  private mapCreateDto(dto: CreateTodoDto): Prisma.TodoCreateInput {
+  private mapCreateDto(dto: CreateTodoDto): Prisma.TodoUncheckedCreateInput {
     return {
       title: dto.title.trim(),
       description: this.normalizeDescription(dto.description),
       completed: dto.completed ?? false,
+      userId: dto.userId,
     };
   }
 

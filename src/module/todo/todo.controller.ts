@@ -48,6 +48,18 @@ export class TodoController {
     return this.todoService.findAll();
   }
 
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get all todos by user id' })
+  @ApiOkResponse({
+    description: 'User todos retrieved successfully',
+    type: [TodoEntity],
+  })
+  async findAllByUser(
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<Todo[]> {
+    return this.todoService.findAllByUser(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get todo by id' })
   @ApiOkResponse({
