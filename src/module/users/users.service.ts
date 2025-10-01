@@ -4,21 +4,38 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { Prisma, User } from '@prisma/client';
+import bcryptJs from 'bcryptjs';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Local typed wrapper avoids unsafe "any" from bcryptjs CJS typings.
+  private readonly bcrypt: {
+    hash(data: string, salt: string | number): Promise<string>;
+  } = bcryptJs as unknown as {
+    hash(data: string, salt: string | number): Promise<string>;
+  };
+
+  private sanitizeUser<T extends { password?: string | null }>(
+    user: T,
+  ): Omit<T, 'password'> {
+    const { password: _password, ...rest } = user;
+    void _password;
+    return rest;
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      return await this.prisma.user.create({
-        data: createUserDto,
+      const hashed = await this.bcrypt.hash(createUserDto.password, 10);
+      const created = await this.prisma.user.create({
+        data: { ...createUserDto, password: hashed },
       });
+      return this.sanitizeUser(created) as unknown as User;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -33,12 +50,13 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     try {
-      return await this.prisma.user.findMany({
+      const users = await this.prisma.user.findMany({
         orderBy: {
           createdAt: 'desc',
         },
       });
-    } catch (error) {
+      return users.map((u) => this.sanitizeUser(u) as unknown as User);
+    } catch {
       throw new BadRequestException('Failed to retrieve users');
     }
   }
@@ -56,7 +74,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return user;
+    return this.sanitizeUser(user) as unknown as User;
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
@@ -64,10 +82,11 @@ export class UsersService {
     await this.findOne(id);
 
     try {
-      return await this.prisma.user.update({
+      const updated = await this.prisma.user.update({
         where: { id },
         data: updateUserDto,
       });
+      return this.sanitizeUser(updated) as unknown as User;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -88,7 +107,7 @@ export class UsersService {
       await this.prisma.user.delete({
         where: { id },
       });
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Failed to delete user');
     }
   }
@@ -99,7 +118,7 @@ export class UsersService {
       throw new BadRequestException('Email is required');
     }
 
-    return await this.prisma.user.findUnique({
+    return this.prisma.user.findUnique({
       where: { email },
     });
   }
