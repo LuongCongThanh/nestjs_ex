@@ -71,6 +71,7 @@ function setupSwagger(
     .setVersion(config.swagger.version)
     .addTag('users', 'User Management')
     .addTag('auth', 'Authentication and Authorization')
+    .addTag('todo', 'Todo Management')
     .addBearerAuth(
       {
         type: 'http',

@@ -12,11 +12,11 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { LoginDto } from 'src/auth/dto/login.dto';
-import { RefreshDto } from 'src/auth/dto/refresh.dto';
-import { RegisterDto } from 'src/auth/dto/register.dto';
-import { AuthTokensDto } from 'src/auth/dto/tokens.dto';
-import { AuthService } from './auth.service';
+import { AuthService } from 'src/module/auth/auth.service';
+import { LoginDto } from 'src/module/auth/dto/login.dto';
+import { RegisterDto } from 'src/module/auth/dto/register.dto';
+import { AuthTokensDto } from 'src/module/auth/dto/tokens.dto';
+import { RefreshDto } from 'src/module/auth/dto/refresh.dto';
 
 // Guard bảo vệ để xác thực JWT token
 // Đây là wrapper mỏng để có thể inject JWT passport guard vào controller
