@@ -17,6 +17,7 @@ async function main() {
       email: 'john@example.com',
       password: hashedPassword,
       phone: '+1234567890',
+      roles: ['admin'],
     },
   });
 
@@ -28,6 +29,7 @@ async function main() {
       email: 'jane@example.com',
       password: hashedPassword,
       phone: '+0987654321',
+      roles: ['user'],
     },
   });
 

@@ -8,12 +8,18 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcryptJs from 'bcryptjs';
 import * as crypto from 'crypto';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { User as PrismaUser } from '@prisma/client';
+import {
+  AuthTokensDto,
+  DEFAULT_USER_ROLES,
+  Role,
+  toUserResponse,
+} from 'src/common';
 import { LoginDto } from 'src/module/auth/dto/login.dto';
 import { RegisterDto } from 'src/module/auth/dto/register.dto';
-import { AuthTokensDto } from 'src/module/auth/dto/tokens.dto';
-import { UsersService } from 'src/module/users/users.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UsersService } from 'src/module/users/users.service';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -97,12 +103,10 @@ export class AuthService {
     userId: number,
     token: string,
   ): Promise<void> {
-    const tokenHash = this.sha256(token); // Hash token trước khi lưu
-    // Tính thời gian hết hạn
-    const expiresAt = new Date(
-      Date.now() + this.parseDurationMs(this.refreshTtl),
-    );
-    // Tạo record mới trong bảng refreshToken
+    const tokenHash = this.sha256(token);
+    const ttl = this.parseDurationMs(this.refreshTtl);
+    const expiresAt = new Date(Date.now() + ttl);
+
     await this.prisma.refreshToken.create({
       data: { userId, tokenHash, expiresAt },
     });
@@ -110,28 +114,21 @@ export class AuthService {
 
   // Chuyển đổi chuỗi thời gian (VD: '15m', '7d') thành milliseconds
   private parseDurationMs(duration: string): number {
-    // Parser đơn giản cho các đơn vị: s (giây), m (phút), h (giờ), d (ngày)
     const match = /^(\d+)([smhd])$/.exec(duration);
-    if (!match) return 0;
-    const value = parseInt(match[1], 10);
-    const unit = match[2];
-    // Bảng quy đổi sang milliseconds
-    const multipliers: Record<string, number> = {
-      s: 1000, // giây
-      m: 60 * 1000, // phút
-      h: 60 * 60 * 1000, // giờ
-      d: 24 * 60 * 60 * 1000, // ngày
-    };
-    return value * multipliers[unit];
-  }
+    if (!match) {
+      throw new Error(`Unsupported duration format: ${duration}`);
+    }
 
-  // Loại bỏ trường password nhạy cảm trước khi trả về thông tin user
-  private sanitizeUser<T extends { password?: string | null }>(
-    user: T,
-  ): Omit<T, 'password'> {
-    const { password: _password, ...rest } = user;
-    void _password; // Đánh dấu biến không dùng để tránh warning
-    return rest;
+    const value = Number.parseInt(match[1], 10);
+    const unit = match[2];
+    const multipliers: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
+
+    return value * multipliers[unit];
   }
 
   // ========== CÁC HÀM PUBLIC - LOGIC NGHIỆP VỤ CHÍNH ==========
@@ -156,28 +153,26 @@ export class AuthService {
         email: dto.email,
         password: hashed,
         phone: dto.phone,
-        roles: [], // Mảng roles rỗng cho user mới
+        roles: [...DEFAULT_USER_ROLES],
       },
     });
 
-    // Tạo payload chứa thông tin user để đưa vào JWT
+    const normalizedUser = this.withRoles(user, DEFAULT_USER_ROLES);
+
     const payload: JwtPayload = {
-      sub: user.id, // sub (subject) = user id
-      email: user.email,
-      roles: user.roles,
+      sub: normalizedUser.id,
+      email: normalizedUser.email,
+      roles: DEFAULT_USER_ROLES,
     };
 
-    // Ký cả access và refresh token đồng thời (song song) để tăng tốc
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(payload),
       this.signRefreshToken(payload),
     ]);
 
-    // Lưu refresh token vào DB để quản lý
-    await this.storeRefreshToken(user.id, refreshToken);
+    await this.storeRefreshToken(normalizedUser.id, refreshToken);
 
-    // Trả về tokens và thông tin user (đã loại bỏ password)
-    return { accessToken, refreshToken, user: this.sanitizeUser(user) };
+    return this.buildAuthTokens(normalizedUser, accessToken, refreshToken);
   }
 
   // ĐĂNG NHẬP: Xác thực credentials và trả về tokens mới
@@ -196,23 +191,23 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Tạo payload JWT
+    const roles = await this.ensureRoles(user);
+    const normalizedUser = this.withRoles(user, roles);
+
     const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      roles: user.roles,
+      sub: normalizedUser.id,
+      email: normalizedUser.email,
+      roles,
     };
 
-    // Ký cả 2 tokens song song
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(payload),
       this.signRefreshToken(payload),
     ]);
 
-    // Lưu refresh token mới vào DB
-    await this.storeRefreshToken(user.id, refreshToken);
+    await this.storeRefreshToken(normalizedUser.id, refreshToken);
 
-    return { accessToken, refreshToken, user: this.sanitizeUser(user) };
+    return this.buildAuthTokens(normalizedUser, accessToken, refreshToken);
   }
 
   // LÀM MỚI TOKEN: Xác thực refresh token cũ và phát hành cặp token mới
@@ -258,11 +253,14 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException('User not found');
 
+    const roles = await this.ensureRoles(user);
+    const normalizedUser = this.withRoles(user, roles);
+
     // Bước 5: Tạo payload mới với thông tin user hiện tại
     const newPayload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      roles: user.roles,
+      sub: normalizedUser.id,
+      email: normalizedUser.email,
+      roles,
     };
 
     // Bước 6: Ký cặp tokens mới
@@ -272,13 +270,13 @@ export class AuthService {
     ]);
 
     // Bước 7: Lưu refresh token mới vào DB
-    await this.storeRefreshToken(user.id, newRefreshToken);
+    await this.storeRefreshToken(normalizedUser.id, newRefreshToken);
 
-    return {
+    return this.buildAuthTokens(
+      normalizedUser,
       accessToken,
-      refreshToken: newRefreshToken,
-      user: this.sanitizeUser(user),
-    };
+      newRefreshToken,
+    );
   }
 
   // ĐĂNG XUẤT: Thu hồi refresh token(s)
@@ -311,5 +309,37 @@ export class AuthService {
       where: { userId, tokenHash, revoked: false },
       data: { revoked: true },
     });
+  }
+
+  private buildAuthTokens(
+    user: PrismaUser,
+    accessToken: string,
+    refreshToken: string,
+  ): AuthTokensDto {
+    return {
+      accessToken,
+      refreshToken,
+      user: toUserResponse(user),
+    };
+  }
+
+  private async ensureRoles(user: PrismaUser): Promise<Role[]> {
+    if (user.roles && user.roles.length > 0) {
+      return user.roles as Role[];
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { roles: [...DEFAULT_USER_ROLES] },
+    });
+
+    return [...DEFAULT_USER_ROLES];
+  }
+
+  private withRoles(user: PrismaUser, roles: Role[]): PrismaUser {
+    return {
+      ...user,
+      roles: roles as string[],
+    };
   }
 }

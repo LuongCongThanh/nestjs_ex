@@ -1,15 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Todo } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateTodoDto } from './dto/create-todo.dto';
-import { UpdateTodoDto } from './dto/update-todo.dto';
+import {
+  CreateTodoDto,
+  TODO_INCLUDE,
+  TodoResponseDto,
+  TodoWithOwner,
+  UpdateTodoDto,
+  toTodoResponse,
+} from './dto';
 
 @Injectable()
 export class TodoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createTodoDto: CreateTodoDto): Promise<Todo> {
+  async create(createTodoDto: CreateTodoDto): Promise<TodoResponseDto> {
     // Kiểm tra user tồn tại
     const userExists = await this.prisma.user.findUnique({
       where: { id: createTodoDto.userId },
@@ -22,36 +28,24 @@ export class TodoService {
       );
     }
 
-    return this.prisma.todo.create({
+    const todo = await this.prisma.todo.create({
       data: this.mapCreateDto(createTodoDto),
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
-        },
-      },
+      include: TODO_INCLUDE,
     });
+
+    return toTodoResponse(todo as TodoWithOwner);
   }
 
-  async findAll(): Promise<Todo[]> {
-    return this.prisma.todo.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
-        },
-      },
+  async findAll(): Promise<TodoResponseDto[]> {
+    const todos = await this.prisma.todo.findMany({
+      include: TODO_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
+
+    return todos.map((todo) => toTodoResponse(todo as TodoWithOwner));
   }
 
-  async findAllByUser(userId: number): Promise<Todo[]> {
+  async findAllByUser(userId: number): Promise<TodoResponseDto[]> {
     // Kiểm tra user tồn tại
     const userExists = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -62,72 +56,59 @@ export class TodoService {
       throw new NotFoundException(`User with id ${userId} not found`);
     }
 
-    return this.prisma.todo.findMany({
+    const todos = await this.prisma.todo.findMany({
       where: { userId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
-        },
-      },
+      include: TODO_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
+
+    return todos.map((todo) => toTodoResponse(todo as TodoWithOwner));
   }
 
-  async findOne(id: number): Promise<Todo> {
+  async findOne(id: number): Promise<TodoResponseDto> {
     const todo = await this.prisma.todo.findUnique({
       where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
-        },
-      },
+      include: TODO_INCLUDE,
     });
 
     if (!todo) {
       throw new NotFoundException(`Todo with id ${id} not found`);
     }
 
-    return todo;
+    return toTodoResponse(todo as TodoWithOwner);
   }
 
-  async update(id: number, updateTodoDto: UpdateTodoDto): Promise<Todo> {
+  async update(
+    id: number,
+    updateTodoDto: UpdateTodoDto,
+  ): Promise<TodoResponseDto> {
     await this.ensureExists(id);
 
-    return this.prisma.todo.update({
+    const todo = await this.prisma.todo.update({
       where: { id },
       data: this.mapUpdateDto(updateTodoDto),
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
-        },
-      },
+      include: TODO_INCLUDE,
     });
+
+    return toTodoResponse(todo as TodoWithOwner);
   }
 
-  async remove(id: number): Promise<Todo> {
+  async remove(id: number): Promise<void> {
     await this.ensureExists(id);
 
-    return this.prisma.todo.delete({ where: { id } });
+    await this.prisma.todo.delete({ where: { id } });
   }
 
-  private mapCreateDto(dto: CreateTodoDto): Prisma.TodoUncheckedCreateInput {
+  private mapCreateDto(dto: CreateTodoDto): Prisma.TodoCreateInput {
     return {
       title: dto.title.trim(),
       description: this.normalizeDescription(dto.description),
       completed: dto.completed ?? false,
-      userId: dto.userId,
+      user: {
+        connect: {
+          id: dto.userId,
+        },
+      },
     };
   }
 
