@@ -244,7 +244,7 @@ curl -i http://localhost:3000/not-exist
 
 ## 📝 Implementation Checklist
 
-- [ ] Project created --strict
+- [x] Project created --strict
 - [ ] Dependencies + Helmet installed
 - [ ] ESLint đầy đủ parserOptions
 - [ ] nest g resource tất cả modules

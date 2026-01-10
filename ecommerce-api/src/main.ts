@@ -1,15 +1,22 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Get ConfigService
+  const configService = app.get(ConfigService);
+
   // Security: Helmet (set HTTP headers)
   app.use(helmet());
+
+  // Global prefix
+  app.setGlobalPrefix(configService.get('API_PREFIX') || 'api/v1');
 
   // Global Validation Pipe
   app.useGlobalPipes(
@@ -25,7 +32,9 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || '*',
+    origin: (configService.get('CORS_ORIGIN') || 'http://localhost:3000').split(
+      ',',
+    ),
     credentials: true,
   });
 
@@ -39,6 +48,13 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT || 3000);
+  const port = configService.get('PORT') || 3000;
+  await app.listen(port);
+
+  console.log(
+    `🚀 Application is running on: http://localhost:${port}/${configService.get('API_PREFIX') || 'api/v1'}`,
+  );
+  console.log(`🏥 Health check: http://localhost:${port}/health`);
+  console.log(`📚 Swagger docs: http://localhost:${port}/api`);
 }
 bootstrap();
