@@ -50,7 +50,7 @@ import { UsersService } from './users.service';
 @UseInterceptors(ClassSerializerInterceptor) // Tự động loại bỏ các field có @Exclude decorator
 export class UsersController {
   // Inject UsersService để xử lý business logic
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   /**
    * Tạo user mới

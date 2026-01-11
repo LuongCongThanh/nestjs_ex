@@ -1,7 +1,9 @@
 import * as bcrypt from 'bcryptjs';
+import { Category } from 'src/entities/category.entity';
+import { Product } from 'src/entities/product.entity';
+import { User, UserRole } from 'src/entities/user.entity';
 import { DataSource } from 'typeorm';
 import dataSource from '../config/typeorm.config';
-import { Category, Product, User, UserRole } from '../entities';
 
 async function seed() {
   let connection: DataSource | null = null;

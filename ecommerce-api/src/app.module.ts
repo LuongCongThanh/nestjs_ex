@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { validationSchema } from './config/env.validation';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { UsersModule } from './modules/users/users.module';
 
     // Feature Modules
     UsersModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
