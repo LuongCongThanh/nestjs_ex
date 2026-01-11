@@ -57,19 +57,16 @@ npm install -D eslint@latest prettier@latest eslint-config-prettier eslint-plugi
 
 ```js
 module.exports = {
-  parser: '@typescript-eslint/parser',
+  parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: './tsconfig.json',
+    project: "./tsconfig.json",
     tsconfigRootDir: __dirname,
-    sourceType: 'module',
+    sourceType: "module",
   },
-  extends: [
-    'plugin:@typescript-eslint/recommended',
-    'prettier',
-  ],
-  plugins: ['@typescript-eslint', 'prettier'],
+  extends: ["plugin:@typescript-eslint/recommended", "prettier"],
+  plugins: ["@typescript-eslint", "prettier"],
   rules: {
-    'prettier/prettier': 'error',
+    "prettier/prettier": "error",
   },
 };
 ```
@@ -128,12 +125,12 @@ Tạo **src/common/filters/http-exception.filter.ts** (giữ nguyên như trư�
 Sửa **src/main.ts**:
 
 ```ts
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
-import { HttpExceptionFilter } from '@common/filters/http-exception.filter';
-import helmet from 'helmet';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { ValidationPipe } from "@nestjs/common";
+import { HttpExceptionFilter } from "@common/filters/http-exception.filter";
+import helmet from "helmet";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -147,7 +144,7 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-    }),
+    })
   );
 
   // Global Exception Filter
@@ -155,19 +152,19 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || '*',
+    origin: process.env.CORS_ORIGIN?.split(",") || "*",
     credentials: true,
   });
 
   // Swagger
   const config = new DocumentBuilder()
-    .setTitle('Ecommerce API')
-    .setDescription('Production-ready ecommerce backend')
-    .setVersion('1.0')
+    .setTitle("Ecommerce API")
+    .setDescription("Production-ready ecommerce backend")
+    .setVersion("1.0")
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup("api", app, document);
 
   await app.listen(process.env.PORT || 3000);
 }
@@ -254,7 +251,7 @@ curl -i http://localhost:3000/not-exist
 - [ ] Git commit
 - [ ] Verification: build/lint/run + test 404 JSON error
 
-**Actual Time:** __ hours __ minutes
+**Actual Time:** ** hours ** minutes
 
 **Notes:**
 

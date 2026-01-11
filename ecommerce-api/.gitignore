@@ -58,4 +58,4 @@ Desktop.ini
 *.pid
 *.seed
 *.pid.lock
-.tsconfig.build.tsbuildinfo
+dist/tsconfig.build.tsbuildinfo

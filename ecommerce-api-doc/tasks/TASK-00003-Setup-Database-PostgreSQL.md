@@ -309,10 +309,10 @@ docker-compose up -d
 # Option 2: Change Docker port in docker-compose.yml
 # Edit docker-compose.yml:
 ports:
-  - '5433:5432'  # Use port 5433 on host
+  - '5432:5432'  # Use port 5432 on host
 
 # Update .env:
-DB_PORT=5433
+DB_PORT=5432
 
 # Restart
 docker-compose down
@@ -323,7 +323,7 @@ docker-compose up -d
 
 ```bash
 docker-compose ps  # Should show "Up (healthy)"
-psql -h localhost -p 5433 -U postgres -d ecommerce_db -c "SELECT 1;"
+psql -h localhost -p 5432 -U postgres -d ecommerce_db -c "SELECT 1;"
 ```
 
 ---
