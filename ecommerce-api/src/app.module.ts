@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { validationSchema } from './config/env.validation';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { HealthModule } from './health/health.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -32,6 +33,9 @@ import { HealthModule } from './health/health.module';
 
     // Health Check Module
     HealthModule,
+
+    // Feature Modules
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
