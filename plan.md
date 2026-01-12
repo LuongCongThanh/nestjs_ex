@@ -9,7 +9,7 @@
 **Các bước thực hiện:**
 
 1. Cài đặt NestJS CLI: `npm i -g @nestjs/cli`
-2. Tạo project mới: `nest new ecommerce-api`
+2. Tạo project mới: `nest new `ecommerce-api``
 3. Cài đặt dependencies cần thiết:
 
    ```bash

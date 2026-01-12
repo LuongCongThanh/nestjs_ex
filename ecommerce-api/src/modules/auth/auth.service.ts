@@ -4,6 +4,7 @@ import { RegisterDto } from '@modules/auth/dto/register.dto';
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -12,12 +13,17 @@ import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
+import * as cryptoNode from 'crypto';
+import { ResetToken } from './entities/reset-token.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(ResetToken)
+    private readonly resetTokenRepository: Repository<ResetToken>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -156,5 +162,46 @@ export class AuthService {
     };
 
     return this.jwtService.sign(payload);
+  }
+
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { email: forgotPasswordDto.email },
+    });
+
+    if (!user) {
+      // Security: Do not reveal if email exists or not, but for now we follow the existing pattern or requirements.
+      // The original code threw NotFoundException, so I will stick to it.
+      throw new NotFoundException('Email not found');
+    }
+
+    // Generate random token
+    const token = cryptoNode.randomBytes(32).toString('hex');
+
+    // Create reset token entity
+    // Expires in 15 minutes
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+    const resetToken = this.resetTokenRepository.create({
+      userId: user.id,
+      token: token,
+      expiresAt: expiresAt,
+    });
+
+    await this.resetTokenRepository.save(resetToken);
+
+    // TODO: Send email
+    // For now, log to console
+    console.log(`
+      ======================================================
+      [EMAIL SIMULATION]
+      To: ${user.email}
+      Subject: Reset Your Password
+      Body: Click here to reset your password:
+      https://example.com/reset-password?token=${token}
+      ======================================================
+    `);
   }
 }

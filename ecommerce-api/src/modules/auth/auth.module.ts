@@ -7,6 +7,7 @@ import { User } from '../../entities/user.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenBlacklist } from './entities/token-blacklist.entity';
+import { ResetToken } from './entities/reset-token.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -38,7 +39,7 @@ import { TokenBlacklistService } from './token-blacklist.service';
     // Import TypeORM repositories để truy vấn database
     // - User: Quản lý thông tin người dùng
     // - TokenBlacklist: Quản lý các token bị thu hồi
-    TypeOrmModule.forFeature([User, TokenBlacklist]),
+    TypeOrmModule.forFeature([User, TokenBlacklist, ResetToken]),
 
     // Đăng ký Passport với strategy mặc định là JWT
     // Passport là framework để handle authentication

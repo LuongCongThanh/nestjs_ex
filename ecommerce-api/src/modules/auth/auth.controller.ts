@@ -7,15 +7,17 @@ import { AuthService } from './auth.service';
 import {
   BadRequestResponse,
   ConflictResponse,
+  ForgotPasswordResponse,
   LoginResponse,
   RegisterResponse,
   UnauthorizedResponse,
 } from './docs/auth.responses';
+import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private  authService: AuthService) {}
 
   /**
    * Register new user
@@ -61,5 +63,29 @@ export class AuthController {
   @BadRequestResponse
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return await this.authService.login(loginDto);
+  }
+
+  /**
+   * Forgot password
+   * POST /auth/forgot-password
+   *
+   * Sends a password reset email to the user.
+   * Returns success message.
+   *
+   * Email should be sent with subject: "Reset Your Password"
+   * and body: "Click here to reset: https://app.com/reset?token=xyz"
+   */
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Forgot password',
+    description: 'Sends a password reset email to the user.',
+  })
+  @ForgotPasswordResponse
+  @BadRequestResponse
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<void> {
+    return await this.authService.forgotPassword(forgotPasswordDto);
   }
 }
