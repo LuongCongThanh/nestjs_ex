@@ -51,9 +51,35 @@ export class AuthResponseDto {
   @ApiProperty({
     example:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-    description: 'JWT access token',
+    description: 'JWT access token (short-lived: 15-30 minutes)',
   })
   access_token: string;
+
+  /**
+   * REFRESH TOKEN - Token để làm mới access token
+   *
+   * TOKEN DÀI HẠN:
+   * - Expiration: 7-30 ngày (config trong .env: JWT_REFRESH_EXPIRATION)
+   * - Lưu trong database để có thể revoke
+   * - Dùng để lấy access token mới khi hết hạn
+   *
+   * TOKEN ROTATION:
+   * - Mỗi lần refresh → token cũ bị invalidate
+   * - Token mới được tạo và lưu vào DB
+   * - Security: Ngăn token bị đánh cắp sử dụng nhiều lần
+   *
+   * CÁCH SỬ DỤNG:
+   * POST /auth/refresh
+   * Body: { "refreshToken": "<refresh_token>" }
+   * Response: { access_token: "...", refresh_token: "..." }
+   */
+  @ApiProperty({
+    example:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE1MTYyMzkwMjJ9.xyz',
+    description:
+      'JWT refresh token (long-lived: 7-30 days) for renewing access token',
+  })
+  refresh_token: string;
 
   /**
    * USER - Thông tin người dùng

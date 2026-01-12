@@ -6,12 +6,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { TokenBlacklist } from './entities/token-blacklist.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
 import { ResetToken } from './entities/reset-token.entity';
+import { TokenBlacklist } from './entities/token-blacklist.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { RefreshTokenService } from './services/refresh-token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { TokenBlacklistService } from './token-blacklist.service';
+import { RefreshStrategy } from './strategies/refresh.strategy';
+import { TokenBlacklistService } from './services/token-blacklist.service';
 
 /**
  * ================================
@@ -39,7 +42,9 @@ import { TokenBlacklistService } from './token-blacklist.service';
     // Import TypeORM repositories để truy vấn database
     // - User: Quản lý thông tin người dùng
     // - TokenBlacklist: Quản lý các token bị thu hồi
-    TypeOrmModule.forFeature([User, TokenBlacklist, ResetToken]),
+    // - ResetToken: Quản lý token reset password
+    // - RefreshToken: Quản lý refresh tokens cho session management
+    TypeOrmModule.forFeature([User, TokenBlacklist, ResetToken, RefreshToken]),
 
     // Đăng ký Passport với strategy mặc định là JWT
     // Passport là framework để handle authentication
@@ -72,9 +77,11 @@ import { TokenBlacklistService } from './token-blacklist.service';
   providers: [
     AuthService, // Service chứa business logic (register, login, validateUser)
     JwtStrategy, // Strategy để validate JWT token từ request header
+    RefreshStrategy, // Strategy để validate refresh token
     JwtAuthGuard, // Guard để protect routes (require JWT token)
     RolesGuard, // Guard để kiểm tra user role (admin, user, etc)
     TokenBlacklistService, // Service quản lý token blacklist (logout, revoke)
+    RefreshTokenService, // Service quản lý refresh tokens (create, validate, revoke)
   ],
 
   // Exports - Cho phép modules khác sử dụng
@@ -82,10 +89,12 @@ import { TokenBlacklistService } from './token-blacklist.service';
   exports: [
     AuthService, // Để modules khác có thể gọi validateUser, login, etc
     JwtStrategy, // Để sử dụng JWT authentication ở modules khác
+    RefreshStrategy, // Để sử dụng refresh token strategy ở modules khác
     PassportModule, // Để sử dụng Passport ở modules khác
     JwtAuthGuard, // Để protect routes ở modules khác với @UseGuards(JwtAuthGuard)
     RolesGuard, // Để check roles ở modules khác với @Roles(UserRole.ADMIN)
     TokenBlacklistService, // Để revoke tokens từ modules khác (ví dụ: logout)
+    RefreshTokenService, // Để quản lý refresh tokens từ modules khác
   ],
 })
 export class AuthModule {}
