@@ -1,47 +1,67 @@
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Cấu hình Validation Pipe
+  // Get ConfigService
+  const configService = app.get(ConfigService);
+
+  // Security: Helmet (set HTTP headers)
+  app.use(helmet());
+
+  // Global prefix
+  app.setGlobalPrefix(configService.get('API_PREFIX') || 'api/v1');
+
+  // Global Validation Pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
-  // Cấu hình Swagger
-  const config = new DocumentBuilder()
-    .setTitle('NestJS Example API')
-    .setDescription('API documentation cho NestJS Example project')
-    .setVersion('1.0')
-    .addTag('users', 'Quản lý người dùng')
-    .build();
+  // Global Exception Filter
+  app.useGlobalFilters(new HttpExceptionFilter());
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document, {
-    customSiteTitle: 'NestJS Example API',
-    customfavIcon: 'https://nestjs.com/img/logo-small.svg',
-    customJs: [
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.js',
-    ],
-    customCssUrl: [
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
-    ],
+  // Global Response Transform Interceptor
+  app.useGlobalInterceptors(new TransformResponseInterceptor());
+
+  // CORS
+  app.enableCors({
+    origin: (configService.get('CORS_ORIGIN') || 'http://localhost:3000').split(
+      ',',
+    ),
+    credentials: true,
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  // Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Ecommerce API')
+    .setDescription('Production-ready ecommerce backend')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+
+  const port = configService.get('PORT') || 3000;
+  await app.listen(port);
+
   console.log(
-    `🚀 Application is running on: http://localhost:${process.env.PORT ?? 3000}`,
+    `🚀 Application is running on: http://localhost:${port}/${configService.get('API_PREFIX') || 'api/v1'}`,
   );
-  console.log(
-    `📚 Swagger documentation: http://localhost:${process.env.PORT ?? 3000}/api`,
-  );
+  console.log(`🏥 Health check: http://localhost:${port}/health`);
+  console.log(`📚 Swagger docs: http://localhost:${port}/api`);
 }
 bootstrap();
