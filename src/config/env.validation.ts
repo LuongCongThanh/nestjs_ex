@@ -24,6 +24,10 @@ export const validationSchema = Joi.object({
     .messages({
       'string.pattern.base': 'JWT_EXPIRATION must be in format: 1d, 7d, 24h, 60m, etc.',
     }),
+  JWT_REFRESH_SECRET: Joi.string().min(32).required().messages({
+    'string.min': 'JWT_REFRESH_SECRET must be at least 32 characters for security',
+    'any.required': 'JWT_REFRESH_SECRET is required (must be different from JWT_SECRET)',
+  }),
   JWT_REFRESH_EXPIRATION: Joi.string()
     .pattern(/^\d+[smhd]$/)
     .default('30d'),

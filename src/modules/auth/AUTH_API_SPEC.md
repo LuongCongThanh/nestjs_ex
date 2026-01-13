@@ -1,8 +1,8 @@
 # 📘 AUTH MODULE – API SPECIFICATION & IMPLEMENTATION GUIDE
 
-**Version:** 1.0  
-**Last Updated:** January 12, 2026  
-**Status:** Production-Ready Specification
+**Version:** 1.1  
+**Last Updated:** January 13, 2026  
+**Status:** Production-Ready Specification (Updated with 2026 Security Best Practices)
 
 ---
 
@@ -29,11 +29,12 @@
 
 The **Auth Module** handles all authentication and authorization concerns for the e-commerce API:
 
-- User registration and login
+- User registration with **mandatory email verification via link**
+- User login (requires verified email)
 - Session management (JWT-based)
 - Token lifecycle (access + refresh tokens)
-- Password management (forgot/reset/change)
-- Email verification (Link-based)
+- Password management with **reset link via email** (forgot/reset/change)
+- Email verification via **verification link** (required for account activation)
 - Role-based access control (RBAC)
 - Security features (blacklist, rate limiting)
 - OAuth integration (optional)
@@ -82,7 +83,7 @@ The **Auth Module** handles all authentication and authorization concerns for th
 
 | Principle                  | Implementation                                                                |
 | -------------------------- | ----------------------------------------------------------------------------- |
-| **Security First**         | bcrypt hashing, JWT signing, token rotation, rate limiting                    |
+| **Security First**         | bcrypt/argon2id hashing, JWT signing, token rotation, rate limiting           |
 | **Stateless Auth**         | JWT-based (no server-side sessions for access tokens)                         |
 | **Stateful Sessions**      | Refresh tokens stored in DB for revocation capability                         |
 | **Generic Errors**         | No information leakage (same error for "email not found" vs "wrong password") |
@@ -92,55 +93,192 @@ The **Auth Module** handles all authentication and authorization concerns for th
 
 ---
 
+### 🏗️ Service Architecture (2026 Best Practices)
+
+**⚠️ Important:** Do NOT put all logic in a single `auth.service.ts` file. This becomes unmaintainable quickly.
+
+**Recommended Service Separation:**
+
+```
+src/modules/auth/
+├── services/
+│   ├── auth.service.ts                    # High-level orchestration only
+│   ├── password.service.ts                # Hash, compare, validate strength
+│   ├── token.service.ts                   # Generate, sign, verify JWT tokens
+│   ├── refresh-token.service.ts           # Refresh token lifecycle (DB)
+│   ├── token-blacklist.service.ts         # Access token blacklist (DB/Redis)
+│   ├── email-verification.service.ts      # Email verification token lifecycle
+│   ├── password-reset.service.ts          # Password reset token lifecycle
+│   └── session.service.ts                 # Device/session management (P2)
+```
+
+**Service Responsibilities:**
+
+| Service                         | Responsibilities                                                        | Dependencies                        |
+| ------------------------------- | ----------------------------------------------------------------------- | ----------------------------------- |
+| `auth.service.ts`               | Orchestrate flows (register, login, refresh), coordinate other services | All other auth services             |
+| `password.service.ts`           | Hash passwords, compare passwords, validate password strength           | bcrypt or argon2id                  |
+| `token.service.ts`              | Generate JWT, sign JWT, verify JWT signature, decode payload            | @nestjs/jwt                         |
+| `refresh-token.service.ts`      | Create/store refresh tokens, validate refresh tokens, revoke tokens     | TypeORM (refresh_tokens table)      |
+| `token-blacklist.service.ts`    | Add to blacklist, check if blacklisted, cleanup expired entries         | TypeORM or Redis                    |
+| `email-verification.service.ts` | Create verification tokens, validate tokens, mark as used, send emails  | TypeORM, email service              |
+| `password-reset.service.ts`     | Create reset tokens, validate reset tokens, mark as used, send emails   | TypeORM, email service              |
+| `session.service.ts`            | Track devices, list active sessions, revoke specific session            | TypeORM (refresh_tokens + metadata) |
+
+**Why This Matters:**
+
+- ✅ Single Responsibility Principle
+- ✅ Easier to test (mock specific services)
+- ✅ Easier to maintain (find bugs faster)
+- ✅ Reusable (e.g., password.service can be used by users module)
+- ✅ Scalable (add new auth methods without modifying existing code)
+
+**Implementation Priority:**
+
+- **P0:** auth.service, password.service, token.service, refresh-token.service, token-blacklist.service, email-verification.service
+- **P1:** password-reset.service
+- **P2:** session.service
+
+---
+
+### 📧 Email Link Response Strategy (2026 Recommendation)
+
+**The Problem:**
+Email links (verify-email, reset-password) can respond in two ways:
+
+1. **JSON Response** - Return structured data, frontend handles redirect
+2. **Direct Redirect** - Backend redirects to frontend page with query params
+
+**⚠️ Decision: Use JSON-First Approach (API-First Architecture)**
+
+| Aspect               | JSON Response (✅ Recommended)        | Redirect (⚠️ Legacy Pattern)           |
+| -------------------- | ------------------------------------- | -------------------------------------- |
+| **Frontend Control** | ✅ Full control over success/error UI | ❌ Limited to query params             |
+| **Error Handling**   | ✅ Structured error codes & messages  | ❌ Must parse query params             |
+| **Mobile Support**   | ✅ Works seamlessly with deep links   | ⚠️ Requires additional handling        |
+| **API Consistency**  | ✅ All endpoints return JSON          | ❌ Breaks RESTful consistency          |
+| **CORS Complexity**  | ✅ Simple (standard CORS)             | ⚠️ Must handle redirect CORS carefully |
+| **Testing**          | ✅ Easy to test with Postman/curl     | ❌ Harder to test redirects            |
+| **State Management** | ✅ Frontend manages state naturally   | ⚠️ State in URL (security concern)     |
+
+**Implementation Strategy:**
+
+**For Email Verification (`GET /auth/verify-email?token=xxx`):**
+
+```typescript
+// ✅ Recommended: Return JSON
+@Get('verify-email')
+async verifyEmail(@Query('token') token: string) {
+  await this.authService.verifyEmail(token);
+  return {
+    statusCode: 200,
+    message: 'Email verified successfully. You can now login.',
+    data: { emailVerified: true }
+  };
+}
+
+// Frontend handles redirect:
+// User clicks link → Opens in browser → Shows success page → Redirects to login
+```
+
+**For Password Reset (`GET /auth/reset-password?token=xxx`):**
+
+```typescript
+// ✅ Recommended: Return JSON (or redirect to form page)
+@Get('reset-password')
+async validateResetToken(@Query('token') token: string) {
+  const isValid = await this.authService.validateResetToken(token);
+
+  if (!isValid) {
+    throw new BadRequestException('Invalid or expired reset token');
+  }
+
+  // Option 1: Return JSON (frontend shows form)
+  return {
+    statusCode: 200,
+    message: 'Token is valid. You can now reset your password.',
+    data: { tokenValid: true }
+  };
+
+  // Option 2: Redirect to frontend reset form (acceptable for UX)
+  return res.redirect(`${FRONTEND_URL}/reset-password?token=${token}`);
+}
+
+// Then POST /auth/reset-password with { token, newPassword }
+```
+
+**Migration Path (if you need redirects now):**
+
+1. Implement JSON responses first (P0)
+2. Add optional `?redirect=1` query param later
+3. Frontend can choose behavior via link generation
+
+**Why This Matters:**
+
+- Modern SPAs (React/Vue/Angular) expect JSON
+- Mobile apps cannot handle browser redirects easily
+- Microservices architecture requires consistent API contracts
+- 2026 best practice: API returns data, frontend handles presentation
+
+---
+
 ## 1️⃣ API PRIORITY MATRIX
 
 ### 🎯 Implementation Order (DO NOT SKIP)
 
 Implement APIs in **strict priority order**. Do not move to next priority until current priority is **100% complete** (code + tests + docs).
 
-### 🔴 P0 – CRITICAL (Core Authentication)
+### 🔴 P0 – CRITICAL (Core Authentication + Email Verification)
 
 **Deadline:** Week 1  
-**Must Have:** These APIs are **mandatory** for any auth system to function.
+**Must Have:** These APIs are **mandatory** for any auth system to function. Email verification is now P0 because users cannot login without verified email.
 
-| #   | Method | Endpoint           | Purpose                 | Estimated Time |
-| --- | ------ | ------------------ | ----------------------- | -------------- |
-| 1   | POST   | `/auth/register`   | Create new user account | 4-6 hours      |
-| 2   | POST   | `/auth/login`      | Authenticate user       | 3-4 hours      |
-| 3   | POST   | `/auth/refresh`    | Renew access token      | 4-5 hours      |
-| 4   | POST   | `/auth/logout`     | Logout current device   | 2-3 hours      |
-| 5   | POST   | `/auth/logout/all` | Logout all devices      | 2-3 hours      |
+| #   | Method | Endpoint                         | Purpose                  | Estimated Time |
+| --- | ------ | -------------------------------- | ------------------------ | -------------- |
+| 1   | POST   | `/auth/register`                 | Create new user account  | 4-6 hours      |
+| 2   | GET    | `/auth/verify-email`             | Verify email with link   | 4-5 hours      |
+| 3   | POST   | `/auth/resend-verification-link` | Resend verification link | 2-3 hours      |
+| 4   | POST   | `/auth/login`                    | Authenticate user        | 3-4 hours      |
+| 5   | POST   | `/auth/refresh`                  | Renew access token       | 4-5 hours      |
+| 6   | POST   | `/auth/logout`                   | Logout current device    | 2-3 hours      |
+| 7   | POST   | `/auth/logout/all`               | Logout all devices       | 2-3 hours      |
 
-**Total P0 Time:** 15-21 hours (~2-3 days)
+**Total P0 Time:** 21-30 hours (~3-4 days)
+
+**⚠️ Implementation Order Critical Path:**
+
+1. Register → Email Verification (API #1-3) must be implemented together
+2. Only then can you test Login (API #4) successfully
+3. Then implement token management (API #5-7)
 
 ---
 
 ### 🟡 P1 – HIGH (Password Management)
 
 **Deadline:** Week 2  
-**Should Have:** Critical for user experience and account recovery.
+**Should Have:** Critical for security and account recovery.
 
 | #   | Method | Endpoint                | Purpose                         | Estimated Time |
 | --- | ------ | ----------------------- | ------------------------------- | -------------- |
-| 6   | POST   | `/auth/forgot-password` | Request password reset          | 3-4 hours      |
-| 7   | POST   | `/auth/reset-password`  | Reset password via token        | 3-4 hours      |
-| 8   | POST   | `/auth/change-password` | Change password (authenticated) | 2-3 hours      |
+| 8   | POST   | `/auth/forgot-password` | Request password reset via link | 3-4 hours      |
+| 9   | POST   | `/auth/reset-password`  | Reset password via token        | 3-4 hours      |
+| 10  | POST   | `/auth/change-password` | Change password (authenticated) | 2-3 hours      |
 
 **Total P1 Time:** 8-11 hours (~1-2 days)
 
 ---
 
-### 🟢 P2 – MEDIUM (Email Verification)
+### 🟢 P2 – MEDIUM (Advanced Features)
 
 **Deadline:** Week 3  
-**Nice to Have:** Improves security and reduces spam accounts.
+**Nice to Have:** Enhanced user experience and account management.
 
-| #   | Method | Endpoint             | Purpose                 | Estimated Time |
-| --- | ------ | -------------------- | ----------------------- | -------------- |
-| 9   | GET    | `/auth/verify-email` | Verify email with link  | 4-5 hours      |
-| 10  | POST   | `/auth/resend-verification-link` | Resend verification link | 2-3 hours      |
+| #   | Method | Endpoint             | Purpose                        | Estimated Time |
+| --- | ------ | -------------------- | ------------------------------ | -------------- |
+| 11  | GET    | `/auth/sessions`     | List active sessions (devices) | 3-4 hours      |
+| 12  | DELETE | `/auth/sessions/:id` | Revoke specific session        | 2-3 hours      |
 
-**Total P2 Time:** 6-8 hours (~1 day)
+**Total P2 Time:** 5-7 hours (~1 day)
 
 ---
 
@@ -160,11 +298,13 @@ Implement APIs in **strict priority order**. Do not move to next priority until 
 
 ### 📊 Total Implementation Time
 
-- **P0 (Critical):** 15-21 hours
-- **P1 (High):** 8-11 hours
-- **P2 (Medium):** 6-8 hours
-- **P3 (Optional):** 5-7 hours
-- **Grand Total:** 34-47 hours (~5-6 working days)
+- **P0 (Critical + Email Verification):** 21-30 hours (~3-4 days)
+- **P1 (Password Management):** 8-11 hours (~1-2 days)
+- **P2 (Session Management):** 5-7 hours (~1 day)
+- **P3 (OAuth - Optional):** 5-7 hours (~1 day)
+- **Grand Total:** 39-55 hours (~5-7 working days)
+
+**⚠️ Note:** Email Verification moved from P1 to P0 because it's a blocker for login functionality.
 
 ---
 
@@ -208,6 +348,7 @@ CREATE TABLE refresh_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   token VARCHAR(500) UNIQUE NOT NULL,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_family_id UUID NOT NULL, -- For refresh token reuse detection (2026 security)
   device_info VARCHAR(255), -- User-Agent for tracking
   ip_address VARCHAR(45), -- IPv6 support
   is_revoked BOOLEAN NOT NULL DEFAULT false,
@@ -220,14 +361,36 @@ CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_user_revoked ON refresh_tokens(user_id, is_revoked);
 CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+CREATE INDEX idx_refresh_tokens_family_id ON refresh_tokens(token_family_id); -- New: for reuse detection
 ```
 
 **TypeORM Entity:** `src/modules/auth/entities/refresh-token.entity.ts` ❌ (Needs to be created)
+
+**🆕 Refresh Token Family (Reuse Detection - 2026 Security):**
+
+When a refresh token is used:
+
+1. Generate new refresh token with **same token_family_id**
+2. Revoke old refresh token
+3. If an **already-revoked token** from the same family is presented → **Revoke entire family**
+4. This detects refresh token theft/replay attacks
+
+**Example Attack Scenario:**
+
+```
+1. Attacker steals refresh_token_A (family_id: xxx)
+2. Legitimate user uses refresh_token_A → Issues refresh_token_B (same family_id)
+3. Attacker tries to use refresh_token_A again (already revoked)
+4. System detects reuse → Revokes entire family (refresh_token_B + all future tokens)
+5. Both attacker and user forced to re-login
+6. User receives security alert email
+```
 
 **Cleanup Strategy:**
 
 - Cron job: Delete expired tokens daily
 - On refresh: Delete old token when issuing new one (token rotation)
+- On reuse detection: Revoke all tokens in family immediately
 
 ---
 
@@ -474,19 +637,26 @@ All error responses follow this format:
 
 ### 🚨 Authentication Errors (4xx)
 
-| Error Code                      | HTTP Status | Description                    | When to Use                     |
-| ------------------------------- | ----------- | ------------------------------ | ------------------------------- |
-| `AUTH_INVALID_CREDENTIALS`      | 401         | Email or password is incorrect | Login with wrong credentials    |
-| `AUTH_TOKEN_EXPIRED`            | 401         | Access token has expired       | Token expiration time reached   |
-| `AUTH_TOKEN_INVALID`            | 401         | Token signature is invalid     | Tampered or malformed token     |
-| `AUTH_TOKEN_REVOKED`            | 401         | Token has been revoked         | Token in blacklist (logout)     |
-| `AUTH_TOKEN_MISSING`            | 401         | Authorization header missing   | No token provided               |
-| `AUTH_REFRESH_TOKEN_EXPIRED`    | 401         | Refresh token has expired      | Refresh token lifetime exceeded |
-| `AUTH_REFRESH_TOKEN_INVALID`    | 401         | Refresh token is invalid       | Invalid refresh token signature |
-| `AUTH_REFRESH_TOKEN_REVOKED`    | 401         | Refresh token has been revoked | Token marked as revoked in DB   |
-| `AUTH_ACCOUNT_INACTIVE`         | 403         | User account is disabled       | `is_active = false`             |
-| `AUTH_EMAIL_NOT_VERIFIED`       | 403         | Email not verified             | `email_verified = false`        |
-| `AUTH_INSUFFICIENT_PERMISSIONS` | 403         | User lacks required role       | RolesGuard rejection            |
+| Error Code                      | HTTP Status | Description                     | When to Use                                        |
+| ------------------------------- | ----------- | ------------------------------- | -------------------------------------------------- |
+| `AUTH_INVALID_CREDENTIALS`      | 401         | Email or password is incorrect  | Login with wrong credentials                       |
+| `AUTH_TOKEN_EXPIRED`            | 401         | Access token has expired        | Token expiration time reached                      |
+| `AUTH_TOKEN_INVALID`            | 401         | Token signature is invalid      | Tampered or malformed token                        |
+| `AUTH_TOKEN_REVOKED`            | 401         | Token has been revoked          | Token in blacklist (logout)                        |
+| `AUTH_TOKEN_MISSING`            | 401         | Authorization header missing    | No token provided                                  |
+| `AUTH_REFRESH_TOKEN_EXPIRED`    | 401         | Refresh token has expired       | Refresh token lifetime exceeded                    |
+| `AUTH_REFRESH_TOKEN_INVALID`    | 401         | Refresh token is invalid        | Invalid refresh token signature                    |
+| `AUTH_REFRESH_TOKEN_REVOKED`    | 401         | Refresh token has been revoked  | Token marked as revoked in DB                      |
+| `AUTH_REFRESH_TOKEN_REUSED`     | 401         | 🆕 Refresh token reuse detected | Same token used twice (attack detected)            |
+| `AUTH_TOKEN_FAMILY_REVOKED`     | 401         | 🆕 Token family revoked         | All tokens in family invalidated (security breach) |
+| `AUTH_ACCOUNT_INACTIVE`         | 403         | User account is disabled        | `is_active = false`                                |
+| `AUTH_EMAIL_NOT_VERIFIED`       | 403         | Email not verified              | `email_verified = false`                           |
+| `AUTH_INSUFFICIENT_PERMISSIONS` | 403         | User lacks required role        | RolesGuard rejection                               |
+
+**🆕 2026 Security Codes:**
+
+- `AUTH_REFRESH_TOKEN_REUSED`: Detects when a revoked refresh token is used again (possible theft)
+- `AUTH_TOKEN_FAMILY_REVOKED`: When reuse detected, entire token family is revoked (forces re-login for both attacker and legitimate user)
 
 ---
 
@@ -513,12 +683,13 @@ All error responses follow this format:
 
 ### 🚨 Email Verification Errors (4xx)
 
-| Error Code                          | HTTP Status | Description                    | When to Use                    |
-| ----------------------------------- | ----------- | ------------------------------ | ------------------------------ |
-| `AUTH_VERIFICATION_TOKEN_INVALID`   | 400         | Verification token is invalid  | Token not found in database    |
-| `AUTH_VERIFICATION_TOKEN_EXPIRED`   | 400         | Verification token has expired | Token `expires_at` passed      |
-| `AUTH_VERIFICATION_TOKEN_USED`      | 400         | Verification token already used| Token `is_used = true`         |
-| `AUTH_EMAIL_ALREADY_VERIFIED`       | 400         | Email already verified         | User `emailVerified = true`   |
+| Error Code                        | HTTP Status | Description                      | When to Use                 |
+| --------------------------------- | ----------- | -------------------------------- | --------------------------- |
+| `AUTH_EMAIL_NOT_VERIFIED`         | 401         | Email not verified, cannot login | Login attempt before verify |
+| `AUTH_VERIFICATION_TOKEN_INVALID` | 400         | Verification token is invalid    | Token not found in database |
+| `AUTH_VERIFICATION_TOKEN_EXPIRED` | 400         | Verification token has expired   | Token `expires_at` passed   |
+| `AUTH_VERIFICATION_TOKEN_USED`    | 400         | Verification token already used  | Token `is_used = true`      |
+| `AUTH_EMAIL_ALREADY_VERIFIED`     | 400         | Email already verified           | User `emailVerified = true` |
 
 ---
 
@@ -527,6 +698,18 @@ All error responses follow this format:
 | Error Code            | HTTP Status | Description       | When to Use              |
 | --------------------- | ----------- | ----------------- | ------------------------ |
 | `RATE_LIMIT_EXCEEDED` | 429         | Too many requests | ThrottlerGuard rejection |
+
+---
+
+### 🚨 Session Management Errors (4xx) - P2
+
+| Error Code                   | HTTP Status | Description                       | When to Use                     |
+| ---------------------------- | ----------- | --------------------------------- | ------------------------------- |
+| `AUTH_SESSION_NOT_FOUND`     | 404         | 🆕 Session ID not found           | Revoke specific session (P2)    |
+| `AUTH_SESSION_LIMIT_REACHED` | 429         | 🆕 Too many active sessions       | Max concurrent devices exceeded |
+| `AUTH_DEVICE_NOT_RECOGNIZED` | 403         | 🆕 Login from unrecognized device | Device fingerprinting (future)  |
+
+**Note:** Session management error codes are for P2 features (device tracking, session listing).
 
 ---
 
@@ -562,26 +745,46 @@ throw new InvalidCredentialsException(); // Extends UnauthorizedException
 
 ### 🔐 Password Security
 
-| Rule                   | Requirement                                             | Implementation                                      |
-| ---------------------- | ------------------------------------------------------- | --------------------------------------------------- |
-| **Hashing Algorithm**  | bcrypt with salt rounds ≥ 10                            | `bcrypt.hash(password, 10)`                         |
-| **Password Strength**  | Min 8 chars, uppercase, lowercase, number, special char | Custom validator decorator                          |
-| **Password Storage**   | Never store plaintext                                   | Hash before saving to DB                            |
-| **Password Exclusion** | Never return password in responses                      | TypeORM `@Column({ select: false })`                |
-| **Password Reset**     | Revoke all sessions on reset                            | Invalidate refresh tokens + blacklist access tokens |
+| Rule                   | Requirement                                             | Implementation                                         |
+| ---------------------- | ------------------------------------------------------- | ------------------------------------------------------ |
+| **Hashing Algorithm**  | Argon2id (recommended 2026) or bcrypt (min 12 rounds)   | `argon2.hash(password)` or `bcrypt.hash(password, 12)` |
+| **Password Strength**  | Min 8 chars, uppercase, lowercase, number, special char | Custom validator decorator                             |
+| **Password Storage**   | Never store plaintext                                   | Hash before saving to DB                               |
+| **Password Exclusion** | Never return password in responses                      | TypeORM `@Column({ select: false })`                   |
+| **Password Reset**     | Revoke all sessions on reset                            | Invalidate refresh tokens + blacklist access tokens    |
+
+**🆕 2026 Recommendation:**
+
+- **Preferred:** Argon2id (winner of Password Hashing Competition 2015, now standard 2026)
+  - Better resistance to GPU/ASIC attacks
+  - Memory-hard algorithm
+  - Install: `npm install argon2`
+  - Usage: `argon2.hash(password)` (defaults are secure)
+- **Acceptable:** Bcrypt with **12-14 rounds** (NOT 10)
+  - Original spec used 10 rounds (2020 standard)
+  - 2026 hardware requires higher cost factor
+  - Usage: `bcrypt.hash(password, 12)`
+
+**Migration Strategy:**
+
+1. Start with bcrypt (easier setup, no native dependencies)
+2. Upgrade to Argon2id when you have time (one-way migration during login)
 
 ---
 
 ### 🔐 Token Security
 
-| Rule                       | Requirement                             | Implementation                       |
-| -------------------------- | --------------------------------------- | ------------------------------------ |
-| **Access Token Lifetime**  | 15-30 minutes (max 1 hour)              | `JWT_EXPIRATION=15m` or `30m`        |
-| **Refresh Token Lifetime** | 7-30 days                               | `JWT_REFRESH_EXPIRATION=7d` or `30d` |
-| **Token Signing**          | Different secrets for access vs refresh | `JWT_SECRET` vs `JWT_REFRESH_SECRET` |
-| **Token Rotation**         | Issue new refresh token on each refresh | Invalidate old, create new           |
-| **Token Revocation**       | Support immediate logout                | Blacklist + database revocation      |
-| **Token Validation**       | Verify signature + expiry + blacklist   | JWT strategy + blacklist service     |
+| Rule                       | Requirement                              | Implementation                                           |
+| -------------------------- | ---------------------------------------- | -------------------------------------------------------- |
+| **Access Token Lifetime**  | 10-15 minutes (max 30 minutes)           | `JWT_EXPIRATION=10m` or `15m` (recommended)              |
+| **Refresh Token Lifetime** | 7-14 days (max 30 days with device mgmt) | `JWT_REFRESH_EXPIRATION=7d` (default)                    |
+| **Token Signing**          | Different secrets for access vs refresh  | `JWT_SECRET` vs `JWT_REFRESH_SECRET`                     |
+| **Token Rotation**         | Issue new refresh token on each refresh  | Invalidate old, create new                               |
+| **Token Revocation**       | Support immediate logout                 | Blacklist + database revocation                          |
+| **Token Validation**       | Verify signature + expiry + blacklist    | JWT strategy + blacklist service                         |
+| **Reuse Detection**        | Detect refresh token replay attacks      | Token family tracking (see Security Best Practices 2026) |
+
+**⚠️ 2026 Security Update:** Access token lifetime reduced from 15-30m to 10-15m to minimize attack window if token is compromised. Refresh token should only exceed 7 days if device/session management (P2) is implemented.
 
 ---
 
@@ -612,14 +815,14 @@ throw new InvalidCredentialsException(); // Extends UnauthorizedException
 
 ### 🔐 Email & Verification Security
 
-| Rule                           | Requirement                    | Implementation                           |
-| ------------------------------ | ------------------------------ | ---------------------------------------- |
-| **Verification Token Length**  | 32+ characters (crypto-secure) | `crypto.randomBytes(32).toString('hex')` |
+| Rule                            | Requirement                    | Implementation                           |
+| ------------------------------- | ------------------------------ | ---------------------------------------- |
+| **Verification Token Length**   | 32+ characters (crypto-secure) | `crypto.randomBytes(32).toString('hex')` |
 | **Token Hashing**               | SHA-256 hash before storage    | Store hashed token in database           |
-| **Verification Token Lifetime**| 24 hours                       | `expires_at` timestamp                   |
+| **Verification Token Lifetime** | 24 hours                       | `expires_at` timestamp                   |
 | **Token Rate Limit**            | 3 link requests per hour       | ThrottlerGuard on resend endpoint        |
 | **Single Use**                  | One-time use only              | Mark `is_used = true` after verification |
-| **Reset Token Length**         | 32+ characters (crypto-secure) | `crypto.randomBytes(32).toString('hex')` |
+| **Reset Token Length**          | 32+ characters (crypto-secure) | `crypto.randomBytes(32).toString('hex')` |
 | **Reset Token Lifetime**        | 10-15 minutes                  | `expires_at` timestamp                   |
 
 ---
@@ -648,23 +851,500 @@ throw new InvalidCredentialsException(); // Extends UnauthorizedException
 
 The following P0 (Critical) APIs have been fully specified with implementation steps, sequence diagrams, and testing checklists:
 
-1. **POST /auth/register** - Create new user account
-2. **POST /auth/login** - Authenticate user
+1. **POST /auth/register** - Create new user account (sends verification email with link)
+2. **POST /auth/login** - Authenticate user (requires verified email)
 3. **POST /auth/refresh** - Renew access token
 4. **POST /auth/logout** - Logout current device
 5. **POST /auth/logout/all** - Logout all devices
 
 **Status:** ✅ All P0 APIs are documented and ready for implementation.
 
-**Next Step:** Implement all P0 APIs before proceeding to P1.
+**⚠️ Important Notes:**
+
+- Register sends verification link via email but does NOT return JWT token
+- Users must verify email before they can login
+- Login endpoint checks `emailVerified = true` before issuing tokens
+
+**Next Step:** Implement all P0 APIs, then immediately implement P1 Email Verification endpoints (API #6-7) before testing login flow.
 
 ---
 
-### 🟡 P1 APIs - PASSWORD MANAGEMENT
+### 🟡 P1 APIs - EMAIL VERIFICATION & PASSWORD MANAGEMENT
+
+**⚠️ IMPORTANT:** Email Verification endpoints (API #6-7) must be implemented immediately after P0 APIs because:
+
+- Register sends verification email but does NOT issue JWT tokens
+- Login requires `emailVerified = true` before issuing tokens
+- Users cannot access the system without verifying their email first
 
 ---
 
-## 🟡 P1 API #6: FORGOT PASSWORD
+## 🟡 P1 API #6: VERIFY EMAIL
+
+### Basic Information
+
+| Property           | Value                                                            |
+| ------------------ | ---------------------------------------------------------------- |
+| **Endpoint**       | `GET /auth/verify-email?token=<verification-token>`              |
+| **Authentication** | ❌ Not required (uses verification token from email link)        |
+| **Rate Limit**     | 10 requests per hour per IP                                      |
+| **Purpose**        | Verify user email address using verification link sent via email |
+
+---
+
+### Request Specification
+
+**Query Parameters:**
+
+```
+GET /auth/verify-email?token=a1b2c3d4e5f6...
+```
+
+**Token Format:**
+
+- 64-character hex string (32 bytes)
+- Sent via email link: `https://app.com/verify-email?token=...`
+
+---
+
+### Response Specification
+
+**Success Response (200 OK):**
+
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Email verified successfully. You can now login.",
+  "data": {
+    "emailVerified": true
+  }
+}
+```
+
+**Error Responses:**
+
+| Status Code | Error Code                        | Description                 |
+| ----------- | --------------------------------- | --------------------------- |
+| 400         | `AUTH_VERIFICATION_TOKEN_INVALID` | Token not found in database |
+| 400         | `AUTH_VERIFICATION_TOKEN_EXPIRED` | Token has expired           |
+| 400         | `AUTH_VERIFICATION_TOKEN_USED`    | Token already used          |
+| 400         | `AUTH_EMAIL_ALREADY_VERIFIED`     | Email already verified      |
+
+---
+
+### Implementation Steps
+
+#### Step 1: Extract Token from Query Parameter
+
+```typescript
+@Get('verify-email')
+async verifyEmail(@Query('token') token: string) {
+  if (!token) {
+    throw new BadRequestException({
+      message: 'Verification token is required',
+      errorCode: 'AUTH_VERIFICATION_TOKEN_INVALID',
+    });
+  }
+
+  // Continue to Step 2
+}
+```
+
+#### Step 2: Hash Provided Token
+
+```typescript
+import * as crypto from 'node:crypto';
+
+const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+```
+
+**Security Note:** Token trong database được lưu dưới dạng hash, nên phải hash token từ query parameter trước khi tìm kiếm.
+
+#### Step 3: Find Verification Token in Database
+
+```typescript
+const verificationToken = await this.emailVerificationTokenRepository.findOne({
+  where: { token: hashedToken },
+  relations: ['user'],
+});
+
+if (!verificationToken) {
+  throw new BadRequestException({
+    message: 'Invalid or expired verification token',
+    errorCode: 'AUTH_VERIFICATION_TOKEN_INVALID',
+  });
+}
+```
+
+#### Step 4: Validate Token Status
+
+```typescript
+// Check if expired
+if (verificationToken.expiresAt < new Date()) {
+  throw new BadRequestException({
+    message: 'Verification token has expired',
+    errorCode: 'AUTH_VERIFICATION_TOKEN_EXPIRED',
+  });
+}
+
+// Check if already used
+if (verificationToken.isUsed) {
+  throw new BadRequestException({
+    message: 'Verification token already used',
+    errorCode: 'AUTH_VERIFICATION_TOKEN_USED',
+  });
+}
+
+// Check if email already verified
+if (verificationToken.user.emailVerified) {
+  throw new BadRequestException({
+    message: 'Email already verified',
+    errorCode: 'AUTH_EMAIL_ALREADY_VERIFIED',
+  });
+}
+```
+
+#### Step 5: Mark Email as Verified
+
+```typescript
+await this.userRepository.update(verificationToken.userId, {
+  emailVerified: true,
+  updatedAt: new Date(),
+});
+```
+
+#### Step 6: Mark Token as Used
+
+```typescript
+await this.emailVerificationTokenRepository.update(verificationToken.id, {
+  isUsed: true,
+});
+```
+
+#### Step 7: (Optional) Redirect to Frontend
+
+```typescript
+// Option 1: Return JSON response
+return {
+  message: 'Email verified successfully. You can now login.',
+  emailVerified: true,
+};
+
+// Option 2: Redirect to frontend success page
+return res.redirect(`${this.configService.get('FRONTEND_URL')}/email-verified?success=true`);
+```
+
+---
+
+### Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant User as User (Browser)
+    participant Frontend as Frontend App
+    participant API as AuthController
+    participant S as AuthService
+    participant DB as PostgreSQL
+
+    User->>Frontend: Click verification link from email
+    Frontend->>API: GET /auth/verify-email?token=xyz
+    API->>S: verifyEmail(token)
+
+    S->>S: Hash token (SHA-256)
+    S->>DB: findOne(hashedToken)
+
+    alt Token not found
+        DB-->>S: null
+        S-->>API: BadRequestException (INVALID)
+        API-->>Frontend: 400 Invalid token
+    else Token found
+        DB-->>S: EmailVerificationToken + User
+
+        alt Token expired
+            S-->>API: BadRequestException (EXPIRED)
+            API-->>Frontend: 400 Token expired
+        else Token already used
+            S-->>API: BadRequestException (USED)
+            API-->>Frontend: 400 Already used
+        else Email already verified
+            S-->>API: BadRequestException (ALREADY_VERIFIED)
+            API-->>Frontend: 400 Already verified
+        else Token valid
+            S->>DB: update(user.emailVerified = true)
+            S->>DB: update(token.isUsed = true)
+            S-->>API: Success
+            API-->>Frontend: 200 OK (or redirect)
+            Frontend-->>User: Show success message
+        end
+    end
+```
+
+---
+
+### Security Considerations
+
+| Concern               | Mitigation                                            |
+| --------------------- | ----------------------------------------------------- |
+| **Token Security**    | Tokens are hashed in database, single-use only        |
+| **Token Expiry**      | Short expiration (24 hours)                           |
+| **Token Reuse**       | Mark token as used after successful verification      |
+| **Email Enumeration** | Generic error messages (don't reveal if email exists) |
+| **Rate Limiting**     | Limit verification attempts per IP                    |
+
+---
+
+### Testing Checklist
+
+- [ ] **Happy Path:** Verify with valid token returns 200
+- [ ] **Invalid Token:** Verify with non-existent token returns 400
+- [ ] **Expired Token:** Verify with expired token returns 400 with specific error code
+- [ ] **Used Token:** Verify with already-used token returns 400
+- [ ] **Already Verified:** Verify already-verified email returns 400
+- [ ] **Email Updated:** Verify `emailVerified` is set to `true` in database
+- [ ] **Token Marked Used:** Verify `isUsed` is set to `true`
+- [ ] **Missing Token:** Request without token returns 400
+- [ ] **Rate Limiting:** Excessive verification attempts return 429
+- [ ] **Can Login:** After verification, user can successfully login
+
+---
+
+## 🟡 P1 API #7: RESEND VERIFICATION LINK
+
+### Basic Information
+
+| Property           | Value                                               |
+| ------------------ | --------------------------------------------------- |
+| **Endpoint**       | `POST /auth/resend-verification-link`               |
+| **Authentication** | ⚠️ Optional (can be authenticated or provide email) |
+| **Rate Limit**     | 3 requests per hour per user                        |
+| **Purpose**        | Resend email verification link                      |
+
+---
+
+### Request Specification
+
+**Headers:**
+
+```
+Content-Type: application/json
+Authorization: Bearer <access-token>  // Optional
+```
+
+**Request Body (ResendVerificationLinkDto):**
+
+```typescript
+{
+  "email": "user@example.com"  // Required if not authenticated
+}
+```
+
+**Validation Rules:**
+
+```typescript
+export class ResendVerificationLinkDto {
+  @IsEmail({}, { message: 'Email must be a valid email address' })
+  @IsNotEmpty({ message: 'Email is required' })
+  email: string;
+}
+```
+
+---
+
+### Response Specification
+
+**Success Response (200 OK):**
+
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "If your email is registered, you will receive a verification link",
+  "data": null
+}
+```
+
+**⚠️ Security Note:** Response is **ALWAYS the same** whether email exists or not. This prevents email enumeration attacks.
+
+**Error Responses:**
+
+| Status Code | Error Code                    | Description            |
+| ----------- | ----------------------------- | ---------------------- |
+| 400         | `VALIDATION_ERROR`            | Invalid email format   |
+| 400         | `AUTH_EMAIL_ALREADY_VERIFIED` | Email already verified |
+| 429         | `RATE_LIMIT_EXCEEDED`         | Too many requests      |
+
+---
+
+### Implementation Steps
+
+#### Step 1: Get User (from token or email)
+
+```typescript
+let user: User;
+
+if (req.user) {
+  // User is authenticated
+  user = req.user;
+} else {
+  // Find user by email
+  user = await this.userRepository.findOne({
+    where: { email: resendVerificationLinkDto.email },
+  });
+
+  if (!user) {
+    // Generic response (don't reveal if email exists)
+    this.logger.warn(`Verification link requested for non-existent email: ${resendVerificationLinkDto.email}`);
+    return {
+      message: 'If your email is registered, you will receive a verification link',
+    };
+  }
+}
+```
+
+#### Step 2: Check if Already Verified
+
+```typescript
+if (user.emailVerified) {
+  throw new BadRequestException({
+    message: 'Email already verified',
+    errorCode: 'AUTH_EMAIL_ALREADY_VERIFIED',
+  });
+}
+```
+
+#### Step 3: Invalidate Previous Verification Tokens
+
+```typescript
+// Delete or expire any existing unused verification tokens for this user
+await this.emailVerificationTokenRepository.update(
+  { userId: user.id, isUsed: false },
+  { expiresAt: new Date() }, // Expire immediately
+);
+```
+
+#### Step 4: Generate Secure Verification Token
+
+```typescript
+import * as crypto from 'node:crypto';
+
+const verificationToken = crypto.randomBytes(32).toString('hex'); // 64-character hex string
+const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
+// Store hashed token in database (never store plaintext)
+await this.emailVerificationTokenRepository.save({
+  token: hashedToken, // Store hashed version
+  userId: user.id,
+  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+  isUsed: false,
+});
+```
+
+**Security Note:** Store hashed token in DB to prevent token theft from database breach.
+
+#### Step 5: Send Verification Email
+
+```typescript
+const verificationUrl = `${this.configService.get('FRONTEND_URL')}/verify-email?token=${verificationToken}`;
+
+await this.emailService.sendVerificationEmail({
+  to: user.email,
+  name: user.firstName,
+  verificationUrl,
+  expiresInHours: 24,
+});
+```
+
+**Email Template Example:**
+
+```html
+Subject: Verify Your Email Address Hi {{name}}, Please verify your email address by clicking the link below:
+{{verificationUrl}} This link expires in 24 hours. If you didn't create an account, please ignore this email.
+```
+
+#### Step 6: Return Generic Response
+
+```typescript
+return {
+  message: 'If your email is registered, you will receive a verification link',
+};
+```
+
+---
+
+### Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as AuthController
+    participant S as AuthService
+    participant DB as PostgreSQL
+    participant Email as EmailService
+
+    C->>API: POST /auth/resend-verification-link<br/>{email}
+    API->>API: Validate DTO
+
+    API->>S: resendVerificationLink(dto)
+    S->>DB: findOne(email)
+
+    alt Email not found
+        DB-->>S: null
+        S->>S: Log event (security monitoring)
+        S-->>API: Generic success message
+        API-->>C: 200 OK (generic)
+    else Email found
+        DB-->>S: User
+
+        alt Email already verified
+            S-->>API: BadRequestException<br/>ALREADY_VERIFIED
+            API-->>C: 400 Already verified
+        else Email not verified
+            S->>DB: update(previous tokens, expire)
+            S->>S: Generate verification token (crypto.randomBytes)
+            S->>S: Hash token (SHA-256)
+            S->>DB: save(verification_token, hashed)
+
+            S->>Email: sendVerificationEmail(email, verificationUrl)
+            Note over Email: Async, non-blocking
+
+            S-->>API: Generic success message
+            API-->>C: 200 OK (generic)
+        end
+    end
+```
+
+---
+
+### Security Considerations
+
+| Concern               | Mitigation                                           |
+| --------------------- | ---------------------------------------------------- |
+| **Email Enumeration** | Always return same generic message                   |
+| **Token Security**    | Store hashed tokens, not plaintext                   |
+| **Token Reuse**       | Invalidate previous tokens before generating new one |
+| **Rate Limiting**     | Strict limit: 3 requests per hour per user           |
+| **Token Expiry**      | Long expiration (24 hours) for better UX             |
+
+---
+
+### Testing Checklist
+
+- [ ] **Happy Path:** Request with valid email returns 200 (even if email doesn't exist)
+- [ ] **Email Found:** Verify verification token is saved in database (hashed)
+- [ ] **Email Not Found:** Same response as email found (generic message)
+- [ ] **Email Sent:** Verify email is sent with correct verification URL
+- [ ] **Token Format:** Verify token is 64-character hex string (32 bytes)
+- [ ] **Token Expiry:** Verify `expiresAt` is set to 24 hours from now
+- [ ] **Previous Tokens:** Verify old unused tokens are invalidated
+- [ ] **Rate Limiting:** 4th request within 1 hour returns 429
+- [ ] **Invalid Email:** Malformed email returns 400 validation error
+- [ ] **Already Verified:** Request for verified email returns 400
+- [ ] **Timing:** Response time similar for existing vs non-existing emails
+
+---
+
+## 🟡 P1 API #8: FORGOT PASSWORD
 
 ### Basic Information
 
@@ -748,14 +1428,11 @@ const user = await this.userRepository.findOne({
 // Continue with generic response
 if (!user) {
   // Log for security monitoring
-  this.logger.warn(
-    `Password reset requested for non-existent email: ${forgotPasswordDto.email}`,
-  );
+  this.logger.warn(`Password reset requested for non-existent email: ${forgotPasswordDto.email}`);
 
   // Return success anyway (generic response)
   return {
-    message:
-      'If your email is registered, you will receive a password reset link',
+    message: 'If your email is registered, you will receive a password reset link',
   };
 }
 ```
@@ -776,10 +1453,7 @@ await this.resetTokenRepository.update(
 import * as crypto from 'crypto';
 
 const resetToken = crypto.randomBytes(32).toString('hex'); // 64-character hex string
-const hashedToken = crypto
-  .createHash('sha256')
-  .update(resetToken)
-  .digest('hex');
+const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
 // Store hashed token in database (never store plaintext)
 await this.resetTokenRepository.save({
@@ -807,17 +1481,15 @@ await this.emailService.sendPasswordResetEmail({
 **Email Template Example:**
 
 ```html
-Subject: Reset Your Password Hi {{name}}, You requested to reset your password.
-Click the link below: {{resetUrl}} This link expires in 15 minutes. If you
-didn't request this, ignore this email.
+Subject: Reset Your Password Hi {{name}}, You requested to reset your password. Click the link below: {{resetUrl}} This
+link expires in 15 minutes. If you didn't request this, ignore this email.
 ```
 
 #### Step 6: Return Generic Response
 
 ```typescript
 return {
-  message:
-    'If your email is registered, you will receive a password reset link',
+  message: 'If your email is registered, you will receive a password reset link',
 };
 ```
 
@@ -931,8 +1603,7 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters' })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
-    message:
-      'Password must contain uppercase, lowercase, number and special character',
+    message: 'Password must contain uppercase, lowercase, number and special character',
   })
   newPassword: string;
 }
@@ -972,10 +1643,7 @@ export class ResetPasswordDto {
 ```typescript
 import * as crypto from 'crypto';
 
-const hashedToken = crypto
-  .createHash('sha256')
-  .update(resetPasswordDto.token)
-  .digest('hex');
+const hashedToken = crypto.createHash('sha256').update(resetPasswordDto.token).digest('hex');
 ```
 
 #### Step 2: Find Reset Token in Database
@@ -1041,10 +1709,7 @@ await this.resetTokenRepository.update(resetToken.id, {
 
 ```typescript
 // Force re-login on all devices
-await this.refreshTokenRepository.update(
-  { userId: resetToken.userId, isRevoked: false },
-  { isRevoked: true },
-);
+await this.refreshTokenRepository.update({ userId: resetToken.userId, isRevoked: false }, { isRevoked: true });
 ```
 
 #### Step 8: (Optional) Send Confirmation Email
@@ -1185,8 +1850,7 @@ export class ChangePasswordDto {
   @IsString()
   @MinLength(8, { message: 'New password must be at least 8 characters' })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
-    message:
-      'New password must contain uppercase, lowercase, number and special character',
+    message: 'New password must contain uppercase, lowercase, number and special character',
   })
   newPassword: string;
 }
@@ -1243,10 +1907,7 @@ const user = await this.userRepository.findOne({
 #### Step 3: Verify Old Password
 
 ```typescript
-const isOldPasswordValid = await bcrypt.compare(
-  changePasswordDto.oldPassword,
-  user.password,
-);
+const isOldPasswordValid = await bcrypt.compare(changePasswordDto.oldPassword, user.password);
 
 if (!isOldPasswordValid) {
   throw new BadRequestException({
@@ -1259,10 +1920,7 @@ if (!isOldPasswordValid) {
 #### Step 4: Check New Password is Different
 
 ```typescript
-const isSamePassword = await bcrypt.compare(
-  changePasswordDto.newPassword,
-  user.password,
-);
+const isSamePassword = await bcrypt.compare(changePasswordDto.newPassword, user.password);
 
 if (isSamePassword) {
   throw new BadRequestException({
@@ -1293,10 +1951,7 @@ await this.userRepository.update(user.id, {
 // Revoke all refresh tokens except current device (optional behavior)
 // Or revoke all tokens to force re-login everywhere (more secure)
 
-await this.refreshTokenRepository.update(
-  { userId: user.id, isRevoked: false },
-  { isRevoked: true },
-);
+await this.refreshTokenRepository.update({ userId: user.id, isRevoked: false }, { isRevoked: true });
 ```
 
 #### Step 8: Generate New Tokens
@@ -1431,12 +2086,12 @@ sequenceDiagram
 
 ### Basic Information
 
-| Property           | Value                                                             |
-| ------------------ | ----------------------------------------------------------------- |
-| **Endpoint**       | `GET /auth/verify-email?token=<verification-token>`                |
-| **Authentication** | ❌ Not required (uses verification token from email link)         |
-| **Rate Limit**     | 10 requests per hour per IP                                       |
-| **Purpose**        | Verify user email address using verification link sent via email  |
+| Property           | Value                                                            |
+| ------------------ | ---------------------------------------------------------------- |
+| **Endpoint**       | `GET /auth/verify-email?token=<verification-token>`              |
+| **Authentication** | ❌ Not required (uses verification token from email link)        |
+| **Rate Limit**     | 10 requests per hour per IP                                      |
+| **Purpose**        | Verify user email address using verification link sent via email |
 
 ---
 
@@ -1449,6 +2104,7 @@ GET /auth/verify-email?token=a1b2c3d4e5f6...
 ```
 
 **Token Format:**
+
 - 64-character hex string (32 bytes)
 - Sent via email link: `https://app.com/verify-email?token=...`
 
@@ -1471,12 +2127,12 @@ GET /auth/verify-email?token=a1b2c3d4e5f6...
 
 **Error Responses:**
 
-| Status Code | Error Code                          | Description                    |
-| ---------- | ----------------------------------- | ------------------------------ |
-| 400        | `AUTH_VERIFICATION_TOKEN_INVALID`   | Token not found in database    |
-| 400        | `AUTH_VERIFICATION_TOKEN_EXPIRED`   | Token has expired              |
-| 400        | `AUTH_VERIFICATION_TOKEN_USED`      | Token already used             |
-| 400        | `AUTH_EMAIL_ALREADY_VERIFIED`       | Email already verified         |
+| Status Code | Error Code                        | Description                 |
+| ----------- | --------------------------------- | --------------------------- |
+| 400         | `AUTH_VERIFICATION_TOKEN_INVALID` | Token not found in database |
+| 400         | `AUTH_VERIFICATION_TOKEN_EXPIRED` | Token has expired           |
+| 400         | `AUTH_VERIFICATION_TOKEN_USED`    | Token already used          |
+| 400         | `AUTH_EMAIL_ALREADY_VERIFIED`     | Email already verified      |
 
 ---
 
@@ -1493,7 +2149,7 @@ async verifyEmail(@Query('token') token: string) {
       errorCode: 'AUTH_VERIFICATION_TOKEN_INVALID',
     });
   }
-  
+
   // Continue to Step 2
 }
 ```
@@ -1503,10 +2159,7 @@ async verifyEmail(@Query('token') token: string) {
 ```typescript
 import * as crypto from 'crypto';
 
-const hashedToken = crypto
-  .createHash('sha256')
-  .update(token)
-  .digest('hex');
+const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 ```
 
 **Security Note:** Token trong database được lưu dưới dạng hash, nên phải hash token từ query parameter trước khi tìm kiếm.
@@ -1600,17 +2253,17 @@ sequenceDiagram
     User->>Frontend: Click verification link from email
     Frontend->>API: GET /auth/verify-email?token=xyz
     API->>S: verifyEmail(token)
-    
+
     S->>S: Hash token (SHA-256)
     S->>DB: findOne(hashedToken)
-    
+
     alt Token not found
         DB-->>S: null
         S-->>API: BadRequestException (INVALID)
         API-->>Frontend: 400 Invalid token
     else Token found
         DB-->>S: EmailVerificationToken + User
-        
+
         alt Token expired
             S-->>API: BadRequestException (EXPIRED)
             API-->>Frontend: 400 Token expired
@@ -1634,13 +2287,13 @@ sequenceDiagram
 
 ### Security Considerations
 
-| Concern               | Mitigation                                     |
-| --------------------- | ---------------------------------------------- |
-| **Token Security**    | Tokens are hashed in database, single-use only |
-| **Token Expiry**      | Short expiration (24 hours)                    |
-| **Token Reuse**       | Mark token as used after successful verification |
+| Concern               | Mitigation                                            |
+| --------------------- | ----------------------------------------------------- |
+| **Token Security**    | Tokens are hashed in database, single-use only        |
+| **Token Expiry**      | Short expiration (24 hours)                           |
+| **Token Reuse**       | Mark token as used after successful verification      |
 | **Email Enumeration** | Generic error messages (don't reveal if email exists) |
-| **Rate Limiting**     | Limit verification attempts per IP              |
+| **Rate Limiting**     | Limit verification attempts per IP                    |
 
 ---
 
@@ -1662,12 +2315,12 @@ sequenceDiagram
 
 ### Basic Information
 
-| Property           | Value                              |
-| ------------------ | ---------------------------------- |
-| **Endpoint**       | `POST /auth/resend-verification-link` |
+| Property           | Value                                               |
+| ------------------ | --------------------------------------------------- |
+| **Endpoint**       | `POST /auth/resend-verification-link`               |
 | **Authentication** | ⚠️ Optional (can be authenticated or provide email) |
-| **Rate Limit**     | 3 requests per hour per user       |
-| **Purpose**        | Resend email verification link     |
+| **Rate Limit**     | 3 requests per hour per user                        |
+| **Purpose**        | Resend email verification link                      |
 
 ---
 
@@ -1717,11 +2370,11 @@ export class ResendVerificationLinkDto {
 
 **Error Responses:**
 
-| Status Code | Error Code                    | Description             |
-| ---------- | ----------------------------- | ----------------------- |
-| 400        | `VALIDATION_ERROR`            | Invalid email format    |
-| 400        | `AUTH_EMAIL_ALREADY_VERIFIED` | Email already verified  |
-| 429        | `RATE_LIMIT_EXCEEDED`         | Too many requests      |
+| Status Code | Error Code                    | Description            |
+| ----------- | ----------------------------- | ---------------------- |
+| 400         | `VALIDATION_ERROR`            | Invalid email format   |
+| 400         | `AUTH_EMAIL_ALREADY_VERIFIED` | Email already verified |
+| 429         | `RATE_LIMIT_EXCEEDED`         | Too many requests      |
 
 ---
 
@@ -1743,12 +2396,9 @@ if (req.user) {
 
   if (!user) {
     // Generic response (don't reveal if email exists)
-    this.logger.warn(
-      `Verification link requested for non-existent email: ${resendVerificationLinkDto.email}`,
-    );
+    this.logger.warn(`Verification link requested for non-existent email: ${resendVerificationLinkDto.email}`);
     return {
-      message:
-        'If your email is registered, you will receive a verification link',
+      message: 'If your email is registered, you will receive a verification link',
     };
   }
 }
@@ -1781,10 +2431,7 @@ await this.emailVerificationTokenRepository.update(
 import * as crypto from 'crypto';
 
 const verificationToken = crypto.randomBytes(32).toString('hex'); // 64-character hex string
-const hashedToken = crypto
-  .createHash('sha256')
-  .update(verificationToken)
-  .digest('hex');
+const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
 
 // Store hashed token in database (never store plaintext)
 await this.emailVerificationTokenRepository.save({
@@ -1813,25 +2460,15 @@ await this.emailService.sendVerificationEmail({
 **Email Template Example:**
 
 ```html
-Subject: Verify Your Email Address
-
-Hi {{name}},
-
-Please verify your email address by clicking the link below:
-
-{{verificationUrl}}
-
-This link expires in 24 hours.
-
-If you didn't create an account, please ignore this email.
+Subject: Verify Your Email Address Hi {{name}}, Please verify your email address by clicking the link below:
+{{verificationUrl}} This link expires in 24 hours. If you didn't create an account, please ignore this email.
 ```
 
 #### Step 6: Return Generic Response
 
 ```typescript
 return {
-  message:
-    'If your email is registered, you will receive a verification link',
+  message: 'If your email is registered, you will receive a verification link',
 };
 ```
 
@@ -1860,7 +2497,7 @@ sequenceDiagram
         API-->>C: 200 OK (generic)
     else Email found
         DB-->>S: User
-        
+
         alt Email already verified
             S-->>API: BadRequestException<br/>ALREADY_VERIFIED
             API-->>C: 400 Already verified
@@ -1883,13 +2520,13 @@ sequenceDiagram
 
 ### Security Considerations
 
-| Concern               | Mitigation                                                    |
-| --------------------- | ------------------------------------------------------------- |
-| **Email Enumeration** | Always return same generic message                            |
-| **Token Security**    | Store hashed tokens, not plaintext                            |
-| **Token Reuse**       | Invalidate previous tokens before generating new one          |
-| **Rate Limiting**     | Strict limit: 3 requests per hour per user                     |
-| **Token Expiry**      | Long expiration (24 hours) for better UX                      |
+| Concern               | Mitigation                                           |
+| --------------------- | ---------------------------------------------------- |
+| **Email Enumeration** | Always return same generic message                   |
+| **Token Security**    | Store hashed tokens, not plaintext                   |
+| **Token Reuse**       | Invalidate previous tokens before generating new one |
+| **Rate Limiting**     | Strict limit: 3 requests per hour per user           |
+| **Token Expiry**      | Long expiration (24 hours) for better UX             |
 
 ---
 
@@ -1940,11 +2577,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
   }
 
-  async validate(
-    accessToken: string,
-    refreshToken: string,
-    profile: any,
-  ): Promise<any> {
+  async validate(accessToken: string, refreshToken: string, profile: any): Promise<any> {
     const { id, name, emails, photos } = profile;
 
     return {
@@ -2102,14 +2735,14 @@ Use this checklist for **each API** you implement:
 
 **Recommended pace:** 1-2 APIs per day
 
-| Day       | APIs                              | Total Hours | Cumulative |
-| --------- | --------------------------------- | ----------- | ---------- |
-| **Day 1** | Register + Login                  | 7-10 hours  | 2 APIs ✅  |
-| **Day 2** | Refresh + Logout + Logout All     | 8-11 hours  | 5 APIs ✅  |
-| **Day 3** | Forgot Password + Reset Password  | 6-8 hours   | 7 APIs ✅  |
-| **Day 4** | Change Password + Verify Email    | 6-8 hours   | 9 APIs ✅  |
+| Day       | APIs                                            | Total Hours | Cumulative |
+| --------- | ----------------------------------------------- | ----------- | ---------- |
+| **Day 1** | Register + Login                                | 7-10 hours  | 2 APIs ✅  |
+| **Day 2** | Refresh + Logout + Logout All                   | 8-11 hours  | 5 APIs ✅  |
+| **Day 3** | Forgot Password + Reset Password                | 6-8 hours   | 7 APIs ✅  |
+| **Day 4** | Change Password + Verify Email                  | 6-8 hours   | 9 APIs ✅  |
 | **Day 5** | Resend Verification Link + Testing & Refinement | 6-8 hours   | 10 APIs ✅ |
-| **Day 6** | (Optional) Google OAuth           | 5-7 hours   | 12 APIs ✅ |
+| **Day 6** | (Optional) Google OAuth                         | 5-7 hours   | 12 APIs ✅ |
 
 **Total:** 5-6 working days for complete auth system
 
@@ -2197,9 +2830,7 @@ describe('AuthService', () => {
       userRepository.findOne.mockResolvedValue({ id: '123' });
 
       // Act & Assert
-      await expect(service.register(registerDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.register(registerDto)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -2308,16 +2939,10 @@ describe('Auth E2E Flows', () => {
     refreshToken = registerResponse.body.data.refreshToken;
 
     // Step 2: Access protected route
-    await request(app.getHttpServer())
-      .get('/users/profile')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(200);
+    await request(app.getHttpServer()).get('/users/profile').set('Authorization', `Bearer ${accessToken}`).expect(200);
 
     // Step 3: Refresh token
-    const refreshResponse = await request(app.getHttpServer())
-      .post('/auth/refresh')
-      .send({ refreshToken })
-      .expect(200);
+    const refreshResponse = await request(app.getHttpServer()).post('/auth/refresh').send({ refreshToken }).expect(200);
 
     const newAccessToken = refreshResponse.body.data.accessToken;
 
@@ -2371,20 +2996,34 @@ export class UserFactory {
 
 ## 9️⃣ RATE LIMITING CONFIGURATION
 
-### 📊 Rate Limit Strategy
+### 📊 Rate Limit Strategy (2026 Security-Hardened)
 
-| Endpoint                     | Limit       | Window     | Reason                        |
-| ---------------------------- | ----------- | ---------- | ----------------------------- |
-| `POST /auth/register`        | 5 requests  | 1 minute   | Prevent mass account creation |
-| `POST /auth/login`           | 5 requests  | 1 minute   | Prevent brute force attacks   |
-| `POST /auth/forgot-password` | 3 requests  | 1 hour     | Prevent email flooding        |
-| `POST /auth/reset-password`  | 5 requests  | 1 hour     | Prevent token brute force     |
-| `POST /auth/change-password` | 10 requests | 1 hour     | Prevent password brute force  |
-| `POST /auth/refresh`         | 10 requests | 1 minute   | Normal refresh rate           |
-| `POST /auth/logout`          | 10 requests | 1 minute   | Normal logout rate            |
-| `POST /auth/logout/all`      | 5 requests  | 1 minute   | Prevent abuse                 |
-| `GET /auth/verify-email`     | 10 requests | 1 hour    | Prevent token brute force     |
-| `POST /auth/resend-verification-link` | 3 requests | 1 hour    | Prevent email flooding        |
+| Endpoint                              | Limit       | Window    | Reason                        | 2026 Update        |
+| ------------------------------------- | ----------- | --------- | ----------------------------- | ------------------ |
+| `POST /auth/register`                 | 3 requests  | 5 minutes | Prevent mass account creation | ⬇️ Stricter        |
+| `POST /auth/login`                    | 5 requests  | 5 minutes | Prevent brute force attacks   | 🔄 Extended window |
+| `POST /auth/forgot-password`          | 3 requests  | 1 hour    | Prevent email flooding        | ✅ Unchanged       |
+| `POST /auth/reset-password`           | 3 requests  | 1 hour    | Prevent token brute force     | ⬇️ Reduced from 5  |
+| `POST /auth/change-password`          | 5 requests  | 1 hour    | Prevent password brute force  | ⬇️ Reduced from 10 |
+| `POST /auth/refresh`                  | 10 requests | 1 minute  | Normal refresh rate           | ✅ Unchanged       |
+| `POST /auth/logout`                   | 10 requests | 1 minute  | Normal logout rate            | ✅ Unchanged       |
+| `POST /auth/logout/all`               | 3 requests  | 5 minutes | Prevent abuse                 | ⬇️ Stricter        |
+| `GET /auth/verify-email`              | 10 requests | 1 hour    | Prevent token brute force     | ✅ Unchanged       |
+| `POST /auth/resend-verification-link` | 3 requests  | 1 hour    | Prevent email flooding        | ✅ Unchanged       |
+
+**⚠️ 2026 Changes Rationale:**
+
+- Register: Reduced from 5/min to 3/5min (legitimate users rarely register multiple times)
+- Login: Increased window from 1min to 5min (prevents rapid retry attacks)
+- Reset Password: Reduced from 5 to 3 attempts per hour (token should work first try)
+- Change Password: Reduced from 10 to 5 per hour (legitimate users rarely change password multiple times)
+- Logout All: Stricter limit (5min window instead of 1min) to prevent abuse
+
+**Production Recommendation:**
+
+- Use **Redis-backed storage** for distributed rate limiting across multiple server instances
+- Monitor rate limit hits and adjust based on real traffic patterns
+- Consider IP-based + user-based rate limiting combined
 
 ---
 
@@ -2422,7 +3061,7 @@ import { APP_GUARD } from '@nestjs/core';
 export class AppModule {}
 ```
 
-#### 3️⃣ Custom Rate Limits per Endpoint
+#### 3️⃣ Custom Rate Limits per Endpoint (2026 Configuration)
 
 ```typescript
 import { Throttle } from '@nestjs/throttler';
@@ -2430,13 +3069,13 @@ import { Throttle } from '@nestjs/throttler';
 @Controller('auth')
 export class AuthController {
   @Post('register')
-  @Throttle(5, 60) // 5 requests per 60 seconds
+  @Throttle(3, 300) // 3 requests per 5 minutes (300 seconds)
   async register(@Body() dto: RegisterDto) {
     // Implementation
   }
 
   @Post('login')
-  @Throttle(5, 60)
+  @Throttle(5, 300) // 5 requests per 5 minutes
   async login(@Body() dto: LoginDto) {
     // Implementation
   }
@@ -2444,6 +3083,24 @@ export class AuthController {
   @Post('forgot-password')
   @Throttle(3, 3600) // 3 requests per hour
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    // Implementation
+  }
+
+  @Post('reset-password')
+  @Throttle(3, 3600) // 3 requests per hour
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    // Implementation
+  }
+
+  @Post('change-password')
+  @Throttle(5, 3600) // 5 requests per hour
+  async changePassword(@Body() dto: ChangePasswordDto) {
+    // Implementation
+  }
+
+  @Post('logout/all')
+  @Throttle(3, 300) // 3 requests per 5 minutes
+  async logoutAll() {
     // Implementation
   }
 }
@@ -2553,15 +3210,18 @@ src/modules/auth/
 #### 🎯 Root Files (Files ở thư mục gốc)
 
 ##### `auth.module.ts`
+
 **Mục đích:** File cấu hình module chính của Auth module.
 
 **Chức năng:**
+
 - Đăng ký tất cả providers (services, guards, strategies)
 - Import các module cần thiết (TypeORM, JWT, Passport)
 - Export các services và guards để modules khác sử dụng
 - Cấu hình JWT module với secret và expiration từ environment variables
 
 **Cách hoạt động:**
+
 ```typescript
 @Module({
   imports: [
@@ -2576,6 +3236,7 @@ src/modules/auth/
 ```
 
 **Dependencies:**
+
 - `AuthController` - Xử lý HTTP requests
 - `AuthService` - Business logic chính
 - `JwtStrategy`, `RefreshStrategy` - Passport strategies
@@ -2585,9 +3246,11 @@ src/modules/auth/
 ---
 
 ##### `auth.controller.ts`
+
 **Mục đích:** Xử lý tất cả HTTP requests liên quan đến authentication.
 
 **Chức năng:**
+
 - Định nghĩa các endpoints (POST /auth/register, POST /auth/login, ...)
 - Validate request body sử dụng DTOs và ValidationPipe
 - Gọi AuthService để xử lý business logic
@@ -2595,6 +3258,7 @@ src/modules/auth/
 - Thêm Swagger documentation cho API
 
 **Các endpoints:**
+
 - `POST /auth/register` - Đăng ký user mới
 - `POST /auth/login` - Đăng nhập
 - `POST /auth/refresh` - Làm mới access token
@@ -2605,11 +3269,12 @@ src/modules/auth/
 - `POST /auth/change-password` - Đổi password (cần authentication)
 
 **Cách hoạt động:**
+
 ```typescript
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
-  
+
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     return await this.authService.register(dto);
@@ -2618,15 +3283,18 @@ export class AuthController {
 ```
 
 **Guards sử dụng:**
+
 - `@UseGuards(JwtAuthGuard)` - Yêu cầu authentication
 - `@Public()` - Bỏ qua authentication (cho public endpoints)
 
 ---
 
 ##### `auth.service.ts`
+
 **Mục đích:** Chứa toàn bộ business logic của authentication.
 
 **Chức năng:**
+
 - **Register:** Tạo user mới, hash password, generate JWT tokens
 - **Login:** Xác thực credentials, generate tokens, update lastLoginAt
 - **Refresh Token:** Validate refresh token, issue new tokens (token rotation)
@@ -2637,6 +3305,7 @@ export class AuthController {
 - **Change Password:** Verify old password, update password, issue new tokens
 
 **Cách hoạt động:**
+
 ```typescript
 @Injectable()
 export class AuthService {
@@ -2644,9 +3313,9 @@ export class AuthService {
     @InjectRepository(User) private userRepository: Repository<User>,
     private jwtService: JwtService,
     private refreshTokenService: RefreshTokenService,
-    private tokenBlacklistService: TokenBlacklistService
+    private tokenBlacklistService: TokenBlacklistService,
   ) {}
-  
+
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
     // 1. Check email exists
     // 2. Hash password
@@ -2658,6 +3327,7 @@ export class AuthService {
 ```
 
 **Dependencies:**
+
 - `User` repository - Quản lý user data
 - `JwtService` - Generate và verify JWT tokens
 - `RefreshTokenService` - Quản lý refresh tokens
@@ -2668,9 +3338,11 @@ export class AuthService {
 #### 📁 `services/` - Tất Cả Services Tập Trung
 
 ##### `services/refresh-token.service.ts`
+
 **Mục đích:** Quản lý vòng đời của refresh tokens.
 
 **Chức năng:**
+
 - `createRefreshToken()` - Tạo và lưu refresh token mới vào database
 - `validateRefreshToken()` - Kiểm tra token có hợp lệ, chưa expired, chưa revoked
 - `revokeToken()` - Đánh dấu token là revoked (logout)
@@ -2680,14 +3352,15 @@ export class AuthService {
 - `getUserActiveTokens()` - Lấy danh sách active tokens của user
 
 **Cách hoạt động:**
+
 ```typescript
 @Injectable()
 export class RefreshTokenService {
   constructor(
     @InjectRepository(RefreshToken)
-    private refreshTokenRepository: Repository<RefreshToken>
+    private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
-  
+
   async validateRefreshToken(token: string): Promise<RefreshToken | null> {
     const refreshToken = await this.findByToken(token);
     if (!refreshToken || refreshToken.isRevoked || refreshToken.expiresAt < new Date()) {
@@ -2703,23 +3376,26 @@ export class RefreshTokenService {
 ---
 
 ##### `services/token-blacklist.service.ts`
+
 **Mục đích:** Quản lý danh sách các access tokens bị thu hồi (blacklist).
 
 **Chức năng:**
+
 - `addToBlacklist()` - Thêm token vào blacklist (khi logout)
 - `isBlacklisted()` - Kiểm tra token có trong blacklist không
 - `cleanupExpiredTokens()` - Xóa các token đã expired khỏi blacklist
 - `revokeUserTokens()` - Revoke tất cả tokens của user (future enhancement)
 
 **Cách hoạt động:**
+
 ```typescript
 @Injectable()
 export class TokenBlacklistService {
   constructor(
     @InjectRepository(TokenBlacklist)
-    private tokenBlacklistRepository: Repository<TokenBlacklist>
+    private tokenBlacklistRepository: Repository<TokenBlacklist>,
   ) {}
-  
+
   async isBlacklisted(token: string): Promise<boolean> {
     const found = await this.tokenBlacklistRepository.findOne({ where: { token } });
     return !!found; // true nếu token bị blacklist
@@ -2728,6 +3404,7 @@ export class TokenBlacklistService {
 ```
 
 **Khi nào sử dụng:**
+
 - Khi user logout → Blacklist access token hiện tại
 - Khi password reset → Blacklist tất cả access tokens
 - Khi phát hiện security breach → Blacklist tokens của user
@@ -2739,9 +3416,11 @@ export class TokenBlacklistService {
 #### 📁 `decorators/` - Custom Decorators
 
 ##### `decorators/get-user.decorator.ts`
+
 **Mục đích:** Extract user object từ request (sau khi JWT guard validate).
 
 **Cách sử dụng:**
+
 ```typescript
 @Get('profile')
 @UseGuards(JwtAuthGuard)
@@ -2751,15 +3430,18 @@ getProfile(@GetUser() user: User) {
 ```
 
 **Cách hoạt động:**
+
 - JwtAuthGuard validate token và attach user vào `request.user`
 - Decorator này lấy `request.user` và return về
 
 ---
 
 ##### `decorators/public.decorator.ts`
+
 **Mục đích:** Đánh dấu endpoint là public (không cần authentication).
 
 **Cách sử dụng:**
+
 ```typescript
 @Post('register')
 @Public() // Bỏ qua JwtAuthGuard
@@ -2769,15 +3451,18 @@ async register(@Body() dto: RegisterDto) {
 ```
 
 **Cách hoạt động:**
+
 - Set metadata `isPublic = true`
 - JwtAuthGuard check metadata này và skip authentication nếu `isPublic = true`
 
 ---
 
 ##### `decorators/roles.decorator.ts`
+
 **Mục đích:** Đánh dấu endpoint yêu cầu role cụ thể.
 
 **Cách sử dụng:**
+
 ```typescript
 @Delete('users/:id')
 @Roles(UserRole.ADMIN) // Chỉ ADMIN mới được truy cập
@@ -2788,6 +3473,7 @@ async deleteUser(@Param('id') id: string) {
 ```
 
 **Cách hoạt động:**
+
 - Set metadata với roles required
 - RolesGuard check user.role có match với roles required không
 
@@ -2800,38 +3486,47 @@ async deleteUser(@Param('id') id: string) {
 **Các DTOs:**
 
 ##### `dto/register.dto.ts`
+
 - `email` - Email address (required, valid email format)
 - `password` - Password (required, min 8 chars, strong password)
 - `firstName` - First name (required)
 - `lastName` - Last name (required)
 
 ##### `dto/login.dto.ts`
+
 - `email` - Email address (required)
 - `password` - Password (required)
 
 ##### `dto/refresh-token.dto.ts`
+
 - `refreshToken` - Refresh token string (required)
 
 ##### `dto/forgot-password.dto.ts`
+
 - `email` - Email address (required)
 
 ##### `dto/reset-password.dto.ts`
+
 - `token` - Reset token từ email (required, 64 chars)
 - `newPassword` - New password (required, strong password)
 
 ##### `dto/change-password.dto.ts`
+
 - `oldPassword` - Current password (required)
 - `newPassword` - New password (required, different from old)
 
 ##### `dto/resend-verification-link.dto.ts`
+
 - `email` - Email address (required if not authenticated)
 
 ##### `dto/auth-response.dto.ts`
+
 - `accessToken` - JWT access token
 - `refreshToken` - JWT refresh token
 - `user` - User object (password excluded)
 
 **Cách hoạt động:**
+
 - ValidationPipe tự động validate DTOs dựa trên decorators
 - Nếu validation fail → Trả về 400 Bad Request với error details
 
@@ -2842,9 +3537,11 @@ async deleteUser(@Param('id') id: string) {
 **Mục đích:** Định nghĩa cấu trúc database tables sử dụng TypeORM.
 
 ##### `entities/refresh-token.entity.ts`
+
 **Table:** `refresh_tokens`
 
 **Fields:**
+
 - `id` - UUID primary key
 - `token` - Refresh token string (unique)
 - `userId` - Foreign key to users table
@@ -2855,14 +3552,17 @@ async deleteUser(@Param('id') id: string) {
 - `createdAt` - Creation timestamp
 
 **Relationships:**
+
 - `@ManyToOne(() => User)` - Một user có nhiều refresh tokens
 
 ---
 
 ##### `entities/reset-token.entity.ts`
+
 **Table:** `password_reset_tokens`
 
 **Fields:**
+
 - `id` - UUID primary key
 - `token` - Reset token (hashed, unique)
 - `userId` - Foreign key to users table
@@ -2871,18 +3571,22 @@ async deleteUser(@Param('id') id: string) {
 - `createdAt` - Creation timestamp
 
 **Relationships:**
+
 - `@ManyToOne(() => User)` - Một user có nhiều reset tokens
 
 **Security:**
+
 - Token được hash (SHA-256) trước khi lưu vào database
 - Single-use only (usedAt được set sau khi sử dụng)
 
 ---
 
 ##### `entities/token-blacklist.entity.ts`
+
 **Table:** `token_blacklist`
 
 **Fields:**
+
 - `id` - UUID primary key
 - `token` - Access token string (unique)
 - `userId` - Foreign key to users table
@@ -2891,9 +3595,11 @@ async deleteUser(@Param('id') id: string) {
 - `createdAt` - Creation timestamp
 
 **Relationships:**
+
 - `@ManyToOne(() => User)` - Một user có nhiều blacklisted tokens
 
 **Cleanup:**
+
 - Cron job xóa tokens đã expired hàng ngày
 
 ---
@@ -2901,9 +3607,11 @@ async deleteUser(@Param('id') id: string) {
 #### 📁 `guards/` - Route Guards
 
 ##### `guards/jwt-auth.guard.ts`
+
 **Mục đích:** Bảo vệ routes yêu cầu authentication.
 
 **Cách hoạt động:**
+
 1. Extract JWT token từ `Authorization: Bearer <token>` header
 2. Verify token signature và expiration
 3. Check token có trong blacklist không
@@ -2913,6 +3621,7 @@ async deleteUser(@Param('id') id: string) {
 7. Throw `UnauthorizedException` nếu fail
 
 **Cách sử dụng:**
+
 ```typescript
 @Get('profile')
 @UseGuards(JwtAuthGuard) // Yêu cầu authentication
@@ -2922,21 +3631,25 @@ getProfile(@GetUser() user: User) {
 ```
 
 **Dependencies:**
+
 - `JwtStrategy` - Validate JWT token
 - `TokenBlacklistService` - Check blacklist
 
 ---
 
 ##### `guards/roles.guard.ts`
+
 **Mục đích:** Kiểm tra user có đủ quyền (role) để truy cập endpoint.
 
 **Cách hoạt động:**
+
 1. Lấy required roles từ `@Roles()` decorator metadata
 2. Lấy user từ `request.user` (sau khi JwtAuthGuard validate)
 3. Check `user.role` có trong required roles không
 4. Allow nếu có quyền, throw `ForbiddenException` nếu không
 
 **Cách sử dụng:**
+
 ```typescript
 @Delete('users/:id')
 @Roles(UserRole.ADMIN) // Yêu cầu ADMIN role
@@ -2947,6 +3660,7 @@ async deleteUser(@Param('id') id: string) {
 ```
 
 **Dependencies:**
+
 - `JwtAuthGuard` - Phải được apply trước (để có user trong request)
 
 ---
@@ -2954,20 +3668,23 @@ async deleteUser(@Param('id') id: string) {
 #### 📁 `interfaces/` - TypeScript Interfaces
 
 ##### `interfaces/jwt-payload.interface.ts`
+
 **Mục đích:** Định nghĩa cấu trúc JWT payload.
 
 **Interface:**
+
 ```typescript
 export interface JwtPayload {
-  sub: string;      // User ID
-  email: string;    // User email
-  role: UserRole;  // User role
-  iat?: number;    // Issued at (auto)
-  exp?: number;     // Expiration (auto)
+  sub: string; // User ID
+  email: string; // User email
+  role: UserRole; // User role
+  iat?: number; // Issued at (auto)
+  exp?: number; // Expiration (auto)
 }
 ```
 
 **Cách sử dụng:**
+
 - Khi generate JWT token → Sign với payload này
 - Khi verify JWT token → Decode về JwtPayload interface
 
@@ -2976,9 +3693,11 @@ export interface JwtPayload {
 #### 📁 `strategies/` - Passport Strategies
 
 ##### `strategies/jwt.strategy.ts`
+
 **Mục đích:** Passport strategy để validate JWT access tokens.
 
 **Cách hoạt động:**
+
 1. Extract token từ `Authorization: Bearer <token>` header
 2. Verify token signature với `JWT_SECRET`
 3. Check token expiration
@@ -2987,20 +3706,21 @@ export interface JwtPayload {
 6. Return user object (attached to `request.user`)
 
 **Cấu hình:**
+
 ```typescript
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigService,
     private authService: AuthService,
-    private tokenBlacklistService: TokenBlacklistService
+    private tokenBlacklistService: TokenBlacklistService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: configService.get('JWT_SECRET'),
     });
   }
-  
+
   async validate(payload: JwtPayload): Promise<User> {
     // Validate và return user
   }
@@ -3008,6 +3728,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 ```
 
 **Dependencies:**
+
 - `JWT_SECRET` - Secret key để verify token
 - `AuthService` - Load user từ database
 - `TokenBlacklistService` - Check blacklist
@@ -3015,21 +3736,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 ---
 
 ##### `strategies/refresh.strategy.ts`
+
 **Mục đích:** Passport strategy để validate JWT refresh tokens.
 
 **Cách hoạt động:**
+
 - Tương tự JwtStrategy nhưng:
   - Sử dụng `JWT_REFRESH_SECRET` thay vì `JWT_SECRET`
   - Extract token từ request body (không phải header)
   - Validate token có trong database (refresh_tokens table)
 
 **Cấu hình:**
+
 ```typescript
 @Injectable()
 export class RefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
   constructor(
     private configService: ConfigService,
-    private refreshTokenService: RefreshTokenService
+    private refreshTokenService: RefreshTokenService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
@@ -3042,9 +3766,11 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
 ---
 
 ##### `strategies/google.strategy.ts`
+
 **Mục đích:** Passport strategy cho Google OAuth (optional, P3).
 
 **Cách hoạt động:**
+
 1. Redirect user đến Google OAuth page
 2. User authorize → Google redirect về callback URL với code
 3. Exchange code lấy access token
@@ -3053,6 +3779,7 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
 6. Generate JWT tokens và return
 
 **Dependencies:**
+
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` - Google OAuth client secret
 
@@ -3061,9 +3788,11 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
 #### 📁 `docs/` - Swagger Documentation
 
 ##### `docs/auth.responses.ts`
+
 **Mục đích:** Định nghĩa Swagger response decorators cho API documentation.
 
 **Các decorators:**
+
 - `@RegisterResponse()` - Success response cho register endpoint
 - `@LoginResponse()` - Success response cho login endpoint
 - `@BadRequestResponse()` - 400 error response
@@ -3071,6 +3800,7 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
 - `@ConflictResponse()` - 409 error response (duplicate email)
 
 **Cách sử dụng:**
+
 ```typescript
 @Post('register')
 @RegisterResponse()      // Swagger: 201 success response
@@ -3087,24 +3817,50 @@ async register(@Body() dto: RegisterDto) {
 
 ### 🔄 Luồng Hoạt Động Tổng Quan
 
-#### 1. Register Flow
+#### 1. Register Flow (WITH Email Verification Required)
+
 ```
 Client → AuthController.register()
   → ValidationPipe validates RegisterDto
   → AuthService.register()
     → Check email exists
     → Hash password (bcrypt)
-    → Create user in database
-    → Generate JWT tokens (access + refresh)
-    → Save refresh token to database
-    → Generate email verification token
+    → Create user in database (emailVerified = false)
+    → Generate email verification token (crypto.randomBytes)
+    → Hash and save verification token to database
     → Send verification email with link (async)
-  → Return AuthResponseDto (tokens + user)
+  → Return success message (NO JWT tokens)
+  → User receives email
+  → User clicks verification link
+  → GET /auth/verify-email?token=xxx
+  → Mark emailVerified = true
+  → User can now login
 ```
 
-**Note:** Verification email được gửi tự động khi đăng ký. User có thể click link trong email để verify hoặc sử dụng `/auth/resend-verification-link` để gửi lại.
+**⚠️ IMPORTANT CHANGES:**
 
-#### 2. Login Flow
+- ✅ Register NO LONGER returns JWT tokens
+- ✅ User must verify email before login
+- ✅ Login endpoint checks `emailVerified = true`
+- ✅ Verification email sent automatically on register
+- ✅ User can resend verification link via `/auth/resend-verification-link`
+
+**Success Response (Register):**
+
+```json
+{
+  "statusCode": 201,
+  "success": true,
+  "message": "Registration successful. Please check your email to verify your account.",
+  "data": {
+    "email": "user@example.com",
+    "message": "A verification link has been sent to your email address."
+  }
+}
+```
+
+#### 2. Login Flow (WITH Email Verification Check)
+
 ```
 Client → AuthController.login()
   → ValidationPipe validates LoginDto
@@ -3112,13 +3868,34 @@ Client → AuthController.login()
     → Find user by email
     → Verify password (bcrypt.compare)
     → Check user is active
+    → ✅ Check emailVerified = true (NEW!)
+      → If false: Throw UnauthorizedException
+      → Message: "Please verify your email before logging in"
     → Update lastLoginAt
-    → Generate JWT tokens
+    → Generate JWT tokens (access + refresh)
     → Save refresh token to database
-  → Return AuthResponseDto
+  → Return AuthResponseDto (tokens + user)
+```
+
+**⚠️ IMPORTANT CHANGES:**
+
+- ✅ Login requires `emailVerified = true`
+- ✅ Unverified users get clear error message
+- ✅ Error includes resend verification link instruction
+
+**Error Response (Unverified Email):**
+
+```json
+{
+  "statusCode": 401,
+  "success": false,
+  "message": "Please verify your email before logging in. Check your inbox or request a new verification link.",
+  "errorCode": "AUTH_EMAIL_NOT_VERIFIED"
+}
 ```
 
 #### 3. Protected Route Flow
+
 ```
 Client → GET /users/profile
   → JwtAuthGuard intercepts
@@ -3134,6 +3911,7 @@ Client → GET /users/profile
 ```
 
 #### 4. Refresh Token Flow
+
 ```
 Client → AuthController.refreshToken()
   → ValidationPipe validates RefreshTokenDto
@@ -3147,6 +3925,7 @@ Client → AuthController.refreshToken()
 ```
 
 #### 5. Logout Flow
+
 ```
 Client → AuthController.logout()
   → JwtAuthGuard validates token
@@ -3280,19 +4059,19 @@ src/modules/auth/
 
 #### Classes
 
-| Type           | Pattern                     | Example                                  |
-| -------------- | --------------------------- | ---------------------------------------- |
-| **Module**     | `PascalCase` + `Module`     | `AuthModule`                             |
-| **Controller** | `PascalCase` + `Controller` | `AuthController`                         |
-| **Service**    | `PascalCase` + `Service`    | `AuthService`, `TokenBlacklistService`   |
-| **Entity**     | `PascalCase`                | `RefreshToken`, `User`                   |
-| **DTO**        | `PascalCase` + `Dto`        | `RegisterDto`, `AuthResponseDto`         |
-| **Guard**      | `PascalCase` + `Guard`      | `JwtAuthGuard`, `RolesGuard`             |
-| **Decorator**  | `camelCase` (function)      | `GetUser`, `Public`, `Roles`             |
-| **Strategy**   | `PascalCase` + `Strategy`   | `JwtStrategy`, `GoogleStrategy`          |
-| **Interface**  | `PascalCase`                | `JwtPayload`, `GoogleProfile`            |
-| **Exception**  | `PascalCase` + `Exception`  | `InvalidCredentialsException`            |
-| **Enum**       | `PascalCase`                | `UserRole`, `BlacklistReason` |
+| Type           | Pattern                     | Example                                |
+| -------------- | --------------------------- | -------------------------------------- |
+| **Module**     | `PascalCase` + `Module`     | `AuthModule`                           |
+| **Controller** | `PascalCase` + `Controller` | `AuthController`                       |
+| **Service**    | `PascalCase` + `Service`    | `AuthService`, `TokenBlacklistService` |
+| **Entity**     | `PascalCase`                | `RefreshToken`, `User`                 |
+| **DTO**        | `PascalCase` + `Dto`        | `RegisterDto`, `AuthResponseDto`       |
+| **Guard**      | `PascalCase` + `Guard`      | `JwtAuthGuard`, `RolesGuard`           |
+| **Decorator**  | `camelCase` (function)      | `GetUser`, `Public`, `Roles`           |
+| **Strategy**   | `PascalCase` + `Strategy`   | `JwtStrategy`, `GoogleStrategy`        |
+| **Interface**  | `PascalCase`                | `JwtPayload`, `GoogleProfile`          |
+| **Exception**  | `PascalCase` + `Exception`  | `InvalidCredentialsException`          |
+| **Enum**       | `PascalCase`                | `UserRole`, `BlacklistReason`          |
 
 #### Methods
 
@@ -3317,6 +4096,87 @@ src/modules/auth/
 5. **Strategies (33%)** - 1/3 strategies fully implemented
 6. **Services (40%)** - Core service exists, needs expansion
 7. **Controllers (30%)** - 3/10 endpoints implemented
+
+---
+
+### 🔴 CRITICAL ISSUES & REQUIRED FIXES (January 13, 2026)
+
+This section documents issues discovered during code review that require immediate attention.
+
+#### 🐛 **ESLint Errors (Must Fix)**
+
+| Location                   | Issue                                         | Priority  | Fix                                                          |
+| -------------------------- | --------------------------------------------- | --------- | ------------------------------------------------------------ |
+| `auth.controller.ts:23`    | `authService` not marked as `readonly`        | 🔴 High   | Add `readonly` modifier to constructor parameter             |
+| `auth.service.ts:10`       | Using `crypto` instead of `node:crypto`       | 🔴 High   | Change import to `import * as cryptoNode from 'node:crypto'` |
+| `auth.service.ts:197, 219` | Using `parseInt` instead of `Number.parseInt` | 🟡 Medium | Replace with `Number.parseInt(...)`                          |
+| `auth.service.ts:285`      | Empty catch block - error not handled         | 🔴 High   | Add `this.logger.error()` in catch block                     |
+| `auth.service.ts:263`      | TODO comment - email not implemented          | 🟡 Medium | Track in backlog, not a blocker                              |
+
+#### 🔒 **Security Issues (Critical)**
+
+| Issue                                     | Current Behavior                                                     | Security Risk                                                                                 | Required Fix                                                                                                                                                                  | Priority    |
+| ----------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| **JWT Refresh Secret Not Separated**      | Refresh tokens use same `JWT_SECRET` as access tokens                | 🔴 **High Risk** - If access token secret is compromised, refresh tokens are also compromised | 1. Add `JWT_REFRESH_SECRET` to `.env`<br>2. Update `auth.service.ts` to use separate secret for refresh tokens<br>3. Update `refresh.strategy.ts` to use `JWT_REFRESH_SECRET` | 🔴 Critical |
+| **Forgot Password Leaks Email Existence** | `forgotPassword()` throws `NotFoundException` if email doesn't exist | 🟡 **Medium Risk** - Attackers can enumerate valid emails                                     | Return success response regardless of email existence (silent fail)                                                                                                           | 🔴 Critical |
+| **No Rate Limiting**                      | Login, register, forgot-password endpoints unprotected               | 🔴 **High Risk** - Vulnerable to brute force attacks                                          | Add `@Throttle()` decorator and install `@nestjs/throttler`                                                                                                                   | 🟡 High     |
+| **Bcrypt Blocking Operations**            | `bcrypt.compare()` blocks event loop                                 | 🟢 **Low Risk** - Performance issue at scale                                                  | Consider worker threads or async queue for production                                                                                                                         | 🔵 Low      |
+
+#### 🏗️ **Architecture Issues**
+
+| Issue                            | Impact                                             | Recommendation                                      | Priority  |
+| -------------------------------- | -------------------------------------------------- | --------------------------------------------------- | --------- |
+| **No Token Cleanup Cron Job**    | Database fills with expired tokens                 | Implement scheduled cleanup with `@nestjs/schedule` | 🟡 High   |
+| **N+1 Query on Token Blacklist** | Every request checks DB for blacklisted token      | Add Redis cache layer for blacklist lookups         | 🟢 Medium |
+| **Missing Device Tracking**      | `register()` and `login()` don't track device info | Add `@Headers('user-agent')` and `@Ip()` parameters | 🟢 Medium |
+| **No Email Verification Flow**   | Users can register without email verification      | Implement P2 email verification endpoints           | 🔵 Low    |
+
+#### 📝 **Missing Implementations**
+
+| Feature                     | Status                              | Effort  | Priority |
+| --------------------------- | ----------------------------------- | ------- | -------- |
+| **Reset Password Endpoint** | DTOs exist but no endpoint          | 2 hours | 🟡 High  |
+| **Email Service**           | Console logging only                | 4 hours | 🟡 High  |
+| **Session Management UI**   | No endpoint to list/revoke devices  | 3 hours | 🔵 Low   |
+| **Account Lockout**         | No protection after N failed logins | 3 hours | 🔵 Low   |
+| **2FA/MFA**                 | Not implemented                     | 8 hours | 🔵 Low   |
+
+#### 🎯 **Action Plan (Priority Order)**
+
+**Phase 1: Critical Fixes (Today)**
+
+```bash
+1. ✅ Fix ESLint errors (readonly, node:crypto, Number.parseInt, error handling)
+2. ✅ Add JWT_REFRESH_SECRET to environment and code
+3. ✅ Fix forgot password security issue (silent fail)
+4. ✅ Update env.validation.ts with JWT_REFRESH_SECRET
+```
+
+**Phase 2: High Priority (This Week)**
+
+```bash
+5. ⚠️ Add rate limiting with @nestjs/throttler
+6. ⚠️ Implement reset password endpoint
+7. ⚠️ Setup email service (SendGrid/AWS SES)
+8. ⚠️ Add device tracking to register/login
+9. ⚠️ Implement token cleanup cron job
+```
+
+**Phase 3: Medium Priority (Next Sprint)**
+
+```bash
+10. 🔄 Add Redis cache for blacklist
+11. 🔄 Implement email verification flow
+12. 🔄 Add session management endpoints
+```
+
+**Phase 4: Nice to Have (Backlog)**
+
+```bash
+13. 💡 Account lockout mechanism
+14. 💡 2FA/MFA support
+15. 💡 OAuth improvements
+```
 
 ---
 
@@ -3348,21 +4208,21 @@ src/modules/auth/
 | **Email Templates**            | ❌ Missing | 2 hours | Email Service          |
 | **Password Service**           | ❌ Missing | 2 hours | None (bcrypt wrapper)  |
 
-**Total P1 Effort:** ~12 hours
+**Total P1 Effort:** ~18 hours (~2-3 days)
+
+**⚠️ CRITICAL:** Email Verification (API #6-7) moved from P2 to P1 because it's now **mandatory** for the authentication flow.
 
 ---
 
-#### 🟢 **P2 - Medium (Nice to Have)**
+#### 🟢 **P2 - Medium (Advanced Features)**
 
-| Component                   | Status     | Effort  | Dependencies                |
-| --------------------------- | ---------- | ------- | --------------------------- |
-| **Email Verification Token Entity** | ❌ Missing | 2 hours | None                        |
-| **Email Verification Service**      | ❌ Missing | 3 hours | Email Verification Token Entity |
-| **GET /auth/verify-email**         | ❌ Missing | 3 hours | Email Verification Service   |
-| **POST /auth/resend-verification-link** | ❌ Missing | 2 hours | Email Verification Service   |
-| **Email Verification Flow**        | ❌ Missing | 2 hours | Email Service + Verification Service |
+| Component                      | Status     | Effort  | Dependencies       |
+| ------------------------------ | ---------- | ------- | ------------------ |
+| **GET /auth/sessions**         | ❌ Missing | 3 hours | RefreshToken table |
+| **DELETE /auth/sessions/:id**  | ❌ Missing | 2 hours | RefreshToken table |
+| **Session Management UI Data** | ❌ Missing | 2 hours | None               |
 
-**Total P2 Effort:** ~12 hours
+**Total P2 Effort:** ~7 hours (~1 day)
 
 ---
 
@@ -3408,45 +4268,62 @@ src/modules/auth/
 
 ```mermaid
 gantt
-    title Auth Module Implementation Roadmap
+    title Auth Module Implementation Roadmap (UPDATED WITH EMAIL VERIFICATION)
     dateFormat  YYYY-MM-DD
     section P0 Critical
-    Refresh Token Entity           :p0-1, 2026-01-13, 2h
-    Refresh Token Service          :p0-2, after p0-1, 3h
-    POST /auth/refresh            :p0-3, after p0-2, 4h
-    POST /auth/logout             :p0-4, after p0-3, 2h
-    POST /auth/logout/all         :p0-5, after p0-4, 2h
-    ThrottlerModule Setup         :p0-6, 2026-01-13, 1h
+    Update Register (no JWT return)     :p0-1, 2026-01-13, 2h
+    Update Login (check emailVerified)  :p0-2, after p0-1, 1h
+    POST /auth/refresh                  :p0-3, after p0-2, 4h
+    POST /auth/logout                   :p0-4, after p0-3, 2h
+    POST /auth/logout/all               :p0-5, after p0-4, 2h
+    ThrottlerModule Setup               :p0-6, 2026-01-13, 1h
 
-    section P1 High
-    Email Service Module          :p1-1, after p0-5, 4h
-    POST /auth/reset-password     :p1-2, after p1-1, 2h
-    POST /auth/change-password    :p1-3, after p1-2, 2h
+    section P1 Email Verification (MANDATORY)
+    Email Verification Token Entity     :p1-1, after p0-5, 2h
+    Email Verification Service          :p1-2, after p1-1, 3h
+    GET /auth/verify-email              :p1-3, after p1-2, 3h
+    POST /auth/resend-verification-link :p1-4, after p1-3, 2h
 
-    section P2 Medium
-    Email Verification Token Entity + Service :p2-1, after p1-3, 5h
-    GET /auth/verify-email                    :p2-2, after p2-1, 3h
-    POST /auth/resend-verification-link       :p2-3, after p2-2, 2h
+    section P1 Password Management
+    Email Service Module                :p1-5, after p1-4, 4h
+    POST /auth/forgot-password          :p1-6, after p1-5, 3h
+    POST /auth/reset-password           :p1-7, after p1-6, 3h
+    POST /auth/change-password          :p1-8, after p1-7, 2h
+
+    section P2 Advanced Features
+    GET /auth/sessions                  :p2-1, after p1-8, 3h
+    DELETE /auth/sessions/:id           :p2-2, after p2-1, 2h
 
     section Testing
-    Unit Tests                    :t1, after p2-3, 6h
-    E2E Tests                     :t2, after t1, 4h
+    Unit Tests                          :t1, after p2-2, 6h
+    E2E Tests                           :t2, after t1, 4h
 ```
 
 ---
 
 ### 🎯 Summary
 
-**Total Implementation Time Remaining:**
+**Total Implementation Time Remaining (UPDATED):**
 
-- **P0 (Critical):** 15 hours (~2 days)
-- **P1 (High):** 12 hours (~1.5 days)
-- **P2 (Medium):** 12 hours (~1.5 days)
-- **P3 (Optional):** 10 hours (~1.5 days)
+- **P0 (Critical - Register/Login/Tokens):** 12 hours (~1.5 days)
+- **P1 (High - Email Verification):** 10 hours (~1.5 days) **← NOW MANDATORY**
+- **P1 (High - Password Management):** 12 hours (~1.5 days)
+- **P2 (Medium - Advanced):** 7 hours (~1 day)
+- **P3 (Optional - OAuth):** 10 hours (~1.5 days)
 - **Testing:** 17 hours (~2 days)
 - **Infrastructure:** 10 hours (~1.5 days)
 
-**Grand Total:** 76 hours (~10 working days for complete system)
+**Grand Total:** 78 hours (~10 working days for complete system)
+
+**⚠️ CRITICAL PATH:** P0 → P1 Email Verification → P1 Password Management → P2 → P3
+
+**New Implementation Order:**
+
+1. **Day 1-2:** Implement P0 APIs (Register/Login/Tokens) **WITH** email verification integration
+2. **Day 2-3:** Implement P1 Email Verification (MUST complete before testing login)
+3. **Day 3-4:** Implement P1 Password Management
+4. **Day 5:** Implement P2 Advanced Features
+5. **Day 6-7:** Testing & Refinement
 
 ---
 

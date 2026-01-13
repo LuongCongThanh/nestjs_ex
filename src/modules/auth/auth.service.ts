@@ -2,12 +2,12 @@ import { AuthResponseDto } from '@modules/auth/dto/auth-response.dto';
 import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
 import { LoginDto } from '@modules/auth/dto/login.dto';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
-import { ConflictException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
-import * as cryptoNode from 'crypto';
+import * as cryptoNode from 'node:crypto';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { ResetToken } from './entities/reset-token.entity';
@@ -62,8 +62,8 @@ export class AuthService {
     // Save to database
     const savedUser = await this.userRepository.save(user);
 
-    // Exclude password from response using destructuring
-    const { password: _, ...userWithoutPassword } = savedUser;
+    // Exclude password from response
+    const userWithoutPassword = savedUser as Omit<User, 'password'>;
 
     // Generate JWT tokens (access + refresh)
     const tokens = await this.generateTokens(savedUser);
@@ -118,8 +118,8 @@ export class AuthService {
       throw new UnauthorizedException('Account has been disabled');
     }
 
-    // Exclude password from response using destructuring
-    const { password: _, ...userWithoutPassword } = user;
+    // Exclude password from response
+    const userWithoutPassword = user as Omit<User, 'password'>;
 
     // Update last login timestamp
     await this.userRepository.update(user.id, { lastLoginAt: new Date() });
@@ -174,13 +174,16 @@ export class AuthService {
     // Generate access token (short-lived: 15-30 minutes)
     const access_token = this.jwtService.sign(payload);
 
-    // Generate refresh token (long-lived: 7-30 days)
+    // Generate refresh token (long-lived: 7-30 days) with separate secret
     const refreshPayload = { sub: user.id, type: 'refresh' };
-    const refresh_token = this.jwtService.sign(refreshPayload);
+    const refreshExpirationString = this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d';
+    const refresh_token = this.jwtService.sign(refreshPayload, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: refreshExpirationString as any,
+    });
 
     // Calculate refresh token expiration date
-    const expirationString = this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d';
-    const expiresAt = this.calculateExpirationDate(expirationString);
+    const expiresAt = this.calculateExpirationDate(refreshExpirationString);
 
     // Store refresh token in database
     await this.refreshTokenService.createRefreshToken(refresh_token, user.id, expiresAt, deviceInfo, ipAddress);
@@ -194,7 +197,7 @@ export class AuthService {
   private calculateExpirationDate(expirationString: string): Date {
     const now = new Date();
     const unit = expirationString.slice(-1);
-    const value = parseInt(expirationString.slice(0, -1), 10);
+    const value = Number.parseInt(expirationString.slice(0, -1), 10);
 
     switch (unit) {
       case 'd': // days
@@ -216,7 +219,7 @@ export class AuthService {
    */
   private parseJwtExpiration(expirationString: string): number {
     const unit = expirationString.slice(-1);
-    const value = parseInt(expirationString.slice(0, -1), 10);
+    const value = Number.parseInt(expirationString.slice(0, -1), 10);
 
     switch (unit) {
       case 'd': // days
@@ -239,9 +242,10 @@ export class AuthService {
     });
 
     if (!user) {
-      // Security: Do not reveal if email exists or not, but for now we follow the existing pattern or requirements.
-      // The original code threw NotFoundException, so I will stick to it.
-      throw new NotFoundException('Email not found');
+      // Security: Do not reveal if email exists or not (silent fail)
+      // Return success to prevent email enumeration attacks
+      this.logger.warn(`Password reset requested for non-existent email: ${forgotPasswordDto.email}`);
+      return;
     }
 
     // Generate random token
@@ -279,10 +283,14 @@ export class AuthService {
    */
   async refreshToken(refreshToken: string, deviceInfo?: string, ipAddress?: string): Promise<AuthResponseDto> {
     // Verify refresh token signature and expiration
-    let payload: any;
+    let payload: { sub: string; type: string; iat?: number; exp?: number };
     try {
-      payload = this.jwtService.verify(refreshToken);
+      const verifiedPayload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
+      payload = verifiedPayload as { sub: string; type: string; iat?: number; exp?: number };
     } catch (error) {
+      this.logger.error('Failed to verify refresh token', error instanceof Error ? error.stack : error);
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
@@ -323,7 +331,7 @@ export class AuthService {
     await this.refreshTokenService.deleteToken(refreshToken);
 
     // Exclude password from response
-    const { password: _, ...userWithoutPassword } = user;
+    const userWithoutPassword = user as Omit<User, 'password'>;
 
     // Generate new tokens (both access and refresh)
     const tokens = await this.generateTokens(user, deviceInfo, ipAddress);
