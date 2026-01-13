@@ -1,10 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  Logger,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch(HttpException)
@@ -37,10 +31,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
 
     // Log error for debugging
-    this.logger.error(
-      `${request.method} ${request.url} - Status: ${status}`,
-      exception.stack,
-    );
+    this.logger.error(`${request.method} ${request.url} - Status: ${status}`, exception.stack);
 
     // Remove undefined fields from response
     Object.keys(errorResponse).forEach(

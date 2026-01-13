@@ -94,9 +94,7 @@ async function seed() {
       },
     ];
 
-    const savedCategories = await connection
-      .getRepository(Category)
-      .save(categories);
+    const savedCategories = await connection.getRepository(Category).save(categories);
     console.log(`✅ Created ${savedCategories.length} categories\n`);
 
     // ===== 4. Create Sub-categories =====
@@ -148,24 +146,19 @@ async function seed() {
       {
         name: 'iPhone 15 Pro Max 256GB',
         slug: 'iphone-15-pro-max-256gb',
-        description:
-          'iPhone 15 Pro Max với chip A17 Pro, camera 48MP, màn hình Dynamic Island',
+        description: 'iPhone 15 Pro Max với chip A17 Pro, camera 48MP, màn hình Dynamic Island',
         price: 29990000,
         comparePrice: 34990000,
         stock: 50,
         sku: 'IP15PM256',
-        images: [
-          '/products/iphone-15-pro-max-1.jpg',
-          '/products/iphone-15-pro-max-2.jpg',
-        ],
+        images: ['/products/iphone-15-pro-max-1.jpg', '/products/iphone-15-pro-max-2.jpg'],
         categoryId: savedCategories[0].id,
         weight: 0.221,
         dimensions: { length: 16.01, width: 7.7, height: 0.83 },
         tags: ['iphone', 'flagship', 'apple', '5g'],
         seo: {
           metaTitle: 'iPhone 15 Pro Max 256GB - Giá tốt nhất',
-          metaDescription:
-            'Mua iPhone 15 Pro Max 256GB chính hãng, giá tốt, bảo hành 12 tháng',
+          metaDescription: 'Mua iPhone 15 Pro Max 256GB chính hãng, giá tốt, bảo hành 12 tháng',
           keywords: 'iphone 15 pro max, iphone, apple, điện thoại',
         },
         isActive: true,
@@ -174,16 +167,12 @@ async function seed() {
       {
         name: 'Samsung Galaxy S24 Ultra 512GB',
         slug: 'samsung-galaxy-s24-ultra-512gb',
-        description:
-          'Galaxy S24 Ultra với bút S Pen, camera 200MP, chip Snapdragon 8 Gen 3',
+        description: 'Galaxy S24 Ultra với bút S Pen, camera 200MP, chip Snapdragon 8 Gen 3',
         price: 27990000,
         comparePrice: 31990000,
         stock: 35,
         sku: 'SSS24U512',
-        images: [
-          '/products/galaxy-s24-ultra-1.jpg',
-          '/products/galaxy-s24-ultra-2.jpg',
-        ],
+        images: ['/products/galaxy-s24-ultra-1.jpg', '/products/galaxy-s24-ultra-2.jpg'],
         categoryId: savedCategories[0].id,
         weight: 0.232,
         dimensions: { length: 16.22, width: 7.9, height: 0.86 },
@@ -194,8 +183,7 @@ async function seed() {
       {
         name: 'Laptop Dell XPS 13 9340',
         slug: 'laptop-dell-xps-13-9340',
-        description:
-          'Dell XPS 13 với Intel Core Ultra 7, RAM 16GB, SSD 512GB, màn hình 13.4" OLED',
+        description: 'Dell XPS 13 với Intel Core Ultra 7, RAM 16GB, SSD 512GB, màn hình 13.4" OLED',
         price: 35990000,
         comparePrice: 39990000,
         stock: 20,
@@ -211,16 +199,12 @@ async function seed() {
       {
         name: 'MacBook Air M3 15 inch 2024',
         slug: 'macbook-air-m3-15-inch-2024',
-        description:
-          'MacBook Air 15" với chip Apple M3, RAM 8GB, SSD 256GB, màu Midnight',
+        description: 'MacBook Air 15" với chip Apple M3, RAM 8GB, SSD 256GB, màu Midnight',
         price: 32990000,
         comparePrice: 36990000,
         stock: 25,
         sku: 'MBA15M3',
-        images: [
-          '/products/macbook-air-m3-1.jpg',
-          '/products/macbook-air-m3-2.jpg',
-        ],
+        images: ['/products/macbook-air-m3-1.jpg', '/products/macbook-air-m3-2.jpg'],
         categoryId: savedCategories[1].id,
         weight: 1.51,
         dimensions: { length: 34.04, width: 23.76, height: 1.15 },
@@ -231,8 +215,7 @@ async function seed() {
       {
         name: 'Sony WH-1000XM5 Wireless',
         slug: 'sony-wh-1000xm5-wireless',
-        description:
-          'Tai nghe Sony WH-1000XM5 chống ồn chủ động, âm thanh Hi-Res, pin 30 giờ',
+        description: 'Tai nghe Sony WH-1000XM5 chống ồn chủ động, âm thanh Hi-Res, pin 30 giờ',
         price: 7990000,
         comparePrice: 9990000,
         stock: 100,
@@ -262,9 +245,7 @@ async function seed() {
       },
     ];
 
-    const savedProducts = await connection
-      .getRepository(Product)
-      .save(products);
+    const savedProducts = await connection.getRepository(Product).save(products);
     console.log(`✅ Created ${savedProducts.length} sample products\n`);
 
     console.log('🎉 Database seeding completed successfully!\n');

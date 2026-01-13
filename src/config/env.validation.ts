@@ -2,9 +2,7 @@ import * as Joi from 'joi';
 
 export const validationSchema = Joi.object({
   // App
-  NODE_ENV: Joi.string()
-    .valid('development', 'production', 'test', 'staging')
-    .default('development'),
+  NODE_ENV: Joi.string().valid('development', 'production', 'test', 'staging').default('development'),
   PORT: Joi.number().default(3000),
   API_PREFIX: Joi.string().default('api/v1'),
 
@@ -24,8 +22,7 @@ export const validationSchema = Joi.object({
     .pattern(/^\d+[smhd]$/)
     .default('7d')
     .messages({
-      'string.pattern.base':
-        'JWT_EXPIRATION must be in format: 1d, 7d, 24h, 60m, etc.',
+      'string.pattern.base': 'JWT_EXPIRATION must be in format: 1d, 7d, 24h, 60m, etc.',
     }),
   JWT_REFRESH_EXPIRATION: Joi.string()
     .pattern(/^\d+[smhd]$/)

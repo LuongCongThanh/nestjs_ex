@@ -139,8 +139,7 @@ export class ResetPasswordDto {
    */
   @ApiProperty({
     example: 'NewPassword@123',
-    description:
-      'New password (min 8 characters, must contain uppercase, lowercase, and number)',
+    description: 'New password (min 8 characters, must contain uppercase, lowercase, and number)',
     minLength: 8,
   })
   @IsStrongPassword()

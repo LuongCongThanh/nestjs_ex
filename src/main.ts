@@ -39,9 +39,7 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: (configService.get('CORS_ORIGIN') || 'http://localhost:3000').split(
-      ',',
-    ),
+    origin: (configService.get('CORS_ORIGIN') || 'http://localhost:3000').split(','),
     credentials: true,
   });
 
@@ -58,9 +56,7 @@ async function bootstrap() {
   const port = configService.get('PORT') || 3000;
   await app.listen(port);
 
-  console.log(
-    `🚀 Application is running on: http://localhost:${port}/${configService.get('API_PREFIX') || 'api/v1'}`,
-  );
+  console.log(`🚀 Application is running on: http://localhost:${port}/${configService.get('API_PREFIX') || 'api/v1'}`);
   console.log(`🏥 Health check: http://localhost:${port}/health`);
   console.log(`📚 Swagger docs: http://localhost:${port}/api`);
 }

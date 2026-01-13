@@ -76,8 +76,7 @@ export class AuthResponseDto {
   @ApiProperty({
     example:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE1MTYyMzkwMjJ9.xyz',
-    description:
-      'JWT refresh token (long-lived: 7-30 days) for renewing access token',
+    description: 'JWT refresh token (long-lived: 7-30 days) for renewing access token',
   })
   refresh_token: string;
 

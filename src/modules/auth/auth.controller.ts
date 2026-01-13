@@ -2,17 +2,7 @@ import { AuthResponseDto } from '@modules/auth/dto/auth-response.dto';
 import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
 import { LoginDto } from '@modules/auth/dto/login.dto';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
-import {
-  Body,
-  Controller,
-  Headers,
-  HttpCode,
-  HttpStatus,
-  Ip,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, HttpStatus, Ip, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -44,8 +34,7 @@ export class AuthController {
   @Post('register')
   @ApiOperation({
     summary: 'Register a new user',
-    description:
-      'Creates a new user account. Email must be unique. Password will be hashed automatically.',
+    description: 'Creates a new user account. Email must be unique. Password will be hashed automatically.',
   })
   @RegisterResponse
   @BadRequestResponse
@@ -68,8 +57,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Login user',
-    description:
-      'Authenticates user with email and password. Returns JWT token and user information.',
+    description: 'Authenticates user with email and password. Returns JWT token and user information.',
   })
   @LoginResponse
   @UnauthorizedResponse
@@ -96,9 +84,7 @@ export class AuthController {
   })
   @ForgotPasswordResponse
   @BadRequestResponse
-  async forgotPassword(
-    @Body() forgotPasswordDto: ForgotPasswordDto,
-  ): Promise<void> {
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<void> {
     return await this.authService.forgotPassword(forgotPasswordDto);
   }
 
@@ -115,8 +101,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Refresh JWT tokens',
-    description:
-      'Refreshes access and refresh tokens. Implements token rotation for security.',
+    description: 'Refreshes access and refresh tokens. Implements token rotation for security.',
   })
   @LoginResponse
   @UnauthorizedResponse
@@ -125,11 +110,7 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
   ): Promise<AuthResponseDto> {
-    return await this.authService.refreshToken(
-      refreshTokenDto.refreshToken,
-      userAgent,
-      ipAddress,
-    );
+    return await this.authService.refreshToken(refreshTokenDto.refreshToken, userAgent, ipAddress);
   }
 
   /**
@@ -147,21 +128,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Logout from current device',
-    description:
-      'Logs out user from current device. Revokes refresh token and blacklists access token.',
+    description: 'Logs out user from current device. Revokes refresh token and blacklists access token.',
   })
-  async logout(
-    @Req() req: Request,
-    @Body() refreshTokenDto: RefreshTokenDto,
-  ): Promise<{ message: string }> {
+  async logout(@Req() req: Request, @Body() refreshTokenDto: RefreshTokenDto): Promise<{ message: string }> {
     const user = req.user as any;
     const accessToken = req.headers.authorization?.replace('Bearer ', '') || '';
 
-    await this.authService.logout(
-      user.id,
-      accessToken,
-      refreshTokenDto.refreshToken,
-    );
+    await this.authService.logout(user.id, accessToken, refreshTokenDto.refreshToken);
 
     return { message: 'Logged out successfully' };
   }
@@ -181,8 +154,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Logout from all devices',
-    description:
-      'Logs out user from all devices. Revokes all refresh tokens and blacklists current access token.',
+    description: 'Logs out user from all devices. Revokes all refresh tokens and blacklists current access token.',
   })
   async logoutAll(@Req() req: Request): Promise<{ message: string }> {
     const user = req.user as any;

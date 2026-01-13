@@ -71,11 +71,7 @@ export class PaginationMetaDto {
   hasPreviousPage: boolean;
 }
 
-export function createPaginatedResult<T>(
-  data: T[],
-  total: number,
-  pagination: PaginationDto,
-): PaginatedResult<T> {
+export function createPaginatedResult<T>(data: T[], total: number, pagination: PaginationDto): PaginatedResult<T> {
   const page = pagination.page ?? 1;
   const limit = pagination.limit ?? 10;
   const totalPages = Math.ceil(total / limit);

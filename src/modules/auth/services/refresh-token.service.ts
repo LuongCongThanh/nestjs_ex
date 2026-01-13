@@ -75,10 +75,7 @@ export class RefreshTokenService {
    * Revoke a specific refresh token (for logout)
    */
   async revokeToken(token: string): Promise<boolean> {
-    const result = await this.refreshTokenRepository.update(
-      { token },
-      { isRevoked: true },
-    );
+    const result = await this.refreshTokenRepository.update({ token }, { isRevoked: true });
 
     return (result.affected ?? 0) > 0;
   }
@@ -87,10 +84,7 @@ export class RefreshTokenService {
    * Revoke all refresh tokens for a user (for logout all devices)
    */
   async revokeAllUserTokens(userId: string): Promise<number> {
-    const result = await this.refreshTokenRepository.update(
-      { userId, isRevoked: false },
-      { isRevoked: true },
-    );
+    const result = await this.refreshTokenRepository.update({ userId, isRevoked: false }, { isRevoked: true });
 
     return result.affected || 0;
   }

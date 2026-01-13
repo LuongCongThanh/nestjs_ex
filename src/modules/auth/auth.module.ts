@@ -63,8 +63,7 @@ import { TokenBlacklistService } from './services/token-blacklist.service';
         signOptions: {
           // Thời gian token hết hạn (từ .env: JWT_EXPIRATION, default: 7 ngày)
           // Token hết hạn → user phải login lại
-          expiresIn: (configService.get<string>('JWT_EXPIRATION') ||
-            '7d') as any,
+          expiresIn: (configService.get<string>('JWT_EXPIRATION') || '7d') as any,
         },
       }),
     }),

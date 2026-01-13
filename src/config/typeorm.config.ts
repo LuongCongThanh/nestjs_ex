@@ -8,9 +8,7 @@ config();
 /**
  * Get TypeORM configuration for NestJS runtime
  */
-export const getTypeOrmConfig = (
-  configService: ConfigService,
-): DataSourceOptions => ({
+export const getTypeOrmConfig = (configService: ConfigService): DataSourceOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST'),
   port: configService.get('DB_PORT'),
@@ -21,10 +19,7 @@ export const getTypeOrmConfig = (
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   synchronize: configService.get('NODE_ENV') === 'development',
   logging: configService.get('NODE_ENV') === 'development',
-  ssl:
-    configService.get('NODE_ENV') === 'production'
-      ? { rejectUnauthorized: false }
-      : false,
+  ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 /**

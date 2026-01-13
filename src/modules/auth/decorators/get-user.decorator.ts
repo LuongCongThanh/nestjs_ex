@@ -23,12 +23,10 @@ import { User } from '../../../entities/user.entity';
  *   return userId;
  * }
  */
-export const GetUser = createParamDecorator(
-  (data: keyof User | undefined, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    const user = request.user as User;
+export const GetUser = createParamDecorator((data: keyof User | undefined, ctx: ExecutionContext) => {
+  const request = ctx.switchToHttp().getRequest();
+  const user = request.user as User;
 
-    // If specific property is requested, return that property
-    return data ? user?.[data] : user;
-  },
-);
+  // If specific property is requested, return that property
+  return data ? user?.[data] : user;
+});

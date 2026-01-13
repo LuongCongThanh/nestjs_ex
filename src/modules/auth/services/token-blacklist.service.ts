@@ -17,12 +17,7 @@ export class TokenBlacklistService {
   /**
    * Add token to blacklist
    */
-  async addToBlacklist(
-    token: string,
-    userId: string,
-    reason: string,
-    expiresAt: Date,
-  ): Promise<void> {
+  async addToBlacklist(token: string, userId: string, reason: string, expiresAt: Date): Promise<void> {
     const blacklistedToken = this.tokenBlacklistRepository.create({
       token,
       userId,

@@ -2,13 +2,7 @@ import { AuthResponseDto } from '@modules/auth/dto/auth-response.dto';
 import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
 import { LoginDto } from '@modules/auth/dto/login.dto';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -113,10 +107,7 @@ export class AuthService {
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      user.password,
-    );
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
@@ -188,18 +179,11 @@ export class AuthService {
     const refresh_token = this.jwtService.sign(refreshPayload);
 
     // Calculate refresh token expiration date
-    const expirationString =
-      this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d';
+    const expirationString = this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d';
     const expiresAt = this.calculateExpirationDate(expirationString);
 
     // Store refresh token in database
-    await this.refreshTokenService.createRefreshToken(
-      refresh_token,
-      user.id,
-      expiresAt,
-      deviceInfo,
-      ipAddress,
-    );
+    await this.refreshTokenService.createRefreshToken(refresh_token, user.id, expiresAt, deviceInfo, ipAddress);
 
     return { access_token, refresh_token };
   }
@@ -293,11 +277,7 @@ export class AuthService {
    * Refresh access token using refresh token
    * Implements token rotation: invalidate old refresh token and issue new one
    */
-  async refreshToken(
-    refreshToken: string,
-    deviceInfo?: string,
-    ipAddress?: string,
-  ): Promise<AuthResponseDto> {
+  async refreshToken(refreshToken: string, deviceInfo?: string, ipAddress?: string): Promise<AuthResponseDto> {
     // Verify refresh token signature and expiration
     let payload: any;
     try {
@@ -307,13 +287,10 @@ export class AuthService {
     }
 
     // Validate refresh token exists in database and is not revoked
-    const storedToken =
-      await this.refreshTokenService.validateRefreshToken(refreshToken);
+    const storedToken = await this.refreshTokenService.validateRefreshToken(refreshToken);
 
     if (!storedToken) {
-      throw new UnauthorizedException(
-        'Refresh token is invalid, expired, or revoked',
-      );
+      throw new UnauthorizedException('Refresh token is invalid, expired, or revoked');
     }
 
     // Find user by id from payload
@@ -363,29 +340,17 @@ export class AuthService {
    * Logout user from current device
    * Revokes refresh token and blacklists access token
    */
-  async logout(
-    userId: string,
-    accessToken: string,
-    refreshToken: string,
-  ): Promise<void> {
+  async logout(userId: string, accessToken: string, refreshToken: string): Promise<void> {
     // Revoke refresh token
     await this.refreshTokenService.revokeToken(refreshToken);
 
     // Calculate token expiration for blacklist
     const tokenExpiration = new Date(
-      Date.now() +
-        this.parseJwtExpiration(
-          this.configService.get<string>('JWT_EXPIRATION') || '15m',
-        ),
+      Date.now() + this.parseJwtExpiration(this.configService.get<string>('JWT_EXPIRATION') || '15m'),
     );
 
     // Blacklist access token to prevent further use
-    await this.tokenBlacklistService.addToBlacklist(
-      accessToken,
-      userId,
-      'logout',
-      tokenExpiration,
-    );
+    await this.tokenBlacklistService.addToBlacklist(accessToken, userId, 'logout', tokenExpiration);
 
     this.logger.log(`User ${userId} logged out from current device`);
   }
@@ -396,27 +361,16 @@ export class AuthService {
    */
   async logoutAll(userId: string, accessToken: string): Promise<void> {
     // Revoke all refresh tokens for this user
-    const revokedCount =
-      await this.refreshTokenService.revokeAllUserTokens(userId);
+    const revokedCount = await this.refreshTokenService.revokeAllUserTokens(userId);
 
     // Calculate token expiration for blacklist
     const tokenExpiration = new Date(
-      Date.now() +
-        this.parseJwtExpiration(
-          this.configService.get<string>('JWT_EXPIRATION') || '15m',
-        ),
+      Date.now() + this.parseJwtExpiration(this.configService.get<string>('JWT_EXPIRATION') || '15m'),
     );
 
     // Blacklist current access token
-    await this.tokenBlacklistService.addToBlacklist(
-      accessToken,
-      userId,
-      'logout',
-      tokenExpiration,
-    );
+    await this.tokenBlacklistService.addToBlacklist(accessToken, userId, 'logout', tokenExpiration);
 
-    this.logger.log(
-      `User ${userId} logged out from all devices (${revokedCount} tokens revoked)`,
-    );
+    this.logger.log(`User ${userId} logged out from all devices (${revokedCount} tokens revoked)`);
   }
 }

@@ -223,8 +223,7 @@ export const VerifyOtpResponse = ApiResponse({
       message: 'OTP verified successfully',
       data: {
         verified: true,
-        access_token:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example.access.token',
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example.access.token',
       },
     },
   },
@@ -269,10 +268,7 @@ export const BadRequestResponse = ApiResponse({
   schema: {
     example: {
       statusCode: 400,
-      message: [
-        'email must be an email',
-        'password must be at least 8 characters',
-      ],
+      message: ['email must be an email', 'password must be at least 8 characters'],
       error: 'Bad Request',
     },
   },

@@ -18,12 +18,7 @@
  * - changePassword(): Đổi password (verify old password trước)
  */
 
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
@@ -248,11 +243,7 @@ export class UsersService {
    * @throws NotFoundException - Nếu user không tồn tại
    * @throws BadRequestException - Nếu old password sai
    */
-  async changePassword(
-    id: string,
-    oldPassword: string,
-    newPassword: string,
-  ): Promise<void> {
+  async changePassword(id: string, oldPassword: string, newPassword: string): Promise<void> {
     // Query với select password field (mặc định không được select)
     const user = await this.userRepository.findOne({
       where: { id },

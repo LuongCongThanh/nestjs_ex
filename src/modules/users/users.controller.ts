@@ -35,11 +35,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
-import {
-  ConflictErrorResponseDto,
-  ErrorResponseDto,
-  NotFoundErrorResponseDto,
-} from './dto/error-response.dto';
+import { ConflictErrorResponseDto, ErrorResponseDto, NotFoundErrorResponseDto } from './dto/error-response.dto';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
@@ -155,10 +151,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user' })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiResponse({ status: 404, type: NotFoundErrorResponseDto })
-  async update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     return await this.usersService.update(id, updateUserDto);
   }
 

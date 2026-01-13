@@ -1,9 +1,4 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -30,14 +25,8 @@ export interface Response<T> {
  * - Or apply to specific controllers/routes
  */
 @Injectable()
-export class TransformResponseInterceptor<T> implements NestInterceptor<
-  T,
-  Response<T>
-> {
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Observable<Response<T>> {
+export class TransformResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
     const method = request.method;
@@ -57,11 +46,7 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<
         }
 
         // If data already has success/message/data structure, return as is
-        if (
-          typeof data === 'object' &&
-          'success' in data &&
-          'message' in data
-        ) {
+        if (typeof data === 'object' && 'success' in data && 'message' in data) {
           return {
             statusCode,
             ...data,
@@ -84,12 +69,9 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<
     if (path.includes('/auth/login')) return 'User logged in successfully';
     if (path.includes('/auth/logout')) return 'User logged out successfully';
     if (path.includes('/auth/refresh')) return 'Tokens refreshed successfully';
-    if (path.includes('/auth/forgot-password'))
-      return 'Password reset email sent';
-    if (path.includes('/auth/reset-password'))
-      return 'Password reset successfully';
-    if (path.includes('/auth/change-password'))
-      return 'Password changed successfully';
+    if (path.includes('/auth/forgot-password')) return 'Password reset email sent';
+    if (path.includes('/auth/reset-password')) return 'Password reset successfully';
+    if (path.includes('/auth/change-password')) return 'Password changed successfully';
 
     // Default messages based on HTTP method
     switch (method) {

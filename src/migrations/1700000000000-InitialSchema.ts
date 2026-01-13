@@ -8,12 +8,8 @@ export class InitialSchema1700000000000 implements MigrationInterface {
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
     // Create ENUM types
-    await queryRunner.query(
-      `CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'admin', 'staff')`,
-    );
-    await queryRunner.query(
-      `CREATE TYPE "public"."addresses_type_enum" AS ENUM('home', 'office', 'other')`,
-    );
+    await queryRunner.query(`CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'admin', 'staff')`);
+    await queryRunner.query(`CREATE TYPE "public"."addresses_type_enum" AS ENUM('home', 'office', 'other')`);
     await queryRunner.query(
       `CREATE TYPE "public"."orders_status_enum" AS ENUM('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')`,
     );
@@ -45,12 +41,8 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_users_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_users_email" ON "users" ("email")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_users_isActive" ON "users" ("isActive")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_users_email" ON "users" ("email")`);
+    await queryRunner.query(`CREATE INDEX "IDX_users_isActive" ON "users" ("isActive")`);
 
     // Create categories table
     await queryRunner.query(`
@@ -69,18 +61,10 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_categories_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_categories_name" ON "categories" ("name")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_categories_slug" ON "categories" ("slug")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_categories_parentId" ON "categories" ("parentId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_categories_isActive" ON "categories" ("isActive")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_categories_name" ON "categories" ("name")`);
+    await queryRunner.query(`CREATE INDEX "IDX_categories_slug" ON "categories" ("slug")`);
+    await queryRunner.query(`CREATE INDEX "IDX_categories_parentId" ON "categories" ("parentId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_categories_isActive" ON "categories" ("isActive")`);
     await queryRunner.query(`
       ALTER TABLE "categories"
       ADD CONSTRAINT "FK_categories_parent"
@@ -114,30 +98,14 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_products_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_products_slug" ON "products" ("slug")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_products_price" ON "products" ("price")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_products_sku" ON "products" ("sku")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_products_categoryId" ON "products" ("categoryId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_products_isActive" ON "products" ("isActive")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_products_isFeatured" ON "products" ("isFeatured")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_products_categoryId_isActive" ON "products" ("categoryId", "isActive")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_products_isFeatured_isActive" ON "products" ("isFeatured", "isActive")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_products_slug" ON "products" ("slug")`);
+    await queryRunner.query(`CREATE INDEX "IDX_products_price" ON "products" ("price")`);
+    await queryRunner.query(`CREATE INDEX "IDX_products_sku" ON "products" ("sku")`);
+    await queryRunner.query(`CREATE INDEX "IDX_products_categoryId" ON "products" ("categoryId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_products_isActive" ON "products" ("isActive")`);
+    await queryRunner.query(`CREATE INDEX "IDX_products_isFeatured" ON "products" ("isFeatured")`);
+    await queryRunner.query(`CREATE INDEX "IDX_products_categoryId_isActive" ON "products" ("categoryId", "isActive")`);
+    await queryRunner.query(`CREATE INDEX "IDX_products_isFeatured_isActive" ON "products" ("isFeatured", "isActive")`);
     await queryRunner.query(`
       ALTER TABLE "products"
       ADD CONSTRAINT "FK_products_category"
@@ -165,12 +133,8 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_addresses_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_addresses_userId" ON "addresses" ("userId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_addresses_isDefault" ON "addresses" ("isDefault")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_addresses_userId" ON "addresses" ("userId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_addresses_isDefault" ON "addresses" ("isDefault")`);
     await queryRunner.query(`
       ALTER TABLE "addresses"
       ADD CONSTRAINT "FK_addresses_user"
@@ -188,15 +152,9 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_carts_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_carts_userId" ON "carts" ("userId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_carts_isActive" ON "carts" ("isActive")`,
-    );
-    await queryRunner.query(
-      `CREATE UNIQUE INDEX "IDX_carts_userId_isActive" ON "carts" ("userId", "isActive")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_carts_userId" ON "carts" ("userId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_carts_isActive" ON "carts" ("isActive")`);
+    await queryRunner.query(`CREATE UNIQUE INDEX "IDX_carts_userId_isActive" ON "carts" ("userId", "isActive")`);
     await queryRunner.query(`
       ALTER TABLE "carts"
       ADD CONSTRAINT "FK_carts_user"
@@ -216,12 +174,8 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_cart_items_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_cart_items_cartId" ON "cart_items" ("cartId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_cart_items_productId" ON "cart_items" ("productId")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_cart_items_cartId" ON "cart_items" ("cartId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_cart_items_productId" ON "cart_items" ("productId")`);
     await queryRunner.query(
       `CREATE UNIQUE INDEX "IDX_cart_items_cartId_productId" ON "cart_items" ("cartId", "productId")`,
     );
@@ -259,21 +213,11 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_orders_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_orders_orderNumber" ON "orders" ("orderNumber")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_orders_userId" ON "orders" ("userId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_orders_status" ON "orders" ("status")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_orders_paymentStatus" ON "orders" ("paymentStatus")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_orders_createdAt" ON "orders" ("createdAt")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_orders_orderNumber" ON "orders" ("orderNumber")`);
+    await queryRunner.query(`CREATE INDEX "IDX_orders_userId" ON "orders" ("userId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_orders_status" ON "orders" ("status")`);
+    await queryRunner.query(`CREATE INDEX "IDX_orders_paymentStatus" ON "orders" ("paymentStatus")`);
+    await queryRunner.query(`CREATE INDEX "IDX_orders_createdAt" ON "orders" ("createdAt")`);
     await queryRunner.query(`
       ALTER TABLE "orders"
       ADD CONSTRAINT "FK_orders_user"
@@ -293,12 +237,8 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_order_items_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_order_items_orderId" ON "order_items" ("orderId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_order_items_productId" ON "order_items" ("productId")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_order_items_orderId" ON "order_items" ("orderId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_order_items_productId" ON "order_items" ("productId")`);
     await queryRunner.query(`
       ALTER TABLE "order_items"
       ADD CONSTRAINT "FK_order_items_order"
@@ -331,18 +271,10 @@ export class InitialSchema1700000000000 implements MigrationInterface {
         CONSTRAINT "PK_payments_id" PRIMARY KEY ("id")
       )
     `);
-    await queryRunner.query(
-      `CREATE INDEX "IDX_payments_orderId" ON "payments" ("orderId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_payments_status" ON "payments" ("status")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_payments_transactionId" ON "payments" ("transactionId")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_payments_createdAt" ON "payments" ("createdAt")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_payments_orderId" ON "payments" ("orderId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_payments_status" ON "payments" ("status")`);
+    await queryRunner.query(`CREATE INDEX "IDX_payments_transactionId" ON "payments" ("transactionId")`);
+    await queryRunner.query(`CREATE INDEX "IDX_payments_createdAt" ON "payments" ("createdAt")`);
     await queryRunner.query(`
       ALTER TABLE "payments"
       ADD CONSTRAINT "FK_payments_order"
@@ -352,36 +284,16 @@ export class InitialSchema1700000000000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop foreign keys
-    await queryRunner.query(
-      `ALTER TABLE "payments" DROP CONSTRAINT "FK_payments_order"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "order_items" DROP CONSTRAINT "FK_order_items_product"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "order_items" DROP CONSTRAINT "FK_order_items_order"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "orders" DROP CONSTRAINT "FK_orders_user"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "cart_items" DROP CONSTRAINT "FK_cart_items_product"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "cart_items" DROP CONSTRAINT "FK_cart_items_cart"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "carts" DROP CONSTRAINT "FK_carts_user"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "addresses" DROP CONSTRAINT "FK_addresses_user"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "products" DROP CONSTRAINT "FK_products_category"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "categories" DROP CONSTRAINT "FK_categories_parent"`,
-    );
+    await queryRunner.query(`ALTER TABLE "payments" DROP CONSTRAINT "FK_payments_order"`);
+    await queryRunner.query(`ALTER TABLE "order_items" DROP CONSTRAINT "FK_order_items_product"`);
+    await queryRunner.query(`ALTER TABLE "order_items" DROP CONSTRAINT "FK_order_items_order"`);
+    await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT "FK_orders_user"`);
+    await queryRunner.query(`ALTER TABLE "cart_items" DROP CONSTRAINT "FK_cart_items_product"`);
+    await queryRunner.query(`ALTER TABLE "cart_items" DROP CONSTRAINT "FK_cart_items_cart"`);
+    await queryRunner.query(`ALTER TABLE "carts" DROP CONSTRAINT "FK_carts_user"`);
+    await queryRunner.query(`ALTER TABLE "addresses" DROP CONSTRAINT "FK_addresses_user"`);
+    await queryRunner.query(`ALTER TABLE "products" DROP CONSTRAINT "FK_products_category"`);
+    await queryRunner.query(`ALTER TABLE "categories" DROP CONSTRAINT "FK_categories_parent"`);
 
     // Drop tables
     await queryRunner.query(`DROP TABLE "payments"`);
