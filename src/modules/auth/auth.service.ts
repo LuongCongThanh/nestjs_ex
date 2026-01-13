@@ -2,16 +2,19 @@ import { AuthResponseDto } from '@modules/auth/dto/auth-response.dto';
 import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
 import { LoginDto } from '@modules/auth/dto/login.dto';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
+import { RegistrationResponseDto } from '@modules/auth/dto/registration-response.dto';
 import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as bcrypt from 'bcryptjs';
 import * as cryptoNode from 'node:crypto';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
+import { EmailVerificationToken } from './entities/email-verification-token.entity';
 import { ResetToken } from './entities/reset-token.entity';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { EmailVerificationService } from './services/email-verification.service';
+import { PasswordService } from './services/password.service';
 import { RefreshTokenService } from './services/refresh-token.service';
 import { TokenBlacklistService } from './services/token-blacklist.service';
 
@@ -24,23 +27,39 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(ResetToken)
     private readonly resetTokenRepository: Repository<ResetToken>,
+    @InjectRepository(EmailVerificationToken)
+    private readonly emailVerificationTokenRepository: Repository<EmailVerificationToken>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly passwordService: PasswordService,
+    private readonly emailVerificationService: EmailVerificationService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly tokenBlacklistService: TokenBlacklistService,
   ) {}
 
   /**
-   * Register a new user
-   * Steps:
+   * Register a new user (2026 Security Implementation)
+   *
+   * Flow (Updated):
    * 1. Check if email already exists
-   * 2. Hash password with bcrypt (10 rounds)
-   * 3. Create and save user to database
-   * 4. Generate JWT token
-   * 5. Return token and user info (without password)
+   * 2. Hash password with bcrypt 12 rounds (2026 standard)
+   * 3. Create user with emailVerified = false
+   * 4. Generate email verification token
+   * 5. Send verification email with link
+   * 6. Return success message (NO JWT tokens)
+   *
+   * Security Changes from Old Implementation:
+   * - Does NOT return JWT tokens immediately
+   * - User must verify email before login
+   * - Uses bcrypt 12 rounds instead of 10
+   * - Dedicated PasswordService for hashing
+   * - Dedicated EmailVerificationService for tokens
+   *
+   * @param registerDto - Registration data from user
+   * @returns RegistrationResponseDto (no tokens, just confirmation)
    */
-  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    // Check if email already exists
+  async register(registerDto: RegisterDto): Promise<RegistrationResponseDto> {
+    // Step 1: Check if email already exists
     const existingUser = await this.userRepository.findOne({
       where: { email: registerDto.email },
       select: ['id'], // Only select id for existence check
@@ -50,38 +69,79 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Hash password with bcrypt (10 salt rounds)
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    // Step 2: Hash password with PasswordService (bcrypt 12 rounds)
+    const hashedPassword = await this.passwordService.hash(registerDto.password);
 
-    // Create user entity
+    // Step 3: Create user entity with emailVerified = false
     const user = this.userRepository.create({
       ...registerDto,
       password: hashedPassword,
+      emailVerified: false, // User must verify email before login
+      isActive: true,
     });
 
     // Save to database
     const savedUser = await this.userRepository.save(user);
 
-    // Exclude password from response
-    const userWithoutPassword = savedUser as Omit<User, 'password'>;
+    // Step 4: Generate email verification token
+    const verificationToken = await this.emailVerificationService.createVerificationToken(savedUser.id);
 
-    // Generate JWT tokens (access + refresh)
-    const tokens = await this.generateTokens(savedUser);
+    // Step 5: Send verification email with link
+    // TODO: Replace with actual email service (SendGrid, AWS SES, etc.)
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
 
+    console.log(`
+      ======================================================
+      [EMAIL SIMULATION - VERIFICATION]
+      To: ${savedUser.email}
+      Subject: Verify Your Email Address
+      
+      Hello ${savedUser.firstName},
+      
+      Thank you for registering! Please verify your email address
+      by clicking the link below:
+      
+      ${verificationLink}
+      
+      This link will expire in 24 hours.
+      
+      If you didn't create this account, please ignore this email.
+      ======================================================
+    `);
+
+    this.logger.log(`User registered successfully: ${savedUser.email} (email verification required)`);
+
+    // Step 6: Return success response (NO JWT tokens)
     return {
-      ...tokens,
-      user: userWithoutPassword as User,
+      statusCode: 201,
+      success: true,
+      message: 'Registration successful! Please check your email to verify your account before logging in.',
+      data: {
+        email: savedUser.email,
+        emailSent: true,
+      },
     };
   }
 
   /**
-   * Login user
-   * Steps:
+   * Login user (2026 Security Implementation)
+   *
+   * Flow (Updated):
    * 1. Find user by email
-   * 2. Verify password with bcrypt.compare
+   * 2. Verify password with PasswordService
    * 3. Check if user is active
-   * 4. Generate JWT token
-   * 5. Return token and user info (without password)
+   * 4. Check if email is verified (NEW - 2026 requirement)
+   * 5. Generate JWT tokens
+   * 6. Return tokens and user info (without password)
+   *
+   * Security Changes from Old Implementation:
+   * - Uses PasswordService.compare() instead of bcrypt directly
+   * - Checks emailVerified = true before issuing tokens
+   * - Throws specific error if email not verified
+   *
+   * @param loginDto - Login credentials from user
+   * @returns AuthResponseDto with tokens and user data
    */
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     // Find user by email
@@ -106,8 +166,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    // Verify password with PasswordService
+    const isPasswordValid = await this.passwordService.compare(loginDto.password, user.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
@@ -116,6 +176,13 @@ export class AuthService {
     // Check if user is active
     if (!user.isActive) {
       throw new UnauthorizedException('Account has been disabled');
+    }
+
+    // 🆕 2026 Security: Check if email is verified
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'Email not verified. Please check your inbox for the verification link or request a new one.',
+      );
     }
 
     // Exclude password from response

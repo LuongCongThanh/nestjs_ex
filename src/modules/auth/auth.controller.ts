@@ -2,6 +2,7 @@ import { AuthResponseDto } from '@modules/auth/dto/auth-response.dto';
 import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
 import { LoginDto } from '@modules/auth/dto/login.dto';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
+import { RegistrationResponseDto } from '@modules/auth/dto/registration-response.dto';
 import { Body, Controller, Headers, HttpCode, HttpStatus, Ip, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -23,23 +24,38 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   /**
-   * Register new user
+   * Register new user (2026 Security Implementation)
    * POST /auth/register
    *
-   * Creates a new user account with email verification disabled by default.
-   * Password is automatically hashed before storage.
+   * Creates a new user account with mandatory email verification.
+   * Password is automatically hashed with bcrypt 12 rounds before storage.
    *
-   * Returns JWT token and user information (password excluded).
+   * Flow:
+   * 1. User submits registration form
+   * 2. Server creates user account (emailVerified = false)
+   * 3. Server sends verification email with link
+   * 4. Server returns success message (NO JWT tokens)
+   * 5. User must verify email before login
+   *
+   * Security Changes (2026):
+   * - Does NOT return JWT tokens (must verify email first)
+   * - Uses bcrypt 12 rounds instead of 10
+   * - Sends email verification link
+   *
+   * Important: User CANNOT login until email is verified
    */
   @Post('register')
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Register a new user',
-    description: 'Creates a new user account. Email must be unique. Password will be hashed automatically.',
+    description:
+      'Creates a new user account. Email must be unique. Password will be hashed automatically. ' +
+      'Returns success message and sends verification email. User must verify email before login.',
   })
   @RegisterResponse
   @BadRequestResponse
   @ConflictResponse
-  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
+  async register(@Body() registerDto: RegisterDto): Promise<RegistrationResponseDto> {
     return await this.authService.register(registerDto);
   }
 
