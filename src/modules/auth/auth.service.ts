@@ -2,6 +2,7 @@ import { AuthResponseDto } from '@modules/auth/dto/auth-response.dto';
 import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
 import { LoginDto } from '@modules/auth/dto/login.dto';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
+import { ResendVerificationLinkDto } from '@modules/auth/dto/resend-verification-link.dto';
 import { RegistrationResponseDto } from '@modules/auth/dto/registration-response.dto';
 import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -125,6 +126,83 @@ export class AuthService {
   }
 
   /**
+   * Verify user's email address using a secure token
+   *
+   * @param token - Secure hex token from email link
+   */
+  async verifyEmail(token: string): Promise<{ verified: boolean }> {
+    const verificationToken = await this.emailVerificationService.validateToken(token);
+
+    if (!verificationToken) {
+      throw new UnauthorizedException('Invalid or expired verification token');
+    }
+
+    // Step 1: Update user's emailVerified status
+    await this.userRepository.update(verificationToken.userId, {
+      emailVerified: true,
+    });
+
+    // Step 2: Mark token as used
+    await this.emailVerificationService.markAsUsed(verificationToken.id);
+
+    this.logger.log(`Email verified successfully for user ${verificationToken.userId}`);
+
+    return { verified: true };
+  }
+
+  /**
+   * Resend verification link to user
+   *
+   * @param resendDto - DTO containing user email
+   */
+  async resendVerificationLink(resendDto: ResendVerificationLinkDto): Promise<{ emailSent: boolean }> {
+    const user = await this.userRepository.findOne({
+      where: { email: resendDto.email },
+      select: ['id', 'email', 'firstName', 'emailVerified'],
+    });
+
+    // Security: Silent success if user doesn't exist to prevent enumeration
+    if (!user) {
+      this.logger.warn(`Verification link resend requested for non-existent email: ${resendDto.email}`);
+      return { emailSent: true };
+    }
+
+    // If already verified, also silent success
+    if (user.emailVerified) {
+      this.logger.log(`Verification link resend requested for already verified user: ${resendDto.email}`);
+      return { emailSent: true };
+    }
+
+    // Revoke old tokens if any
+    await this.emailVerificationService.revokeUserTokens(user.id);
+
+    // Generate new token
+    const token = await this.emailVerificationService.createVerificationToken(user.id);
+
+    // Send email (Simulation)
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const verificationLink = `${frontendUrl}/verify-email?token=${token}`;
+
+    console.log(`
+      ======================================================
+      [EMAIL SIMULATION - RESEND VERIFICATION]
+      To: ${user.email}
+      Subject: Verify Your Email Address
+      
+      Hello ${user.firstName},
+      
+      You requested a new verification link. Please click below:
+      
+      ${verificationLink}
+      
+      This link will expire in 24 hours.
+      ======================================================
+    `);
+
+    return { emailSent: true };
+  }
+
+  /**
    * Login user (2026 Security Implementation)
    *
    * Flow (Updated):
@@ -231,6 +309,7 @@ export class AuthService {
     user: User,
     deviceInfo?: string,
     ipAddress?: string,
+    tokenFamilyId?: string,
   ): Promise<{ access_token: string; refresh_token: string }> {
     const payload: JwtPayload = {
       sub: user.id,
@@ -253,7 +332,14 @@ export class AuthService {
     const expiresAt = this.calculateExpirationDate(refreshExpirationString);
 
     // Store refresh token in database
-    await this.refreshTokenService.createRefreshToken(refresh_token, user.id, expiresAt, deviceInfo, ipAddress);
+    await this.refreshTokenService.createRefreshToken(
+      refresh_token,
+      user.id,
+      expiresAt,
+      deviceInfo,
+      ipAddress,
+      tokenFamilyId,
+    );
 
     return { access_token, refresh_token };
   }
@@ -362,11 +448,16 @@ export class AuthService {
     }
 
     // Validate refresh token exists in database and is not revoked
-    const storedToken = await this.refreshTokenService.validateRefreshToken(refreshToken);
+    const validationResult = await this.refreshTokenService.validateRefreshToken(refreshToken);
 
-    if (!storedToken) {
+    if (validationResult.reused) {
+      throw new UnauthorizedException('Refresh token reuse detected. Please login again.');
+    }
+
+    if (!validationResult.token) {
       throw new UnauthorizedException('Refresh token is invalid, expired, or revoked');
     }
+    const storedToken = validationResult.token;
 
     // Find user by id from payload
     const user = await this.userRepository.findOne({
@@ -394,14 +485,14 @@ export class AuthService {
       throw new UnauthorizedException('Account has been disabled');
     }
 
-    // Token rotation: Delete old refresh token
-    await this.refreshTokenService.deleteToken(refreshToken);
+    // Token rotation: revoke old refresh token (keep for reuse detection)
+    await this.refreshTokenService.revokeToken(refreshToken);
 
     // Exclude password from response
     const userWithoutPassword = user as Omit<User, 'password'>;
 
     // Generate new tokens (both access and refresh)
-    const tokens = await this.generateTokens(user, deviceInfo, ipAddress);
+    const tokens = await this.generateTokens(user, deviceInfo, ipAddress, storedToken.tokenFamilyId);
 
     this.logger.log(`Tokens refreshed for user ${user.email}`);
 

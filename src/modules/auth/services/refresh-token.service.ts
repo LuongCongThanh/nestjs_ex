@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { randomUUID } from 'node:crypto';
 import { LessThan, Repository } from 'typeorm';
 import { RefreshToken } from '../entities/refresh-token.entity';
 
@@ -25,13 +26,17 @@ export class RefreshTokenService {
     expiresAt: Date,
     deviceInfo?: string,
     ipAddress?: string,
+    tokenFamilyId?: string,
   ): Promise<RefreshToken> {
+    const familyId = tokenFamilyId || randomUUID();
+
     const refreshToken = this.refreshTokenRepository.create({
       token,
       userId,
       expiresAt,
       deviceInfo,
       ipAddress,
+      tokenFamilyId: familyId,
       isRevoked: false,
     });
 
@@ -51,24 +56,26 @@ export class RefreshTokenService {
   /**
    * Validate refresh token (not expired, not revoked)
    */
-  async validateRefreshToken(token: string): Promise<RefreshToken | null> {
+  async validateRefreshToken(token: string): Promise<{ token: RefreshToken | null; reused: boolean }> {
     const refreshToken = await this.findByToken(token);
 
     if (!refreshToken) {
-      return null;
+      return { token: null, reused: false };
     }
 
-    // Check if token is revoked
+    // If already revoked, treat as reuse attempt and revoke entire family
     if (refreshToken.isRevoked) {
-      return null;
+      await this.revokeFamilyTokens(refreshToken.tokenFamilyId);
+      this.logger.warn(`Refresh token reuse detected for family ${refreshToken.tokenFamilyId}`);
+      return { token: null, reused: true };
     }
 
     // Check if token is expired
     if (new Date() > refreshToken.expiresAt) {
-      return null;
+      return { token: null, reused: false };
     }
 
-    return refreshToken;
+    return { token: refreshToken, reused: false };
   }
 
   /**
@@ -86,6 +93,14 @@ export class RefreshTokenService {
   async revokeAllUserTokens(userId: string): Promise<number> {
     const result = await this.refreshTokenRepository.update({ userId, isRevoked: false }, { isRevoked: true });
 
+    return result.affected || 0;
+  }
+
+  /**
+   * Revoke all tokens in the same family (reuse detection response)
+   */
+  async revokeFamilyTokens(tokenFamilyId: string): Promise<number> {
+    const result = await this.refreshTokenRepository.update({ tokenFamilyId }, { isRevoked: true });
     return result.affected || 0;
   }
 

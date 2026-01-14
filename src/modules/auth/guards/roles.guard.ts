@@ -6,35 +6,38 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 /**
  * Roles Guard
  *
- * Checks if the authenticated user has the required roles to access a route.
- * Works in combination with @Roles() decorator.
+ * Guard này dùng để kiểm tra xem người dùng đã đăng nhập có đủ quyền (Role)
+ * để truy cập vào route này hay không.
+ * Thường được dùng kết hợp với decorator @Roles().
  *
- * Usage:
- * @UseGuards(JwtAuthGuard, RolesGuard)
- * @Roles(UserRole.ADMIN)
- * @Get('admin-only')
- * adminOnlyRoute() { ... }
+ * Lưu ý: Guard này phải chạy SAU JwtAuthGuard để có thông tin user trong request.
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  /**
+   * Phương thức kiểm tra quyền truy cập dựa trên Role.
+   * @param context Ngữ cảnh thực thi của request
+   */
   canActivate(context: ExecutionContext): boolean {
-    // Get required roles from decorator metadata
+    // 1. Lấy danh sách các Roles được yêu cầu từ decorator @Roles()
+    // Nó sẽ kiểm tra ở cấp độ phương thức (handler) trước, sau đó đến cấp độ Controller (class)
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-    // If no roles are required, allow access
+    // 2. Nếu route không yêu cầu Role cụ thể nào, cho phép truy cập luôn
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
-    // Get user from request (set by JwtAuthGuard)
+    // 3. Lấy thông tin user từ request (thông tin này được JwtAuthGuard gán vào sau khi validate token)
     const { user } = context.switchToHttp().getRequest();
 
-    // Check if user has any of the required roles
+    // 4. Kiểm tra xem Role của user có nằm trong danh sách các Roles được yêu cầu hay không
+    // Trả về true nếu khớp, ngược lại trả về false (sẽ gây ra lỗi 403 Forbidden)
     return user?.role ? requiredRoles.includes(user.role) : false;
   }
 }

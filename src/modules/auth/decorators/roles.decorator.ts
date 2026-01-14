@@ -2,26 +2,30 @@ import { SetMetadata } from '@nestjs/common';
 import { UserRole } from '../../../entities/user.entity';
 
 /**
- * Metadata key for roles
+ * Key metadata dùng để lưu trữ danh sách các vai trò (roles) được phép truy cập.
+ * Key này sẽ được RolesGuard sử dụng để kiểm tra quyền hạn của người dùng.
  */
 export const ROLES_KEY = 'roles';
 
 /**
  * Roles Decorator
  *
- * Sets required roles for accessing a route.
- * Must be used with RolesGuard.
+ * Decorator này dùng để chỉ định danh sách các vai trò (UserRole) cần thiết để truy cập một route.
+ * Nó lưu trữ danh sách roles vào metadata của method hoặc class.
+ * Để decorator này có tác dụng, bạn phải sử dụng kèm với RolesGuard.
  *
- * @param roles - One or more UserRole values
+ * @param roles - Danh sách một hoặc nhiều vai trò (Admin, User, Staff, v.v.)
  *
  * @example
+ * // Chỉ cho phép Admin truy cập
  * @Roles(UserRole.ADMIN)
- * @Get('admin')
+ * @Get('admin-dashboard')
  * adminOnly() { ... }
  *
  * @example
+ * // Cho phép cả Admin và Staff truy cập
  * @Roles(UserRole.ADMIN, UserRole.STAFF)
- * @Get('staff')
+ * @Get('management')
  * staffOnly() { ... }
  */
 export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);

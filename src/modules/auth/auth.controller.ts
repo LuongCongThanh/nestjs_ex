@@ -3,19 +3,25 @@ import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
 import { LoginDto } from '@modules/auth/dto/login.dto';
 import { RegisterDto } from '@modules/auth/dto/register.dto';
 import { RegistrationResponseDto } from '@modules/auth/dto/registration-response.dto';
-import { Body, Controller, Headers, HttpCode, HttpStatus, Ip, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Ip, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import {
   BadRequestResponse,
   ConflictResponse,
+  ForbiddenResponse,
   ForgotPasswordResponse,
   LoginResponse,
+  LogoutResponse,
   RegisterResponse,
+  ResendVerificationResponse,
   UnauthorizedResponse,
+  VerificationResponse,
 } from './docs/auth.responses';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ResendVerificationLinkDto } from './dto/resend-verification-link.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Authentication')
@@ -46,17 +52,58 @@ export class AuthController {
    */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({ default: { limit: 5, ttl: 300 } }) // Limit registration attempts (5 per 5 minutes)
   @ApiOperation({
-    summary: 'Register a new user',
+    summary: 'Create a new user account',
     description:
-      'Creates a new user account. Email must be unique. Password will be hashed automatically. ' +
-      'Returns success message and sends verification email. User must verify email before login.',
+      'Initiates the registration process. An email verification link will be sent to the user. ' +
+      'Authentication tokens are NOT issued until the email is verified (2026 Security Requirement).',
   })
   @RegisterResponse
   @BadRequestResponse
   @ConflictResponse
   async register(@Body() registerDto: RegisterDto): Promise<RegistrationResponseDto> {
     return await this.authService.register(registerDto);
+  }
+
+  /**
+   * Verify email address
+   * GET /auth/verify-email?token=xxx
+   *
+   * Validates the verification token sent via email and activates the user account.
+   */
+  @Get('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 600 } }) // Limit verification checks to reduce brute force
+  @ApiOperation({
+    summary: 'Verify email address',
+    description: 'Validates the secure token from the email link and marks the email as verified.',
+  })
+  @VerificationResponse
+  @UnauthorizedResponse
+  @BadRequestResponse
+  async verifyEmail(@Query('token') token: string): Promise<{ verified: boolean }> {
+    return await this.authService.verifyEmail(token);
+  }
+
+  /**
+   * Resend verification link
+   * POST /auth/resend-verification-link
+   *
+   * Generates and sends a new verification link to the user's email.
+   * Invalidates any previously sent links for this user.
+   */
+  @Post('resend-verification-link')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 3600 } }) // Limit resend attempts (3 per hour)
+  @ApiOperation({
+    summary: 'Resend verification link',
+    description: 'Generates a new secure verification token and sends it via email.',
+  })
+  @ResendVerificationResponse
+  @BadRequestResponse
+  async resendVerificationLink(@Body() resendDto: ResendVerificationLinkDto): Promise<{ emailSent: boolean }> {
+    return await this.authService.resendVerificationLink(resendDto);
   }
 
   /**
@@ -71,12 +118,14 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 300 } }) // Limit login attempts (10 per 5 minutes)
   @ApiOperation({
     summary: 'Login user',
     description: 'Authenticates user with email and password. Returns JWT token and user information.',
   })
   @LoginResponse
   @UnauthorizedResponse
+  @ForbiddenResponse
   @BadRequestResponse
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return await this.authService.login(loginDto);
@@ -115,12 +164,14 @@ export class AuthController {
    */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: 300 } }) // Limit refresh calls
   @ApiOperation({
     summary: 'Refresh JWT tokens',
     description: 'Refreshes access and refresh tokens. Implements token rotation for security.',
   })
   @LoginResponse
   @UnauthorizedResponse
+  @ForbiddenResponse
   async refreshToken(
     @Body() refreshTokenDto: RefreshTokenDto,
     @Headers('user-agent') userAgent: string,
@@ -142,10 +193,13 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: 300 } })
   @ApiOperation({
-    summary: 'Logout from current device',
-    description: 'Logs out user from current device. Revokes refresh token and blacklists access token.',
+    summary: 'Logout current device',
+    description: 'Invalidates the current refresh token and blacklists the access token.',
   })
+  @LogoutResponse
+  @UnauthorizedResponse
   async logout(@Req() req: Request, @Body() refreshTokenDto: RefreshTokenDto): Promise<{ message: string }> {
     const user = req.user as any;
     const accessToken = req.headers.authorization?.replace('Bearer ', '') || '';
@@ -168,10 +222,13 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 600 } })
   @ApiOperation({
     summary: 'Logout from all devices',
-    description: 'Logs out user from all devices. Revokes all refresh tokens and blacklists current access token.',
+    description: 'Invalidates all active refresh tokens for the user and blacklists the current access token.',
   })
+  @LogoutResponse
+  @UnauthorizedResponse
   async logoutAll(@Req() req: Request): Promise<{ message: string }> {
     const user = req.user as any;
     const accessToken = req.headers.authorization?.replace('Bearer ', '') || '';

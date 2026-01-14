@@ -42,24 +42,18 @@ export class RegistrationResponseDto {
   })
   success: boolean;
 
-  /**
-   * User-friendly message
-   */
   @ApiProperty({
     example: 'Registration successful! Please check your email to verify your account before logging in.',
-    description: 'Success message with instructions',
+    description: 'User-friendly success message with further instructions',
   })
   message: string;
 
-  /**
-   * Additional data (email for reference)
-   */
   @ApiProperty({
     example: {
       email: 'user@example.com',
       emailSent: true,
     },
-    description: 'Registration details',
+    description: 'Additional registration data including email status',
   })
   data: {
     email: string;

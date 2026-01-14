@@ -1,4 +1,4 @@
-# 📘 AUTH MODULE – API SPECIFICATION & IMPLEMENTATION GUIDE
+auth# 📘 AUTH MODULE – API SPECIFICATION & IMPLEMENTATION GUIDE
 
 **Version:** 1.1  
 **Last Updated:** January 13, 2026  
@@ -959,7 +959,7 @@ import * as crypto from 'node:crypto';
 const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 ```
 
-**Security Note:** Token trong database được lưu dưới dạng hash, nên phải hash token từ query parameter trước khi tìm kiếm.
+**Security Note:** Database tokens are stored as hashes; therefore, the token from the query parameter must be hashed before searching.
 
 #### Step 3: Find Verification Token in Database
 
@@ -1463,7 +1463,7 @@ await this.resetTokenRepository.save({
 });
 ```
 
-**Security Note:** Store hashed token in DB to prevent token theft from database breach.
+**Security Note:** Store hashed tokens in the database to prevent token theft in the event of a database breach.
 
 #### Step 5: Send Reset Email
 
@@ -2162,7 +2162,7 @@ import * as crypto from 'crypto';
 const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 ```
 
-**Security Note:** Token trong database được lưu dưới dạng hash, nên phải hash token từ query parameter trước khi tìm kiếm.
+**Security Note:** Database tokens are stored as hashes; therefore, the token from the query parameter must be hashed before searching.
 
 #### Step 3: Find Verification Token in Database
 
@@ -3158,7 +3158,7 @@ export class InternalController {
 
 ```
 src/modules/auth/
-├── auth.controller.ts          # Controller xử lý HTTP requests
+├── auth.controller.ts          # Controller for handling HTTP requests
 ├── auth.module.ts              # Module configuration
 ├── auth.service.ts             # Main service (register, login, logout)
 ├── AUTH_API_SPEC.md           # API documentation
@@ -3193,9 +3193,9 @@ src/modules/auth/
 ├── interfaces/                 # TypeScript interfaces
 │   └── jwt-payload.interface.ts
 │
-├── services/                   # ✅ Tất cả services tập trung ở đây
+├── services/                   # ✅ All services are centralized here
 │   ├── refresh-token.service.ts
-│   └── token-blacklist.service.ts  # ✅ Đã di chuyển vào đây
+│   └── token-blacklist.service.ts  # ✅ Moved here
 │
 └── strategies/                 # Passport strategies
     ├── google.strategy.ts
@@ -3205,33 +3205,33 @@ src/modules/auth/
 
 ---
 
-### 📖 Chi Tiết Cấu Trúc & Cách Hoạt Động
+### 📖 Structure Details & Logic Flow
 
-#### 🎯 Root Files (Files ở thư mục gốc)
+#### 🎯 Root Files
 
 ##### `auth.module.ts`
 
-**Mục đích:** File cấu hình module chính của Auth module.
+**Purpose:** Main configuration file for the Auth module.
 
 **Chức năng:**
 
-- Đăng ký tất cả providers (services, guards, strategies)
-- Import các module cần thiết (TypeORM, JWT, Passport)
-- Export các services và guards để modules khác sử dụng
-- Cấu hình JWT module với secret và expiration từ environment variables
+- Register all providers (services, guards, strategies)
+- Import necessary modules (TypeORM, JWT, Passport)
+- Export services and guards for use by other modules
+- Configure JWT module with secret and expiration from environment variables
 
-**Cách hoạt động:**
+**Logic Flow:**
 
 ```typescript
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, TokenBlacklist, ResetToken, RefreshToken]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.registerAsync({ ... }) // Cấu hình JWT động từ .env
+    JwtModule.registerAsync({ ... }) // Dynamic JWT config from .env
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, ...],
-  exports: [AuthService, JwtAuthGuard, ...] // Cho phép modules khác dùng
+  exports: [AuthService, JwtAuthGuard, ...] // Allow other modules to use
 })
 ```
 
@@ -3247,28 +3247,28 @@ src/modules/auth/
 
 ##### `auth.controller.ts`
 
-**Mục đích:** Xử lý tất cả HTTP requests liên quan đến authentication.
+**Purpose:** Handles all HTTP requests related to authentication.
 
-**Chức năng:**
+**Features:**
 
-- Định nghĩa các endpoints (POST /auth/register, POST /auth/login, ...)
-- Validate request body sử dụng DTOs và ValidationPipe
-- Gọi AuthService để xử lý business logic
-- Trả về response theo format chuẩn
-- Thêm Swagger documentation cho API
+- Define endpoints (POST /auth/register, POST /auth/login, ...)
+- Validate request body using DTOs and ValidationPipe
+- Call AuthService to handle business logic
+- Return responses in a standardized format
+- Add Swagger documentation for the API
 
-**Các endpoints:**
+**Endpoints:**
 
-- `POST /auth/register` - Đăng ký user mới
-- `POST /auth/login` - Đăng nhập
-- `POST /auth/refresh` - Làm mới access token
-- `POST /auth/logout` - Đăng xuất thiết bị hiện tại
-- `POST /auth/logout/all` - Đăng xuất tất cả thiết bị
-- `POST /auth/forgot-password` - Yêu cầu reset password
-- `POST /auth/reset-password` - Reset password với token
-- `POST /auth/change-password` - Đổi password (cần authentication)
+- `POST /auth/register` - New user registration
+- `POST /auth/login` - User login
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/logout` - Logout from the current device
+- `POST /auth/logout/all` - Logout from all devices
+- `POST /auth/forgot-password` - Request password reset
+- `POST /auth/reset-password` - Reset password with token
+- `POST /auth/change-password` - Change password (requires authentication)
 
-**Cách hoạt động:**
+**Logic Flow:**
 
 ```typescript
 @Controller('auth')
@@ -3282,29 +3282,29 @@ export class AuthController {
 }
 ```
 
-**Guards sử dụng:**
+**Guards used:**
 
-- `@UseGuards(JwtAuthGuard)` - Yêu cầu authentication
-- `@Public()` - Bỏ qua authentication (cho public endpoints)
+- `@UseGuards(JwtAuthGuard)` - Requires authentication
+- `@Public()` - Skips authentication (for public endpoints)
 
 ---
 
 ##### `auth.service.ts`
 
-**Mục đích:** Chứa toàn bộ business logic của authentication.
+**Purpose:** Contains all business logic for authentication.
 
 **Chức năng:**
 
-- **Register:** Tạo user mới, hash password, generate JWT tokens
-- **Login:** Xác thực credentials, generate tokens, update lastLoginAt
-- **Refresh Token:** Validate refresh token, issue new tokens (token rotation)
-- **Logout:** Revoke refresh token, blacklist access token
-- **Logout All:** Revoke tất cả refresh tokens của user
-- **Forgot Password:** Generate reset token, gửi email
-- **Reset Password:** Validate reset token, update password, revoke sessions
-- **Change Password:** Verify old password, update password, issue new tokens
+- **Register:** Create a new user, hash password, and generate JWT tokens.
+- **Login:** Authenticate credentials, generate tokens, and update lastLoginAt.
+- **Refresh Token:** Validate refresh token and issue new tokens (token rotation).
+- **Logout:** Revoke refresh token and blacklist access token.
+- **Logout All:** Revoke all of a user's refresh tokens.
+- **Forgot Password:** Generate reset token and send email.
+- **Reset Password:** Validate reset token, update password, and revoke sessions.
+- **Change Password:** Verify old password, update password, and issue new tokens.
 
-**Cách hoạt động:**
+**Logic Flow:**
 
 ```typescript
 @Injectable()
@@ -3328,30 +3328,30 @@ export class AuthService {
 
 **Dependencies:**
 
-- `User` repository - Quản lý user data
-- `JwtService` - Generate và verify JWT tokens
-- `RefreshTokenService` - Quản lý refresh tokens
-- `TokenBlacklistService` - Quản lý blacklisted tokens
+- `User` repository - Manages user data
+- `JwtService` - Generates and verifies JWT tokens
+- `RefreshTokenService` - Manages refresh tokens
+- `TokenBlacklistService` - Manages blacklisted tokens
 
 ---
 
-#### 📁 `services/` - Tất Cả Services Tập Trung
+#### 📁 `services/` - Centralized Services
 
 ##### `services/refresh-token.service.ts`
 
-**Mục đích:** Quản lý vòng đời của refresh tokens.
+**Purpose:** Manages the lifecycle of refresh tokens.
 
 **Chức năng:**
 
-- `createRefreshToken()` - Tạo và lưu refresh token mới vào database
-- `validateRefreshToken()` - Kiểm tra token có hợp lệ, chưa expired, chưa revoked
-- `revokeToken()` - Đánh dấu token là revoked (logout)
-- `revokeAllUserTokens()` - Revoke tất cả tokens của một user
-- `deleteToken()` - Xóa token khỏi database (token rotation)
-- `cleanupExpiredTokens()` - Xóa các token đã expired (cron job)
-- `getUserActiveTokens()` - Lấy danh sách active tokens của user
+- `createRefreshToken()` - Create and save a new refresh token to the database.
+- `validateRefreshToken()` - Check if the token is valid, not expired, and not revoked.
+- `revokeToken()` - Mark a token as revoked (logout).
+- `revokeAllUserTokens()` - Revoke all tokens belonging to a user.
+- `deleteToken()` - Delete a token from the database (token rotation).
+- `cleanupExpiredTokens()` - Delete expired tokens (cron job).
+- `getUserActiveTokens()` - List active tokens for a user.
 
-**Cách hoạt động:**
+**Logic Flow:**
 
 ```typescript
 @Injectable()
@@ -3371,22 +3371,22 @@ export class RefreshTokenService {
 }
 ```
 
-**Database Entity:** `RefreshToken` - Lưu thông tin token, userId, expiresAt, isRevoked
+**Database Entity:** `RefreshToken` - Stores token info, userId, expiresAt, and isRevoked.
 
 ---
 
 ##### `services/token-blacklist.service.ts`
 
-**Mục đích:** Quản lý danh sách các access tokens bị thu hồi (blacklist).
+**Purpose:** Manages the list of revoked access tokens (blacklist).
 
 **Chức năng:**
 
-- `addToBlacklist()` - Thêm token vào blacklist (khi logout)
-- `isBlacklisted()` - Kiểm tra token có trong blacklist không
-- `cleanupExpiredTokens()` - Xóa các token đã expired khỏi blacklist
-- `revokeUserTokens()` - Revoke tất cả tokens của user (future enhancement)
+- `addToBlacklist()` - Add a token to the blacklist (during logout).
+- `isBlacklisted()` - Check if a token is in the blacklist.
+- `cleanupExpiredTokens()` - Delete expired tokens from the blacklist.
+- `revokeUserTokens()` - Revoke all tokens for a user (future enhancement).
 
-**Cách hoạt động:**
+**Logic Flow:**
 
 ```typescript
 @Injectable()
@@ -3398,18 +3398,18 @@ export class TokenBlacklistService {
 
   async isBlacklisted(token: string): Promise<boolean> {
     const found = await this.tokenBlacklistRepository.findOne({ where: { token } });
-    return !!found; // true nếu token bị blacklist
+    return !!found; // true if token is blacklisted
   }
 }
 ```
 
-**Khi nào sử dụng:**
+**When to use:**
 
-- Khi user logout → Blacklist access token hiện tại
-- Khi password reset → Blacklist tất cả access tokens
-- Khi phát hiện security breach → Blacklist tokens của user
+- When a user logs out → Blacklist the current access token.
+- When a password is reset → Blacklist all access tokens.
+- When a security breach is detected → Blacklist tokens for the affected user.
 
-**Database Entity:** `TokenBlacklist` - Lưu token, userId, reason, expiresAt
+**Database Entity:** `TokenBlacklist` - Stores token, userId, reason, and expiresAt.
 
 ---
 
@@ -3417,7 +3417,7 @@ export class TokenBlacklistService {
 
 ##### `decorators/get-user.decorator.ts`
 
-**Mục đích:** Extract user object từ request (sau khi JWT guard validate).
+**Purpose:** Extract the user object from the request (after JWT guard validation).
 
 **Cách sử dụng:**
 
@@ -3425,26 +3425,26 @@ export class TokenBlacklistService {
 @Get('profile')
 @UseGuards(JwtAuthGuard)
 getProfile(@GetUser() user: User) {
-  return user; // User đã được extract từ JWT token
+  return user; // User has been extracted from the JWT token
 }
 ```
 
 **Cách hoạt động:**
 
-- JwtAuthGuard validate token và attach user vào `request.user`
-- Decorator này lấy `request.user` và return về
+- JwtAuthGuard validates the token and attaches the user to `request.user`.
+- This decorator retrieves `request.user` and returns it.
 
 ---
 
 ##### `decorators/public.decorator.ts`
 
-**Mục đích:** Đánh dấu endpoint là public (không cần authentication).
+**Purpose:** Mark an endpoint as public (skips authentication).
 
 **Cách sử dụng:**
 
 ```typescript
 @Post('register')
-@Public() // Bỏ qua JwtAuthGuard
+@Public() // Skip JwtAuthGuard
 async register(@Body() dto: RegisterDto) {
   return await this.authService.register(dto);
 }
@@ -3452,20 +3452,20 @@ async register(@Body() dto: RegisterDto) {
 
 **Cách hoạt động:**
 
-- Set metadata `isPublic = true`
-- JwtAuthGuard check metadata này và skip authentication nếu `isPublic = true`
+- Sets metadata `isPublic = true`.
+- JwtAuthGuard checks this metadata and skips authentication if `isPublic = true`.
 
 ---
 
 ##### `decorators/roles.decorator.ts`
 
-**Mục đích:** Đánh dấu endpoint yêu cầu role cụ thể.
+**Purpose:** Mark an endpoint as requiring a specific role.
 
 **Cách sử dụng:**
 
 ```typescript
 @Delete('users/:id')
-@Roles(UserRole.ADMIN) // Chỉ ADMIN mới được truy cập
+@Roles(UserRole.ADMIN) // Only ADMIN can access
 @UseGuards(JwtAuthGuard, RolesGuard)
 async deleteUser(@Param('id') id: string) {
   // ...
@@ -3474,16 +3474,16 @@ async deleteUser(@Param('id') id: string) {
 
 **Cách hoạt động:**
 
-- Set metadata với roles required
-- RolesGuard check user.role có match với roles required không
+- Sets metadata with required roles.
+- RolesGuard checks if `user.role` matches any of the required roles.
 
 ---
 
 #### 📁 `dto/` - Data Transfer Objects
 
-**Mục đích:** Định nghĩa cấu trúc dữ liệu cho request/response và validation rules.
+**Purpose:** Defines the data structure for request/response and validation rules.
 
-**Các DTOs:**
+**DTO Classes:**
 
 ##### `dto/register.dto.ts`
 
@@ -3525,16 +3525,16 @@ async deleteUser(@Param('id') id: string) {
 - `refreshToken` - JWT refresh token
 - `user` - User object (password excluded)
 
-**Cách hoạt động:**
+**Logic Flow:**
 
-- ValidationPipe tự động validate DTOs dựa trên decorators
-- Nếu validation fail → Trả về 400 Bad Request với error details
+- ValidationPipe automatically validates DTOs based on decorators.
+- If validation fails → Returns 400 Bad Request with error details.
 
 ---
 
 #### 📁 `entities/` - Database Entities
 
-**Mục đích:** Định nghĩa cấu trúc database tables sử dụng TypeORM.
+**Purpose:** Defines the database table structure using TypeORM.
 
 ##### `entities/refresh-token.entity.ts`
 
@@ -3553,7 +3553,7 @@ async deleteUser(@Param('id') id: string) {
 
 **Relationships:**
 
-- `@ManyToOne(() => User)` - Một user có nhiều refresh tokens
+- `@ManyToOne(() => User)` - One user can have multiple refresh tokens.
 
 ---
 
@@ -3572,12 +3572,12 @@ async deleteUser(@Param('id') id: string) {
 
 **Relationships:**
 
-- `@ManyToOne(() => User)` - Một user có nhiều reset tokens
+- `@ManyToOne(() => User)` - One user can have multiple reset tokens.
 
 **Security:**
 
-- Token được hash (SHA-256) trước khi lưu vào database
-- Single-use only (usedAt được set sau khi sử dụng)
+- Token is hashed (SHA-256) before being saved to the database.
+- Single-use only (`usedAt` is set after consumption).
 
 ---
 
@@ -3596,11 +3596,11 @@ async deleteUser(@Param('id') id: string) {
 
 **Relationships:**
 
-- `@ManyToOne(() => User)` - Một user có nhiều blacklisted tokens
+- `@ManyToOne(() => User)` - One user can have multiple blacklisted tokens.
 
 **Cleanup:**
 
-- Cron job xóa tokens đã expired hàng ngày
+- Cron job deletes expired tokens daily.
 
 ---
 
@@ -3608,23 +3608,23 @@ async deleteUser(@Param('id') id: string) {
 
 ##### `guards/jwt-auth.guard.ts`
 
-**Mục đích:** Bảo vệ routes yêu cầu authentication.
+**Purpose:** Protects routes that require authentication.
 
 **Cách hoạt động:**
 
-1. Extract JWT token từ `Authorization: Bearer <token>` header
-2. Verify token signature và expiration
-3. Check token có trong blacklist không
-4. Load user từ database
-5. Attach user vào `request.user`
-6. Allow request nếu tất cả checks pass
-7. Throw `UnauthorizedException` nếu fail
+1. Extract JWT token from the `Authorization: Bearer <token>` header.
+2. Verify token signature and expiration.
+3. Check if the token is in the blacklist.
+4. Load user from the database.
+5. Attach user to `request.user`.
+6. Allow request if all checks pass.
+7. Throw `UnauthorizedException` if any check fails.
 
-**Cách sử dụng:**
+**How to use:**
 
 ```typescript
 @Get('profile')
-@UseGuards(JwtAuthGuard) // Yêu cầu authentication
+@UseGuards(JwtAuthGuard) // Requires authentication
 getProfile(@GetUser() user: User) {
   return user;
 }
@@ -3639,21 +3639,21 @@ getProfile(@GetUser() user: User) {
 
 ##### `guards/roles.guard.ts`
 
-**Mục đích:** Kiểm tra user có đủ quyền (role) để truy cập endpoint.
+**Purpose:** Checks if a user has sufficient permissions (roles) to access an endpoint.
 
 **Cách hoạt động:**
 
-1. Lấy required roles từ `@Roles()` decorator metadata
-2. Lấy user từ `request.user` (sau khi JwtAuthGuard validate)
-3. Check `user.role` có trong required roles không
-4. Allow nếu có quyền, throw `ForbiddenException` nếu không
+1. Get required roles from `@Roles()` decorator metadata.
+2. Get user from `request.user` (after JwtAuthGuard validation).
+3. Check if `user.role` matches any of the required roles.
+4. Allow if authorized, otherwise throw `ForbiddenException`.
 
-**Cách sử dụng:**
+**How to use:**
 
 ```typescript
 @Delete('users/:id')
-@Roles(UserRole.ADMIN) // Yêu cầu ADMIN role
-@UseGuards(JwtAuthGuard, RolesGuard) // Phải có cả 2 guards
+@Roles(UserRole.ADMIN) // Requires ADMIN role
+@UseGuards(JwtAuthGuard, RolesGuard) // Must apply both guards
 async deleteUser(@Param('id') id: string) {
   // ...
 }
@@ -3661,7 +3661,7 @@ async deleteUser(@Param('id') id: string) {
 
 **Dependencies:**
 
-- `JwtAuthGuard` - Phải được apply trước (để có user trong request)
+- `JwtAuthGuard` - Must be applied first (to populate user in the request).
 
 ---
 
@@ -3669,7 +3669,7 @@ async deleteUser(@Param('id') id: string) {
 
 ##### `interfaces/jwt-payload.interface.ts`
 
-**Mục đích:** Định nghĩa cấu trúc JWT payload.
+**Purpose:** Defines the structure of the JWT payload.
 
 **Interface:**
 
@@ -3683,10 +3683,10 @@ export interface JwtPayload {
 }
 ```
 
-**Cách sử dụng:**
+**How to use:**
 
-- Khi generate JWT token → Sign với payload này
-- Khi verify JWT token → Decode về JwtPayload interface
+- When generating a JWT token → Sign with this payload.
+- When verifying a JWT token → Decode it into the `JwtPayload` interface.
 
 ---
 
@@ -3698,12 +3698,12 @@ export interface JwtPayload {
 
 **Cách hoạt động:**
 
-1. Extract token từ `Authorization: Bearer <token>` header
-2. Verify token signature với `JWT_SECRET`
-3. Check token expiration
-4. Check token có trong blacklist không
-5. Load user từ database
-6. Return user object (attached to `request.user`)
+1. Extract token from the `Authorization: Bearer <token>` header.
+2. Verify token signature with `JWT_SECRET`.
+3. Check token expiration.
+4. Check if the token is in the blacklist.
+5. Load user from the database.
+6. Return user object (attached to `request.user`).
 
 **Cấu hình:**
 
@@ -3722,7 +3722,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<User> {
-    // Validate và return user
+    // Validate and return user
   }
 }
 ```
@@ -3741,10 +3741,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
 **Cách hoạt động:**
 
-- Tương tự JwtStrategy nhưng:
-  - Sử dụng `JWT_REFRESH_SECRET` thay vì `JWT_SECRET`
-  - Extract token từ request body (không phải header)
-  - Validate token có trong database (refresh_tokens table)
+- Similar to `JwtStrategy` but:
+  - Uses `JWT_REFRESH_SECRET` instead of `JWT_SECRET`.
+  - Extracts token from the request body (not the header).
+  - Validates if the token exists in the database (`refresh_tokens` table).
 
 **Cấu hình:**
 
@@ -3771,12 +3771,12 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
 
 **Cách hoạt động:**
 
-1. Redirect user đến Google OAuth page
-2. User authorize → Google redirect về callback URL với code
-3. Exchange code lấy access token
-4. Get user profile từ Google API
-5. Create/login user trong database
-6. Generate JWT tokens và return
+1. Redirect user to the Google OAuth page.
+2. User authorizes → Google redirects back for the callback URL with a code.
+3. Exchange the code for an access token.
+4. Get user profile from the Google API.
+5. Create or login user in the database.
+6. Generate JWT tokens and return.
 
 **Dependencies:**
 
@@ -3793,8 +3793,8 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
 
 **Các decorators:**
 
-- `@RegisterResponse()` - Success response cho register endpoint
-- `@LoginResponse()` - Success response cho login endpoint
+- `@RegisterResponse()` - Success response for register endpoint
+- `@LoginResponse()` - Success response for login endpoint
 - `@BadRequestResponse()` - 400 error response
 - `@UnauthorizedResponse()` - 401 error response
 - `@ConflictResponse()` - 409 error response (duplicate email)
@@ -3811,7 +3811,7 @@ async register(@Body() dto: RegisterDto) {
 }
 ```
 
-**Kết quả:** Tự động generate Swagger UI documentation tại `/api`
+**Result:** Automatically generates Swagger UI documentation at `/api`.
 
 ---
 

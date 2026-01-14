@@ -3,21 +3,12 @@ import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-vali
 import { IsStrongPassword } from '../../../common/decorators/is-strong-password.decorator';
 
 /**
- * ================================
- * REGISTER DTO - Đăng ký người dùng mới
- * ================================
+ * Data Transfer Object for user registration.
  *
- * DTO (Data Transfer Object) này dùng để:
- * 1. Validate dữ liệu đầu vào khi user đăng ký
- * 2. Document API với Swagger (@ApiProperty)
- * 3. Transform và sanitize dữ liệu
- *
- * FLOW SỬ DỤNG:
- * Client gửi request → NestJS ValidationPipe → Validate DTO → Pass vào Controller
- *
- * NẾU VALIDATION FAILED:
- * → Tự động throw BadRequestException
- * → Response: 400 Bad Request với array error messages
+ * Used to:
+ * 1. Validate input data for new user accounts.
+ * 2. Document the registration endpoint in Swagger.
+ * 3. Enforce 2026 security standards for passwords and verification.
  *
  * @example
  * POST /auth/register
@@ -26,24 +17,12 @@ import { IsStrongPassword } from '../../../common/decorators/is-strong-password.
  *   "password": "Password@123",
  *   "firstName": "John",
  *   "lastName": "Doe",
- *   "phone": "0987654321"
+ *   "phone": "+1234567890"
  * }
  */
 export class RegisterDto {
   /**
-   * EMAIL - Địa chỉ email của người dùng
-   *
-   * Validators:
-   * - @IsEmail(): Kiểm tra format email hợp lệ (có @ và domain)
-   * - @IsNotEmpty(): Không được để trống
-   *
-   * @ApiProperty: Dùng cho Swagger documentation
-   * - example: Giá trị mẫu hiển thị trong Swagger UI
-   * - description: Mô tả field
-   *
-   * Error messages nếu invalid:
-   * - "Please provide a valid email address" (nếu không đúng format)
-   * - "Email is required" (nếu bỏ trống)
+   * User email address. Must be unique in the system.
    */
   @ApiProperty({
     example: 'user@example.com',
@@ -54,30 +33,8 @@ export class RegisterDto {
   email: string;
 
   /**
-   * PASSWORD - Mật khẩu của người dùng
-   *
-   * Validators:
-   * - @IsStrongPassword(): Custom validator kiểm tra mật khẩu mạnh
-   *   + Phải có ít nhất 1 chữ hoa (A-Z)
-   *   + Phải có ít nhất 1 chữ thường (a-z)
-   *   + Phải có ít nhất 1 số (0-9) hoặc ký tự đặc biệt (@#$%...)
-   * - @MinLength(8): Tối thiểu 8 ký tự
-   * - @IsNotEmpty(): Không được để trống
-   *
-   * LƯU Ý BẢO MẬT:
-   * - Password này sẽ được hash bằng bcrypt trước khi lưu database
-   * - KHÔNG BAO GIỜ lưu plain password vào database
-   * - bcrypt.hash(password, 10) → "$2a$10$..."
-   *
-   * @example Valid passwords:
-   * - "Password@123"
-   * - "MySecure#Pass1"
-   * - "Test1234!@#"
-   *
-   * @example Invalid passwords:
-   * - "password" (không có chữ hoa, số)
-   * - "PASSWORD" (không có chữ thường, số)
-   * - "Pass123" (quá ngắn, < 8 ký tự)
+   * User password. Must meet 2026 security strength requirements.
+   * Will be hashed using bcrypt (12 rounds) before storage.
    */
   @ApiProperty({
     example: 'Password@123',
@@ -91,14 +48,7 @@ export class RegisterDto {
   password: string;
 
   /**
-   * FIRST NAME - Tên của người dùng
-   *
-   * Validators:
-   * - @IsString(): Phải là chuỗi text
-   * - @IsNotEmpty(): Không được để trống
-   *
-   * Lưu vào database dạng plain text
-   * Dùng để hiển thị tên user trong UI
+   * User's first name.
    */
   @ApiProperty({
     example: 'John',
@@ -109,14 +59,7 @@ export class RegisterDto {
   firstName: string;
 
   /**
-   * LAST NAME - Họ của người dùng
-   *
-   * Validators:
-   * - @IsString(): Phải là chuỗi text
-   * - @IsNotEmpty(): Không được để trống
-   *
-   * Kết hợp với firstName để hiển thị tên đầy đủ:
-   * fullName = `${firstName} ${lastName}` → "John Doe"
+   * User's last name.
    */
   @ApiProperty({
     example: 'Doe',
@@ -127,21 +70,7 @@ export class RegisterDto {
   lastName: string;
 
   /**
-   * PHONE - Số điện thoại của người dùng (OPTIONAL)
-   *
-   * Validators:
-   * - @IsString(): Phải là chuỗi text
-   * - @IsOptional(): Field này không bắt buộc
-   *
-   * phone?: string → Dấu ? có nghĩa là optional (có thể undefined)
-   *
-   * Client có thể:
-   * 1. Bỏ qua field này → phone = undefined
-   * 2. Gửi phone = null → phone = null
-   * 3. Gửi phone = "0987654321" → phone = "0987654321"
-   *
-   * LƯU Ý: Không validate format số điện thoại
-   * → Có thể thêm custom validator nếu cần validate format cụ thể
+   * User's phone number. Optional.
    */
   @ApiProperty({
     example: '0987654321',

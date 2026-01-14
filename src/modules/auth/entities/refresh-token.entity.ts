@@ -8,6 +8,7 @@ import { User } from '../../../entities/user.entity';
  */
 @Entity('refresh_tokens')
 @Index(['userId', 'isRevoked'])
+@Index(['tokenFamilyId'])
 export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -15,6 +16,9 @@ export class RefreshToken {
   @Column({ type: 'varchar', length: 500, unique: true })
   @Index()
   token: string;
+
+  @Column({ type: 'uuid', name: 'token_family_id' })
+  tokenFamilyId: string;
 
   @Column({ type: 'uuid', name: 'user_id' })
   @Index()
