@@ -17,13 +17,13 @@ export class User {
   email: string;
 
   @Column({ length: 255 })
-  @Exclude()
+  @Exclude() // CRITICAL: Never expose password in responses
   password: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ name: 'first_name', length: 100 })
   firstName: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ name: 'last_name', length: 100 })
   lastName: string;
 
   @Column({ length: 20, nullable: true })
@@ -36,29 +36,19 @@ export class User {
   })
   role: UserRole;
 
-  @Column({ default: true })
+  @Column({ name: 'is_active', default: true })
   @Index()
   isActive: boolean;
 
-  @Column({ default: false })
+  @Column({ name: 'email_verified', default: false })
   emailVerified: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ name: 'last_login_at', type: 'timestamp', nullable: true })
   lastLoginAt: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
-
-  // Relationships will be added when other entities are created
-  // @OneToMany(() => Cart, cart => cart.user)
-  // carts: Cart[];
-
-  // @OneToMany(() => Order, order => order.user)
-  // orders: Order[];
-
-  // @OneToMany(() => Address, address => address.user)
-  // addresses: Address[];
 }

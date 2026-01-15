@@ -1,26 +1,26 @@
 import { SetMetadata } from '@nestjs/common';
 
 /**
- * Key metadata dùng để nhận diện các route công khai.
- * Key này sẽ được JwtAuthGuard sử dụng để kiểm tra xem có nên bỏ qua bước xác thực hay không.
+ * Key metadata used to identify public routes.
+ * This key will be used by JwtAuthGuard to check if authentication should be skipped.
  */
 export const IS_PUBLIC_KEY = 'isPublic';
 
 /**
  * Public Decorator
  *
- * Decorator này dùng để đánh dấu một route (method) hoặc một Controller (class) là "Công khai".
- * Khi một route được gắn @Public(), JwtAuthGuard sẽ bỏ qua việc kiểm tra JWT token,
- * cho phép bất kỳ ai cũng có thể truy cập mà không cần đăng nhập.
+ * This decorator is used to mark a route (method) or a Controller (class) as "Public".
+ * When a route is marked with @Public(), JwtAuthGuard will skip JWT token validation,
+ * allowing anyone to access it without logging in.
  *
  * @example
- * // Cho phép truy cập endpoint đăng ký mà không cần token
+ * // Allow access to register endpoint without token
  * @Public()
  * @Post('register')
  * register() { ... }
  *
  * @example
- * // Cho phép truy cập endpoint kiểm tra sức khỏe hệ thống
+ * // Allow access to health check endpoint
  * @Public()
  * @Get('health')
  * healthCheck() { ... }

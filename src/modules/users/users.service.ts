@@ -20,7 +20,7 @@
 
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';

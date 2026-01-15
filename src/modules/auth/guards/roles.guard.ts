@@ -6,38 +6,38 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 /**
  * Roles Guard
  *
- * Guard này dùng để kiểm tra xem người dùng đã đăng nhập có đủ quyền (Role)
- * để truy cập vào route này hay không.
- * Thường được dùng kết hợp với decorator @Roles().
+ * This guard is used to check if the logged-in user has enough permissions (Role)
+ * to access this route.
+ * Usually used in combination with the @Roles() decorator.
  *
- * Lưu ý: Guard này phải chạy SAU JwtAuthGuard để có thông tin user trong request.
+ * Note: This guard must run AFTER JwtAuthGuard to have user information in the request.
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   /**
-   * Phương thức kiểm tra quyền truy cập dựa trên Role.
-   * @param context Ngữ cảnh thực thi của request
+   * Method to check access permission based on Role.
+   * @param context Execution context of the request
    */
   canActivate(context: ExecutionContext): boolean {
-    // 1. Lấy danh sách các Roles được yêu cầu từ decorator @Roles()
-    // Nó sẽ kiểm tra ở cấp độ phương thức (handler) trước, sau đó đến cấp độ Controller (class)
+    // 1. Get list of required Roles from @Roles() decorator
+    // It checks at method level (handler) first, then Controller level (class)
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-    // 2. Nếu route không yêu cầu Role cụ thể nào, cho phép truy cập luôn
+    // 2. If route does not require any specific Role, allow access immediately
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
-    // 3. Lấy thông tin user từ request (thông tin này được JwtAuthGuard gán vào sau khi validate token)
+    // 3. Get user info from request (this info is assigned by JwtAuthGuard after token validation)
     const { user } = context.switchToHttp().getRequest();
 
-    // 4. Kiểm tra xem Role của user có nằm trong danh sách các Roles được yêu cầu hay không
-    // Trả về true nếu khớp, ngược lại trả về false (sẽ gây ra lỗi 403 Forbidden)
+    // 4. Check if user's Role is in the list of required Roles
+    // Return true if matched, otherwise return false (will cause 403 Forbidden error)
     return user?.role ? requiredRoles.includes(user.role) : false;
   }
 }

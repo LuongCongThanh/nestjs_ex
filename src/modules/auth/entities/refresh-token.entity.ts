@@ -1,46 +1,30 @@
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../../../entities/user.entity';
 
-/**
- * RefreshToken Entity
- * Stores refresh tokens for session management and revocation
- * Implements token rotation and device tracking
- */
 @Entity('refresh_tokens')
-@Index(['userId', 'isRevoked'])
-@Index(['tokenFamilyId'])
 export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 500, unique: true })
-  @Index()
-  token: string;
+  @Column({ unique: true, length: 500 })
+  token: string; // Hashed refresh token
 
-  @Column({ type: 'uuid', name: 'token_family_id' })
-  tokenFamilyId: string;
-
-  @Column({ type: 'uuid', name: 'user_id' })
-  @Index()
+  @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, name: 'device_info' })
-  deviceInfo: string; // User-Agent for tracking
-
-  @Column({ type: 'varchar', length: 45, nullable: true, name: 'ip_address' })
-  ipAddress: string; // IPv4/IPv6 support
-
-  @Column({ type: 'boolean', default: false, name: 'is_revoked' })
-  isRevoked: boolean;
-
-  @Column({ type: 'timestamp', name: 'expires_at' })
-  @Index()
+  @Column({ name: 'expires_at' })
   expiresAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @Column({ name: 'user_agent', nullable: true, length: 255 })
+  userAgent: string;
+
+  @Column({ name: 'ip_address', nullable: true, length: 45 })
+  ipAddress: string;
 }

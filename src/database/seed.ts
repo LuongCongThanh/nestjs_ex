@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { Category } from 'src/entities/category.entity';
 import { Product } from 'src/entities/product.entity';
 import { User, UserRole } from 'src/entities/user.entity';

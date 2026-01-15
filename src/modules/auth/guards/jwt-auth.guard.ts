@@ -6,9 +6,9 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 /**
  * JWT Authentication Guard
  *
- * Guard này có nhiệm vụ bảo vệ các route yêu cầu xác thực bằng JWT Token.
- * Nó kiểm tra mã token trong header 'Authorization: Bearer <token>'.
- * Ngoài ra, nó cũng hỗ trợ bỏ qua xác thực nếu route được đánh dấu là @Public().
+ * This guard is responsible for protecting routes that require JWT Token authentication.
+ * It checks the token in the 'Authorization: Bearer <token>' header.
+ * Additionally, it also supports skipping authentication if the route is marked as @Public().
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -17,24 +17,24 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   /**
-   * Phương thức quyết định request có được phép đi tiếp hay không.
-   * @param context Ngữ cảnh thực thi của request
+   * Method to decide if the request allows to proceed.
+   * @param context Execution context of the request
    */
   canActivate(context: ExecutionContext) {
-    // 1. Kiểm tra xem Controller hoặc Handler (method) có gắn decorator @Public() không
-    // reflector.getAllAndOverride sẽ tìm kiếm key IS_PUBLIC_KEY trong meta-data
+    // 1. Check if Controller or Handler (method) has @Public() decorator
+    // reflector.getAllAndOverride will search for IS_PUBLIC_KEY in meta-data
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(), // Kiểm tra ở cấp độ method
-      context.getClass(), // Kiểm tra ở cấp độ class (Controller)
+      context.getHandler(), // Check at method level
+      context.getClass(), // Check at class level (Controller)
     ]);
 
-    // 2. Nếu route là công khai (isPublic = true), cho phép truy cập mà không cần check token
+    // 2. If route is public (isPublic = true), allow access without token check
     if (isPublic) {
       return true;
     }
 
-    // 3. Nếu không phải route công khai, gọi logic xác thực JWT mặc định của Passport
-    // logic này sẽ sử dụng JwtStrategy đã cấu hình để validate token
+    // 3. If not public route, call default Passport JWT authentication logic
+    // This logic will use configured JwtStrategy to validate token
     return super.canActivate(context);
   }
 }
