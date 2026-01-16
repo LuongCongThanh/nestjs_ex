@@ -10,6 +10,7 @@ import { getTypeOrmConfig } from './config/typeorm.config';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { UsersModule } from './modules/users/users.module';
     // Feature Modules
     UsersModule,
     AuthModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [

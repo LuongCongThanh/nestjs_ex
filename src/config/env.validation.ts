@@ -20,7 +20,7 @@ export const validationSchema = Joi.object({
   }),
   JWT_EXPIRATION: Joi.string()
     .pattern(/^\d+[smhd]$/)
-    .default('7d')
+    .default('15m')
     .messages({
       'string.pattern.base': 'JWT_EXPIRATION must be in format: 1d, 7d, 24h, 60m, etc.',
     }),
@@ -46,4 +46,24 @@ export const validationSchema = Joi.object({
   // Pagination
   DEFAULT_PAGE_SIZE: Joi.number().default(10),
   MAX_PAGE_SIZE: Joi.number().default(100),
+
+  // Frontend
+  FRONTEND_URL: Joi.string().uri().default('http://localhost:3000'),
+  BACKEND_URL: Joi.string().uri().default('http://localhost:3000'),
+
+  // Stateless Token Secrets
+  JWT_VERIFICATION_SECRET: Joi.string().required(),
+  JWT_RESET_SECRET: Joi.string().required(),
+
+  // Email / Resend
+  RESEND_API_KEY: Joi.string().required(),
+  MAIL_FROM: Joi.string().required(),
+  // Legacy SMTP (optional fallback, not used by Resend)
+  MAIL_HOST: Joi.string().optional(),
+  MAIL_PORT: Joi.number().optional(),
+  MAIL_USER: Joi.string().optional(),
+  MAIL_PASSWORD: Joi.string().optional(),
+  MAIL_SECURE: Joi.boolean().optional(),
+  BREVO_API_KEY: Joi.string().optional(),
+  SENDGRID_API_KEY: Joi.string().optional(),
 });
