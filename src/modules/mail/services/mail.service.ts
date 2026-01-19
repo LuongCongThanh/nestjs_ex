@@ -1,28 +1,61 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
+  private transporter: nodemailer.Transporter;
   private readonly sender: string;
-  private readonly resend: Resend;
+  private isTestAccount = false;
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    if (!apiKey) {
-      throw new Error('Missing RESEND_API_KEY for sending emails');
-    }
-    this.resend = new Resend(apiKey);
+    this.sender = this.configService.get<string>('MAIL_FROM') || 'noreply@example.com';
+  }
 
-    const sender = this.configService.get<string>('MAIL_FROM');
-    if (!sender) {
-      throw new Error('MAIL_FROM is required for sending emails');
+  private async getTransporter(): Promise<nodemailer.Transporter> {
+    if (this.transporter) return this.transporter;
+
+    const user = this.configService.get<string>('MAIL_USER');
+    const pass = this.configService.get<string>('MAIL_PASSWORD');
+
+    if (!user || user === 'your_mailtrap_username' || !pass || pass === 'your_mailtrap_password') {
+      this.logger.warn('SMTP credentials are not configured or still using placeholders. Creating a test account...');
+      try {
+        const testAccount = await nodemailer.createTestAccount();
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: {
+            user: testAccount.user,
+            pass: testAccount.pass,
+          },
+        });
+        this.isTestAccount = true;
+        this.logger.log(`Created auto-test account: ${testAccount.user}`);
+      } catch (error) {
+        this.logger.error('Failed to create test account:', error);
+        throw error;
+      }
+    } else {
+      const host = this.configService.get<string>('MAIL_HOST');
+      const port = this.configService.get<number>('MAIL_PORT');
+      const secure = this.configService.get<boolean>('MAIL_SECURE', false);
+
+      this.transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        auth: { user, pass },
+      });
     }
-    this.sender = sender;
+
+    return this.transporter;
   }
 
   async sendVerificationEmail(email: string, firstName: string, token: string) {
+    const transporter = await this.getTransporter();
     const verifyUrl = this.buildVerifyUrl(token);
     const html = `
       <h1>Welcome ${firstName}!</h1>
@@ -32,13 +65,17 @@ export class MailService {
     `;
 
     try {
-      await this.resend.emails.send({
-        from: this.sender,
+      const info = await transporter.sendMail({
+        from: this.isTestAccount ? '"Ethereal Test" <noreply@ethereal.email>' : this.sender,
         to: email,
         subject: 'Verify your email',
         html,
       });
-      this.logger.log(`Verification email sent to ${email}`);
+
+      this.logger.log(`Verification email sent to ${email}. MessageId: ${info.messageId}`);
+      if (this.isTestAccount) {
+        this.logger.log(`PREVIEW URL: ${nodemailer.getTestMessageUrl(info)}`);
+      }
     } catch (error) {
       this.logger.error(
         `Failed to send verification email to ${email}: ${error?.message || error}`,
@@ -49,6 +86,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(email: string, firstName: string, token: string) {
+    const transporter = await this.getTransporter();
     const frontendUrl = this.configService.get('FRONTEND_URL');
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
     const html = `
@@ -61,13 +99,17 @@ export class MailService {
     `;
 
     try {
-      await this.resend.emails.send({
-        from: this.sender,
+      const info = await transporter.sendMail({
+        from: this.isTestAccount ? '"Ethereal Test" <noreply@ethereal.email>' : this.sender,
         to: email,
         subject: 'Reset your password',
         html,
       });
-      this.logger.log(`Password reset email sent to ${email}`);
+
+      this.logger.log(`Password reset email sent to ${email}. MessageId: ${info.messageId}`);
+      if (this.isTestAccount) {
+        this.logger.log(`PREVIEW URL: ${nodemailer.getTestMessageUrl(info)}`);
+      }
     } catch (error) {
       this.logger.error(
         `Failed to send password reset email to ${email}: ${error?.message || error}`,
@@ -78,10 +120,7 @@ export class MailService {
   }
 
   private buildVerifyUrl(token: string): string {
-    const baseUrl =
-      this.configService.get('BACKEND_URL') ||
-      this.configService.get('FRONTEND_URL') ||
-      '';
+    const baseUrl = this.configService.get('BACKEND_URL') || `http://localhost:${this.configService.get('PORT', 3000)}`;
     const apiPrefix = (this.configService.get('API_PREFIX') || 'api/v1').replace(/^\/+|\/+$/g, '');
     const normalizedBase = baseUrl.replace(/\/+$/, '');
     const path = 'auth/verify-email';

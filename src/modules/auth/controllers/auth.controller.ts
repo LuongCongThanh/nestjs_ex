@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Query,
-  UseGuards,
-  Req,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from '../services/auth.service';
@@ -61,7 +51,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Login to system' })
   @ApiResponse({ status: 200, description: 'Returns accessToken & refreshToken' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @ApiResponse({ status: 403, description: 'Email chưa được xác thực' })
+  @ApiResponse({ status: 403, description: 'Email not verified' })
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const userAgent = req.headers['user-agent'] || '';
     const ipAddress = req.ip || req.connection.remoteAddress || '';
@@ -72,12 +62,12 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Làm mới Access Token' })
+  @ApiOperation({ summary: 'Refresh Access Token' })
   @ApiResponse({ status: 200, description: 'Token refresh successful' })
   @ApiResponse({ status: 401, description: 'Invalid or expired Refresh Token' })
   async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
     const userAgent = req.headers['user-agent'] || '';
-    const ipAddress = req.ip || req.connection.remoteAddress || '';
+    const ipAddress = req.ip || req.connection?.remoteAddress || '';
     const cleanIp = Array.isArray(ipAddress) ? ipAddress[0] : ipAddress;
     return this.authService.refresh(dto, userAgent, cleanIp);
   }

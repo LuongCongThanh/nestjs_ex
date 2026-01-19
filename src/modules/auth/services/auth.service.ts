@@ -1,19 +1,21 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { User, UserRole } from '../../../entities/user.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { PasswordResetToken } from '../entities/password-reset-token.entity';
 import { TokenService } from './token.service';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
@@ -72,10 +74,10 @@ export class AuthService {
       throw new ServiceUnavailableException('Unable to send verification email. Please try again later.');
     }
 
-    return { 
-      success: true, 
-      statusCode: 201, 
-      message: 'Registration successful. Please check your email for verification.' 
+    return {
+      success: true,
+      statusCode: 201,
+      message: 'Registration successful. Please check your email for verification.',
     };
   }
 
@@ -140,8 +142,8 @@ export class AuthService {
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) throw new UnauthorizedException('Invalid email or password');
 
-    if (!user.isActive) throw new UnauthorizedException('Account is disabled');
-    if (!user.emailVerified) throw new UnauthorizedException('Email not verified');
+    if (!user.isActive) throw new ForbiddenException('Account is disabled');
+    if (!user.emailVerified) throw new ForbiddenException('Email not verified');
 
     return this.generateAuthResponse(user, userAgent, ipAddress, {
       updateLastLogin: true,
@@ -151,10 +153,10 @@ export class AuthService {
 
   async refresh(dto: RefreshTokenDto, userAgent: string, ipAddress: string) {
     // Verify signature & expiry first
-    let payload: any;
+    let payload: JwtPayload;
     try {
       payload = this.tokenService.verifyRefreshToken(dto.refreshToken);
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -196,10 +198,7 @@ export class AuthService {
     const user = await this.userRepository.findOne({ where: { email: dto.email } });
     if (!user) return { success: true, message: 'Check your email to reset password' };
 
-    const resetToken = this.tokenService.generateStatelessToken(
-      { sub: user.id, type: 'reset_password' },
-      'reset',
-    );
+    const resetToken = this.tokenService.generateStatelessToken({ sub: user.id, type: 'reset_password' }, 'reset');
 
     // Persist hashed token for single-use enforcement
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // matches token TTL
@@ -228,10 +227,10 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    let payload: any;
+    let payload: JwtPayload;
     try {
       payload = this.tokenService.verifyStatelessToken(dto.token, 'reset');
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Invalid or expired password reset link.');
     }
 
@@ -259,7 +258,7 @@ export class AuthService {
     await this.refreshTokenRepository.delete({ userId: user.id });
     // Mark this reset token as used and clean up any others for safety
     await this.passwordResetTokenRepository.update(resetTokenRecord.id, { usedAt: new Date() });
-    await this.passwordResetTokenRepository.delete({ userId: user.id, usedAt: null });
+    await this.passwordResetTokenRepository.delete({ userId: user.id, usedAt: IsNull() });
 
     return { success: true, message: 'Password updated successfully!' };
   }
@@ -291,7 +290,9 @@ export class AuthService {
     const accessToken = this.tokenService.generateAccessToken(payload);
     const refreshTokenDetails = this.tokenService.generateRefreshToken(payload);
     const refreshPayload = this.tokenService.verifyRefreshToken(refreshTokenDetails);
-    const expiresAt = refreshPayload?.exp ? new Date(refreshPayload.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = refreshPayload?.exp
+      ? new Date(refreshPayload.exp * 1000)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const hashedRefreshToken = this.hashToken(refreshTokenDetails);
 
     // Optional: revoke same-device tokens to avoid piling up duplicates
@@ -329,7 +330,8 @@ export class AuthService {
     }
 
     // Exclude password
-    const { password, ...userWithoutPassword } = user;
+    const userWithoutPassword = { ...user };
+    delete (userWithoutPassword as Partial<User>).password;
 
     return {
       success: true,

@@ -55,15 +55,12 @@ export const validationSchema = Joi.object({
   JWT_VERIFICATION_SECRET: Joi.string().required(),
   JWT_RESET_SECRET: Joi.string().required(),
 
-  // Email / Resend
-  RESEND_API_KEY: Joi.string().required(),
+  // Email
   MAIL_FROM: Joi.string().required(),
-  // Legacy SMTP (optional fallback, not used by Resend)
+  // SMTP Configuration (Mailtrap/etc)
   MAIL_HOST: Joi.string().optional(),
   MAIL_PORT: Joi.number().optional(),
   MAIL_USER: Joi.string().optional(),
   MAIL_PASSWORD: Joi.string().optional(),
   MAIL_SECURE: Joi.boolean().optional(),
-  BREVO_API_KEY: Joi.string().optional(),
-  SENDGRID_API_KEY: Joi.string().optional(),
 });

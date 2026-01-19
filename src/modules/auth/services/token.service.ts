@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 @Injectable()
 export class TokenService {
@@ -10,48 +11,52 @@ export class TokenService {
     private configService: ConfigService,
   ) {}
 
-  generateAccessToken(payload: any): string {
+  generateAccessToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: this.configService.get('JWT_EXPIRATION') || '15m',
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: (this.configService.get<string>('JWT_EXPIRATION') || '15m') as any,
       jwtid: this.generateJti(),
     });
   }
 
-  generateRefreshToken(payload: any): string {
+  generateRefreshToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION') || '30d',
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: (this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '30d') as any,
       jwtid: this.generateJti(),
     });
   }
 
-  generateStatelessToken(payload: any, type: 'verify' | 'reset'): string {
-    const secret = type === 'verify' 
-      ? this.configService.get('JWT_VERIFICATION_SECRET')
-      : this.configService.get('JWT_RESET_SECRET');
-    
+  generateStatelessToken(payload: Partial<JwtPayload>, type: 'verify' | 'reset'): string {
+    const secret =
+      type === 'verify'
+        ? this.configService.get<string>('JWT_VERIFICATION_SECRET')
+        : this.configService.get<string>('JWT_RESET_SECRET');
+
     const expiresIn = type === 'verify' ? '1d' : '15m';
 
     return this.jwtService.sign(payload, { secret, expiresIn, jwtid: this.generateJti() });
   }
 
-  verifyStatelessToken(token: string, type: 'verify' | 'reset'): any {
-    const secret = type === 'verify' 
-      ? this.configService.get('JWT_VERIFICATION_SECRET')
-      : this.configService.get('JWT_RESET_SECRET');
-      
+  verifyStatelessToken(token: string, type: 'verify' | 'reset'): JwtPayload {
+    const secret =
+      type === 'verify'
+        ? this.configService.get<string>('JWT_VERIFICATION_SECRET')
+        : this.configService.get<string>('JWT_RESET_SECRET');
+
     try {
-      return this.jwtService.verify(token, { secret });
-    } catch (e) {
+      return this.jwtService.verify<JwtPayload>(token, { secret });
+    } catch {
       throw new Error('Invalid token');
     }
   }
 
-  verifyRefreshToken(token: string): any {
+  verifyRefreshToken(token: string): JwtPayload {
     try {
-      return this.jwtService.verify(token, { secret: this.configService.get('JWT_REFRESH_SECRET') });
-    } catch (e) {
+      return this.jwtService.verify<JwtPayload>(token, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
+    } catch {
       throw new Error('Invalid refresh token');
     }
   }

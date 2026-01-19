@@ -17,7 +17,9 @@ async function bootstrap() {
   app.use(helmet());
 
   // Global prefix
-  app.setGlobalPrefix(configService.get('API_PREFIX') || 'api/v1');
+  app.setGlobalPrefix(configService.get('API_PREFIX') || 'api/v1', {
+    exclude: ['health', ''],
+  });
 
   // Global Validation Pipe
   app.useGlobalPipes(

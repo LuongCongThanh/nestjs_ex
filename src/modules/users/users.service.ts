@@ -150,25 +150,10 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(`User with ID "${id}" not found`);
     }
 
     return user;
-  }
-
-  /**
-   * Tìm user theo email (dùng cho authentication)
-   *
-   * Note: Method này KHÔNG throw exception nếu không tìm thấy
-   * Trả về null để AuthService có thể handle
-   *
-   * @param email - User email
-   * @returns User object hoặc null
-   */
-  async findByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findOne({
-      where: { email },
-    });
   }
 
   /**
@@ -194,74 +179,14 @@ export class UsersService {
   /**
    * Xóa user (soft delete)
    *
-   * Soft delete: Chỉ set isActive = false, không xóa data
-   * User vẫn tồn tại trong database nhưng:
-   * - Không thể login
-   * - Không hiện trong danh sách (GET /users filter isActive=true)
-   * - Có thể restore nếu cần
+   * Sử dụng TypeORM's softRemove để đánh dấu user là đã xóa.
+   * User vẫn tồn tại trong database nhưng sẽ có trường `deletedAt` được set.
    *
    * @param id - User UUID
    * @throws NotFoundException - Nếu user không tồn tại
    */
-  async remove(id: string): Promise<void> {
+  async softDelete(id: string): Promise<void> {
     const user = await this.findOne(id);
-
-    // Soft delete: chỉ set isActive = false
-    user.isActive = false;
-    await this.userRepository.save(user);
-  }
-
-  /**
-   * Đánh dấu email đã được verified
-   *
-   * Dùng sau khi user click vào link verification trong email
-   *
-   * @param id - User UUID
-   * @returns User object đã update
-   * @throws NotFoundException - Nếu user không tồn tại
-   */
-  async verifyEmail(id: string): Promise<User> {
-    const user = await this.findOne(id);
-    user.emailVerified = true;
-    return await this.userRepository.save(user);
-  }
-
-  /**
-   * Đổi password
-   *
-   * Steps:
-   * 1. Verify old password có đúng không
-   * 2. Hash new password
-   * 3. Save vào database
-   *
-   * Note: Query với select: ['id', 'password'] để lấy password field
-   * (mặc định password không được select do @Select(false) trong entity)
-   *
-   * @param id - User UUID
-   * @param oldPassword - Password hiện tại (để verify)
-   * @param newPassword - Password mới (sẽ được hash)
-   * @throws NotFoundException - Nếu user không tồn tại
-   * @throws BadRequestException - Nếu old password sai
-   */
-  async changePassword(id: string, oldPassword: string, newPassword: string): Promise<void> {
-    // Query với select password field (mặc định không được select)
-    const user = await this.userRepository.findOne({
-      where: { id },
-      select: ['id', 'password'], // Explicitly select password field
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Verify old password bằng bcrypt.compare()
-    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isPasswordValid) {
-      throw new BadRequestException('Old password is incorrect');
-    }
-
-    // Hash and save new password
-    user.password = await bcrypt.hash(newPassword, 10);
-    await this.userRepository.save(user);
+    await this.userRepository.softRemove(user);
   }
 }

@@ -21,8 +21,8 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { 
-          expiresIn: (configService.get<string>('JWT_EXPIRATION') || '15m') as any 
+        signOptions: {
+          expiresIn: (configService.get<string>('JWT_EXPIRATION') || '15m') as any,
         },
       }),
     }),

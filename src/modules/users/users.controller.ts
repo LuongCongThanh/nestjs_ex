@@ -183,7 +183,7 @@ export class UsersController {
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 404, type: NotFoundErrorResponseDto })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
-    await this.usersService.remove(id);
+    await this.usersService.softDelete(id);
     return { message: 'User deleted successfully', id };
   }
 }
