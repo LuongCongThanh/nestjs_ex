@@ -1,6 +1,11 @@
 import { ApiResponse } from '@nestjs/swagger';
 
 /**
+ * Standard Success Response Schema
+ */
+// SuccessSchema was unused, removing.
+
+/**
  * Response for successful user registration.
  */
 export const RegisterResponse = ApiResponse({
@@ -10,11 +15,7 @@ export const RegisterResponse = ApiResponse({
     example: {
       statusCode: 201,
       success: true,
-      message: 'Registration successful! Please check your email to verify your account before logging in.',
-      data: {
-        email: 'user@example.com',
-        emailSent: true,
-      },
+      message: 'Registration successful. Please check your email for verification.',
     },
   },
 });
@@ -31,19 +32,19 @@ export const LoginResponse = ApiResponse({
       success: true,
       message: 'User logged in successfully',
       data: {
-        access_token:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1dWlkIiwiZW1haWwiOiJ1c2VyQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3MDUwMDAwMDAsImV4cCI6MTcwNTYwNDgwMH0.example',
+        accessToken: 'eyJhbGciOiJIUzI1Ni... (short-lived)',
+        refreshToken: '7c8d9e... (long-lived / hashed in DB)',
         user: {
-          id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          id: 'uuid-v4-string',
           email: 'user@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          phone: '+1234567890',
-          role: 'user',
+          firstName: 'Thanh',
+          lastName: 'Luong',
+          role: 'USER',
           isActive: true,
           emailVerified: true,
-          createdAt: '2026-01-12T00:00:00.000Z',
-          updatedAt: '2026-01-12T00:00:00.000Z',
+          lastLoginAt: '2024-01-19T10:00:00.000Z',
+          createdAt: '2024-01-19T09:00:00.000Z',
+          updatedAt: '2024-01-19T10:00:00.000Z',
         },
       },
     },
@@ -51,45 +52,7 @@ export const LoginResponse = ApiResponse({
 });
 
 /**
- * Response for successful user logout.
- */
-export const LogoutResponse = ApiResponse({
-  status: 200,
-  description: 'User logged out successfully',
-  schema: {
-    example: {
-      statusCode: 200,
-      success: true,
-      message: 'User logged out successfully',
-    },
-  },
-});
-
-/**
- * Response for retrieving the current authenticated user's profile.
- */
-export const GetCurrentUserResponse = ApiResponse({
-  status: 200,
-  description: 'Current user retrieved successfully',
-  schema: {
-    example: {
-      statusCode: 200,
-      success: true,
-      message: 'Current user retrieved successfully',
-      data: {
-        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        email: 'user@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        phone: '+1234567890',
-        role: 'user',
-      },
-    },
-  },
-});
-
-/**
- * Response for successful token refresh operation.
+ * Response for successful token refresh.
  */
 export const RefreshTokensResponse = ApiResponse({
   status: 200,
@@ -100,59 +63,9 @@ export const RefreshTokensResponse = ApiResponse({
       success: true,
       message: 'Tokens refreshed successfully',
       data: {
-        access_token: 'new.access.token',
-        refresh_token: 'new.refresh.token',
-      },
-    },
-  },
-});
-
-/**
- * Response when a password reset email has been successfully initiated.
- */
-export const ForgotPasswordResponse = ApiResponse({
-  status: 200,
-  description: 'Password reset email sent successfully',
-  schema: {
-    example: {
-      statusCode: 200,
-      success: true,
-      message: 'Password reset email sent successfully',
-      data: {
-        email: 'user@example.com',
-      },
-    },
-  },
-});
-
-/**
- * Response for a successful password reset operation.
- */
-export const ResetPasswordResponse = ApiResponse({
-  status: 200,
-  description: 'Password reset successfully',
-  schema: {
-    example: {
-      statusCode: 200,
-      success: true,
-      message: 'Password reset successfully',
-    },
-  },
-});
-
-/**
- * Response for a successful password change operation.
- */
-export const ChangePasswordResponse = ApiResponse({
-  status: 200,
-  description: 'Password changed successfully',
-  schema: {
-    example: {
-      statusCode: 200,
-      success: true,
-      message: 'Password changed successfully',
-      data: {
-        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new.access.token',
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+        user: { id: 'uuid', email: '...', role: 'USER' },
       },
     },
   },
@@ -168,16 +81,13 @@ export const VerifyEmailResponse = ApiResponse({
     example: {
       statusCode: 200,
       success: true,
-      message: 'Email verified successfully',
-      data: {
-        emailVerified: true,
-      },
+      message: 'Email verified successfully!',
     },
   },
 });
 
 /**
- * Response when an email verification link is successfully resent.
+ * Response for successful resend verification link.
  */
 export const ResendVerificationResponse = ApiResponse({
   status: 200,
@@ -186,110 +96,136 @@ export const ResendVerificationResponse = ApiResponse({
     example: {
       statusCode: 200,
       success: true,
-      message: 'Verification link resent successfully. Please check your email.',
-      data: {
-        email: 'user@example.com',
-      },
+      message: 'Verification email sent.',
     },
   },
 });
 
 /**
- * Response for successful verification operation.
+ * Response for forgot password request.
  */
-export const VerificationResponse = ApiResponse({
+export const ForgotPasswordResponse = ApiResponse({
   status: 200,
-  description: 'Verification successful',
+  description: 'Password reset email sent successfully (if user exists)',
   schema: {
     example: {
       statusCode: 200,
       success: true,
-      message: 'Email verified successfully',
-      data: {
-        verified: true,
-      },
+      message: 'Check your email to reset password',
     },
   },
 });
 
 /**
- * Error response for unauthorized requests (invalid credentials or token).
+ * Response for successful password reset.
+ */
+export const ResetPasswordResponse = ApiResponse({
+  status: 200,
+  description: 'Password reset successfully',
+  schema: {
+    example: {
+      statusCode: 200,
+      success: true,
+      message: 'Password updated successfully!',
+    },
+  },
+});
+
+/**
+ * Response for successful password change (Authenticated).
+ */
+export const ChangePasswordResponse = ApiResponse({
+  status: 200,
+  description: 'Password changed successfully',
+  schema: {
+    example: {
+      statusCode: 200,
+      success: true,
+      message: 'Password changed successfully',
+    },
+  },
+});
+
+/**
+ * Response for successful logout.
+ */
+export const LogoutResponse = ApiResponse({
+  status: 200,
+  description: 'Logout successful',
+  schema: {
+    example: {
+      statusCode: 200,
+      success: true,
+      message: 'Logout successful',
+    },
+  },
+});
+
+/**
+ * Error: Unauthorized (401)
  */
 export const UnauthorizedResponse = ApiResponse({
   status: 401,
-  description: 'Unauthorized - Invalid credentials or expired token',
+  description: 'Unauthorized - Invalid credentials or token',
   schema: {
     example: {
       statusCode: 401,
-      success: false,
+      timestamp: '2024-01-19T10:00:00.000Z',
+      path: '/api/v1/auth/login',
+      method: 'POST',
       message: 'Invalid email or password',
-      errorCode: 'AUTH_INVALID_CREDENTIALS',
-      timestamp: '2026-01-14T10:00:00.000Z',
-      path: '/auth/login',
     },
   },
 });
 
 /**
- * Error response for conflicts, such as when an email already exists in the system.
- */
-export const ConflictResponse = ApiResponse({
-  status: 409,
-  description: 'Conflict - Resource already exists (e.g., email)',
-  schema: {
-    example: {
-      statusCode: 409,
-      success: false,
-      message: 'User with this email already exists',
-      errorCode: 'AUTH_EMAIL_EXISTS',
-      timestamp: '2026-01-14T10:00:00.000Z',
-      path: '/auth/register',
-    },
-  },
-});
-
-/**
- * Error response for bad requests, typically due to validation failures.
- */
-export const BadRequestResponse = ApiResponse({
-  status: 400,
-  description: 'Bad Request - Validation failed or invalid input',
-  schema: {
-    example: {
-      statusCode: 400,
-      success: false,
-      message: 'Validation failed',
-      errorCode: 'VALIDATION_ERROR',
-      errors: [
-        {
-          field: 'email',
-          message: 'Please provide a valid email address',
-        },
-        {
-          field: 'password',
-          message: 'Password must be at least 8 characters long',
-        },
-      ],
-      timestamp: '2026-01-14T10:00:00.000Z',
-      path: '/auth/register',
-    },
-  },
-});
-
-/**
- * Error response for forbidden requests (e.g., email not verified or account disabled).
+ * Error: Forbidden (403)
  */
 export const ForbiddenResponse = ApiResponse({
   status: 403,
-  description: 'Forbidden - Account inactive or email not verified',
+  description: 'Forbidden - Unverified email or disabled account',
   schema: {
     example: {
       statusCode: 403,
-      success: false,
-      message: 'Email not verified. Please check your inbox.',
-      errorCode: 'AUTH_EMAIL_NOT_VERIFIED',
-      timestamp: '2026-01-14T10:00:00.000Z',
-      path: '/auth/login',
+      timestamp: '2024-01-19T10:00:00.000Z',
+      path: '/api/v1/auth/login',
+      method: 'POST',
+      message: 'Email not verified',
+    },
+  },
+});
+
+/**
+ * Error: Conflict (409)
+ */
+export const ConflictResponse = ApiResponse({
+  status: 409,
+  description: 'Conflict - Email already exists',
+  schema: {
+    example: {
+      statusCode: 409,
+      timestamp: '2024-01-19T10:00:00.000Z',
+      path: '/api/v1/auth/register',
+      method: 'POST',
+      message: 'Email already exists',
+    },
+  },
+});
+
+/**
+ * Error: Bad Request / Validation (400)
+ */
+export const BadRequestResponse = ApiResponse({
+  status: 400,
+  description: 'Bad Request - Validation failed',
+  schema: {
+    example: {
+      statusCode: 400,
+      timestamp: '2024-01-19T10:00:00.000Z',
+      path: '/api/v1/auth/register',
+      method: 'POST',
+      message: 'Bad Request Exception',
+      errors: ['email must be an email', 'password must be longer than or equal to 8 characters'],
     },
   },
 });

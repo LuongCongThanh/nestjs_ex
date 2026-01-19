@@ -12,6 +12,10 @@ import { User } from '../../entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 
+import { PasswordService } from './services/password.service';
+import { SessionService } from './services/session.service';
+import { AuthUserService } from './services/auth-user.service';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, RefreshToken, PasswordResetToken]),
@@ -19,16 +23,17 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           expiresIn: (configService.get<string>('JWT_EXPIRATION') || '15m') as any,
         },
       }),
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, TokenService, JwtStrategy],
+  providers: [AuthService, TokenService, PasswordService, SessionService, AuthUserService, JwtStrategy],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

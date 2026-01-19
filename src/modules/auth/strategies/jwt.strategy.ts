@@ -5,7 +5,12 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../../entities/user.entity';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
+/**
+ * JWT Strategy - Passport strategy for validating Bearer tokens.
+ * Extracts the JWT from the Authorization header and validates the user existence/status.
+ */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
@@ -20,7 +25,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any): Promise<User> {
+  /**
+   * Validates the JWT payload and attaches the user to the request object.
+   * Performs basic account status checks.
+   */
+  async validate(payload: JwtPayload): Promise<User> {
     const { sub } = payload;
     const user = await this.userRepository.findOne({
       where: { id: sub },
@@ -34,9 +43,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user.isActive) {
       throw new UnauthorizedException('Account has been disabled');
     }
-
-    // Optional: enforce email verification for all protected routes
-    // if (!user.emailVerified) throw new UnauthorizedException('Email not verified');
 
     return user;
   }

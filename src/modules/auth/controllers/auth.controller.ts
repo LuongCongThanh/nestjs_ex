@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, Query, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../dto/register.dto';
@@ -11,101 +11,143 @@ import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { Request } from 'express';
+import * as AuthResponses from '../docs/auth.responses';
 
+/**
+ * Auth Controller - Entry point for authentication and session management.
+ * Provides endpoints for registration, login, token refresh, and password recovery.
+ * Implements rate limiting (throttling) on sensitive actions.
+ */
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+   * Endpoint for new user registration.
+   * Triggers an email verification flow.
+   */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 req/hour
   @ApiOperation({ summary: 'Register new account' })
-  @ApiResponse({ status: 201, description: 'Registration successful' })
-  @ApiResponse({ status: 409, description: 'Email already exists' })
+  @AuthResponses.RegisterResponse
+  @AuthResponses.ConflictResponse
+  @AuthResponses.BadRequestResponse
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
+  /**
+   * Endpoint for verifying email via a link token.
+   */
   @Get('verify-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify email (Link from email)' })
-  @ApiResponse({ status: 200, description: 'Verification successful' })
-  @ApiResponse({ status: 400, description: 'Invalid verification token' })
+  @AuthResponses.VerifyEmailResponse
+  @AuthResponses.BadRequestResponse
   async verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
   }
 
+  /**
+   * Endpoint to resend verification email for a user.
+   */
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 req/hour
   @ApiOperation({ summary: 'Resend email verification link' })
-  @ApiResponse({ status: 200, description: 'Verification email resent if needed' })
+  @AuthResponses.ResendVerificationResponse
   async resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerification(dto);
   }
 
+  /**
+   * Endpoint for user login. Returns access and refresh tokens.
+   */
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 req/5min
   @ApiOperation({ summary: 'Login to system' })
-  @ApiResponse({ status: 200, description: 'Returns accessToken & refreshToken' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @ApiResponse({ status: 403, description: 'Email not verified' })
+  @AuthResponses.LoginResponse
+  @AuthResponses.UnauthorizedResponse
+  @AuthResponses.ForbiddenResponse
   async login(@Body() dto: LoginDto, @Req() req: Request) {
-    const userAgent = req.headers['user-agent'] || '';
-    const ipAddress = req.ip || req.connection.remoteAddress || '';
-    // Normalize IP if strictly needed, but internal logic usually just stores it.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const userAgent = (req.headers['user-agent'] as any) || '';
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const ipAddress = (req.ip || (req as any).connection?.remoteAddress || '') as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const cleanIp = Array.isArray(ipAddress) ? ipAddress[0] : ipAddress;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.authService.login(dto, userAgent, cleanIp);
   }
 
+  /**
+   * Endpoint to obtain a new access token using a refresh token.
+   */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh Access Token' })
-  @ApiResponse({ status: 200, description: 'Token refresh successful' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired Refresh Token' })
+  @AuthResponses.RefreshTokensResponse
+  @AuthResponses.UnauthorizedResponse
   async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
-    const userAgent = req.headers['user-agent'] || '';
-    const ipAddress = req.ip || req.connection?.remoteAddress || '';
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const userAgent = (req.headers['user-agent'] as any) || '';
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const ipAddress = (req.ip || (req as any).connection?.remoteAddress || '') as string;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const cleanIp = Array.isArray(ipAddress) ? ipAddress[0] : ipAddress;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.authService.refresh(dto, userAgent, cleanIp);
   }
 
+  /**
+   * Endpoint to revoke a session (logout).
+   */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout (Revoke Refresh Token)' })
-  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @AuthResponses.LogoutResponse
   async logout(@Body() dto: RefreshTokenDto) {
     return this.authService.logout(dto);
   }
 
+  /**
+   * Endpoint to initiate the forgot password flow.
+   */
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 req/hour
   @ApiOperation({ summary: 'Request password reset' })
-  @ApiResponse({ status: 200, description: 'Email sent successfully (if exists)' })
+  @AuthResponses.ForgotPasswordResponse
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
   }
 
+  /**
+   * Endpoint to set a new password using a reset token.
+   */
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset new password' })
-  @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @AuthResponses.ResetPasswordResponse
+  @AuthResponses.BadRequestResponse
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
   }
 
+  /**
+   * Endpoint to change password for an authenticated session.
+   */
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change Password (Authenticated)' })
-  @ApiResponse({ status: 200, description: 'Password changed successfully' })
-  @ApiResponse({ status: 401, description: 'Incorrect old password' })
-  async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
+  @AuthResponses.ChangePasswordResponse
+  @AuthResponses.UnauthorizedResponse
+  async changePassword(@Req() req: { user: { id: string } }, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(req.user.id, dto);
   }
 }

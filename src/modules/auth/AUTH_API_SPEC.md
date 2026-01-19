@@ -1,553 +1,394 @@
-# 📘 AUTH MODULE – ULTRA-DETAILED SPECIFICATION
+# 📘 AUTH MODULE – HƯỚNG DẪN API
 
-**Version:** 3.2 (Restored & Optimized)  
-**Target:** E-commerce Projects (Vietnam 2026)  
-**Architecture:** Stateless Verification/Reset (JWT) + Stateful Sessions (DB)
-
----
-
-## 📋 TABLE OF CONTENTS
-
-1. [Overview & Architecture](#1-overview--architecture)
-2. [Database Schema](#2-database-schema)
-3. [DTOs & Validation (with Swagger)](#3-dtos--validation)
-4. [API Endpoints (Full Detail)](#4-api-endpoints-full-detail)
-5. [Service Implementation](#5-service-implementation)
-6. [Controller Implementation (with Swagger)](#6-controller-implementation)
-7. [Email Templates](#7-email-templates)
-8. [Error Handling](#8-error-handling)
-9. [Security & Edge Cases](#9-security--edge-cases)
-10. [Testing Strategy](#10-testing-strategy)
+**Phiên bản:** 4.1 (bám sát code hiện tại)  
+**Ngữ cảnh:** NestJS + JWT + Refresh Token lưu DB  
+**Prefix mặc định:** `/api/v1` (qua `API_PREFIX`)
 
 ---
 
-## 1. OVERVIEW & ARCHITECTURE
-
-### 🎯 Module Purpose
-Authentication module for e-commerce platform with:
-- ✅ **Stateless Email Verification** (JWT-based)
-- ✅ **Stateless Password Reset** (JWT-based)
-- ✅ JWT-based authentication (Access + Refresh tokens)
-- ✅ Token rotation (DB-backed refresh tokens for security)
-
-### 🏗️ Folder Structure
-```
-src/modules/auth/
-├── dto/
-│   ├── register.dto.ts
-│   ├── login.dto.ts
-│   ├── refresh-token.dto.ts
-│   ├── forgot-password.dto.ts
-│   ├── reset-password.dto.ts
-│   └── change-password.dto.ts
-├── entities/
-│   └── refresh-token.entity.ts  <-- Sole auth entity
-├── services/
-│   ├── auth.service.ts
-│   └── token.service.ts
-├── controllers/
-│   └── auth.controller.ts
-├── guards/
-│   ├── jwt-auth.guard.ts
-│   └── roles.guard.ts
-├── strategies/
-│   └── jwt.strategy.ts
-└── auth.module.ts
-```
+## Mục lục
+1. [Tổng quan & kiến trúc](#1-tổng-quan--kiến-trúc)
+2. [Chuẩn response & lỗi](#2-chuẩn-response--lỗi)
+3. [Cấu hình & giá trị mặc định](#3-cấu-hình--giá-trị-mặc-định)
+4. [Lược đồ CSDL](#4-lược-đồ-csdl)
+5. [DTO & validate](#5-dto--validate)
+6. [Tài liệu API](#6-tài-liệu-api)
+   - [6.1 Đăng ký](#61-post-apiv1authregister--đăng-ký)
+   - [6.2 Xác thực email](#62-get-apiv1authverify-email--xác-thực-email)
+   - [6.3 Gửi lại email xác thực](#63-post-apiv1authresend-verification--gửi-lại-email-xác-thực)
+   - [6.4 Đăng nhập](#64-post-apiv1authlogin--đăng-nhập)
+   - [6.5 Làm mới phiên](#65-post-apiv1authrefresh--làm-mới-phiên)
+   - [6.6 Đăng xuất](#66-post-apiv1authlogout--đăng-xuất)
+   - [6.7 Quên mật khẩu](#67-post-apiv1authforgot-password--quên-mật-khẩu)
+   - [6.8 Đặt lại mật khẩu](#68-post-apiv1authreset-password--đặt-lại-mật-khẩu)
+   - [6.9 Đổi mật khẩu (có đăng nhập)](#69-post-apiv1authchange-password--đổi-mật-khẩu-có-đăng-nhập)
+7. [Mã lỗi tổng hợp](#7-mã-lỗi-tổng-hợp)
 
 ---
 
-## 2. DATABASE SCHEMA
-
-### 2.1 `users` Table (Partial - Auth Fields)
-```typescript
-// src/entities/user.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Exclude } from 'class-transformer';
-
-@Entity('users')
-export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ unique: true, length: 255 })
-  email: string;
-
-  @Column({ length: 255 })
-  @Exclude() // CRITICAL: Never expose password in responses
-  password: string;
-
-  @Column({ name: 'first_name', length: 100 })
-  firstName: string;
-
-  @Column({ name: 'last_name', length: 100 })
-  lastName: string;
-
-  @Column({ default: 'USER', length: 20 })
-  role: string;
-
-  @Column({ name: 'is_active', default: true })
-  isActive: boolean;
-
-  @Column({ name: 'email_verified', default: false })
-  emailVerified: boolean;
-
-  @Column({ name: 'last_login_at', nullable: true })
-  lastLoginAt: Date;
-
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
-}
-```
-
-### 2.2 `refresh_tokens` Table
-```typescript
-// src/modules/auth/entities/refresh-token.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { User } from '../../../entities/user.entity';
-
-@Entity('refresh_tokens')
-export class RefreshToken {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ unique: true, length: 500 })
-  token: string; // Hashed refresh token
-
-  @Column({ name: 'user_id', type: 'uuid' })
-  userId: string;
-
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
-  @Column({ name: 'expires_at' })
-  expiresAt: Date;
-
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @Column({ name: 'user_agent', nullable: true, length: 255 })
-  userAgent: string;
-
-  @Column({ name: 'ip_address', nullable: true, length: 45 })
-  ipAddress: string;
-}
-```
+## 1. Tổng quan & kiến trúc
+- **Xác thực email stateless:** JWT (TTL 24h) gửi qua email, không lưu DB.  
+- **Phiên đăng nhập stateful:** Refresh Token JWT lưu ở DB dạng băm SHA-256, kèm `userAgent`, `ipAddress`; tối đa **5** phiên / người dùng, tự xóa phiên cũ.  
+- **Làm mới có xoay vòng:** Refresh token cũ bị xóa sau khi dùng, token mới được phát hành và lưu lại.  
+- **Reset mật khẩu lai:** JWT (truyền) + bảng `password_reset_tokens` (theo dõi hết hạn, đã dùng).  
+- **Bảo mật:** Bcrypt salt rounds = 12; bắt buộc email đã xác thực, tài khoản `isActive = true`; kiểm soát tốc độ bằng `@Throttle` trên các endpoint nhạy cảm.  
+- **Prefix API:** tất cả route thực tế là `/{API_PREFIX}/auth/...` (mặc định `/api/v1/auth/...`).  
 
 ---
 
-## 3. DTOs & VALIDATION (FULL CODE)
+## 2. Chuẩn response & lỗi
+- **Success wrapper (TransformResponseInterceptor):**
+  - Luôn trả về dạng: `{ statusCode, success, message, data? }`.
+  - Nếu service đã trả `success` + `message`, interceptor giữ nguyên các trường đó và gắn `statusCode`.
+  - Nếu service không có `message`, interceptor thêm `message` mặc định theo route (ví dụ login: `"User logged in successfully"`), và bọc payload vào `data`.
+- **Error wrapper (HttpExceptionFilter):**
+  - Dạng: `{ statusCode, timestamp, path, method, message, errors? }`.
+  - `errors` chỉ có khi lỗi validate trả về mảng.
+- **Throttling:** Khi vượt giới hạn, NestJS trả `429 Too Many Requests`.
 
-### 3.1 Register DTO
-```typescript
-// src/modules/auth/dto/register.dto.ts
-import { IsEmail, IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class RegisterDto {
-  @ApiProperty({
-    example: 'user@example.com',
-    description: 'Email address (will be converted to lowercase)',
-  })
-  @IsEmail({}, { message: 'Email không hợp lệ' })
-  @IsNotEmpty({ message: 'Email không được để trống' })
-  @Transform(({ value }) => value?.toLowerCase().trim())
-  email: string;
-
-  @ApiProperty({
-    example: 'Password123!',
-    description: 'Mật khẩu (min 8 ký tự, 1 hoa, 1 thường, 1 số, 1 ký tự đặc biệt)',
-  })
-  @IsString()
-  @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/, {
-    message: 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt',
-  })
-  password: string;
-
-  @ApiProperty({ example: 'Thanh', description: 'Họ' })
-  @IsString()
-  @IsNotEmpty({ message: 'Họ không được để trống' })
-  @Transform(({ value }) => value?.trim())
-  firstName: string;
-
-  @ApiProperty({ example: 'Luong', description: 'Tên' })
-  @IsString()
-  @IsNotEmpty({ message: 'Tên không được để trống' })
-  @Transform(({ value }) => value?.trim())
-  lastName: string;
-}
-```
-
-### 3.2 Login DTO
-```typescript
-// src/modules/auth/dto/login.dto.ts
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class LoginDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail({}, { message: 'Email không hợp lệ' })
-  @IsNotEmpty({ message: 'Email không được để trống' })
-  @Transform(({ value }) => value?.toLowerCase().trim())
-  email: string;
-
-  @ApiProperty({ example: 'Password123!' })
-  @IsString()
-  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
-  password: string;
-}
-```
-
-### 3.3 Refresh Token DTO
-```typescript
-// src/modules/auth/dto/refresh-token.dto.ts
-import { IsNotEmpty, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class RefreshTokenDto {
-  @ApiProperty({ example: '7c8d9e...' })
-  @IsString()
-  @IsNotEmpty({ message: 'Refresh token không được để trống' })
-  refreshToken: string;
-}
-```
-
-### 3.4 Forgot Password DTO
-```typescript
-// src/modules/auth/dto/forgot-password.dto.ts
-import { IsEmail, IsNotEmpty } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class ForgotPasswordDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail({}, { message: 'Email không hợp lệ' })
-  @IsNotEmpty({ message: 'Email không được để trống' })
-  @Transform(({ value }) => value?.toLowerCase().trim())
-  email: string;
-}
-```
-
-### 3.5 Reset Password DTO
-```typescript
-// src/modules/auth/dto/reset-password.dto.ts
-import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class ResetPasswordDto {
-  @ApiProperty({ example: 'jwt-token-string' })
-  @IsString()
-  @IsNotEmpty({ message: 'Token không được để trống' })
-  token: string;
-
-  @ApiProperty({ example: 'NewPassword123!' })
-  @IsString()
-  @MinLength(8, { message: 'Mật khẩu mới phải có ít nhất 8 ký tự' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/, {
-    message: 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt',
-  })
-  newPassword: string;
-}
-```
-
-### 3.6 Change Password DTO
-```typescript
-// src/modules/auth/dto/change-password.dto.ts
-import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class ChangePasswordDto {
-  @ApiProperty({ example: 'CurrentPassword123!' })
-  @IsString()
-  @IsNotEmpty({ message: 'Mật khẩu hiện tại không được để trống' })
-  oldPassword: string;
-
-  @ApiProperty({ example: 'NewPassword123!' })
-  @IsString()
-  @MinLength(8, { message: 'Mật khẩu mới phải có ít nhất 8 ký tự' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/, {
-    message: 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt',
-  })
-  newPassword: string;
-}
-```
-
----
-
-## 4. API ENDPOINTS
-
-### 4.1 POST /auth/register
-- **Flow**: Create User → Sign JWT (1d) → Send Email
-- **Stateless**: Token is NOT saved in DB.
-
-### 4.2 GET /auth/verify-email
-- **Flow**: Verify JWT Signature → Update `emailVerified=true`
-- **Stateless**: Validates via CPU.
-
-### 4.3 POST /auth/forgot-password
-- **Flow**: Find User → Sign JWT (15m) → Send Email
-- **Stateless**: Token is NOT saved in DB.
-
-### 4.4 POST /auth/reset-password
-- **Flow**: Verify JWT → Update Password → Revoke Sessions (DB)
-- **Logic**: Even though reset token is stateless, we still clear `refresh_tokens` table to force security.
-
-### 4.5 POST /auth/login & /auth/refresh
-- **Stateful**: Uses `refresh_tokens` table to allow revocation.
-
----
-
-## 5. SERVICE IMPLEMENTATION
-
-### 5.1 Token Service (Helper)
-```typescript
-// src/modules/auth/services/token.service.ts
-import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
-
-@Injectable()
-export class TokenService {
-  constructor(
-    private jwtService: JwtService,
-    private configService: ConfigService,
-  ) {}
-
-  generateAccessToken(payload: any): string {
-    return this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: '15m',
-    });
+Ví dụ response thực tế cho login (service không tự set `message` nên payload được bọc vào `data`):
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "User logged in successfully",
+  "data": {
+    "success": true,
+    "accessToken": "eyJ...",
+    "refreshToken": "eyJ...",
+    "user": { "id": "...", "email": "...", "role": "user", "emailVerified": true, "isActive": true }
   }
+}
+```
 
-  generateRefreshToken(payload: any): string {
-    return crypto.randomBytes(64).toString('hex');
-  }
+---
 
-  generateStatelessToken(payload: any, type: 'verify' | 'reset'): string {
-    const secret = type === 'verify' 
-      ? this.configService.get('JWT_VERIFICATION_SECRET')
-      : this.configService.get('JWT_RESET_SECRET');
-    
-    const expiresIn = type === 'verify' ? '1d' : '15m';
+## 3. Cấu hình & giá trị mặc định
+| Biến môi trường | Vai trò | Mặc định |
+| :--- | :--- | :--- |
+| `API_PREFIX` | Prefix chung | `api/v1` |
+| `JWT_SECRET` | Ký Access Token | bắt buộc |
+| `JWT_EXPIRATION` | TTL Access Token | `15m` |
+| `JWT_REFRESH_SECRET` | Ký Refresh Token | bắt buộc |
+| `JWT_REFRESH_EXPIRATION` | TTL Refresh Token | `30d` |
+| `JWT_VERIFICATION_SECRET` | Ký token xác thực email | bắt buộc (TTL cố định 1d) |
+| `JWT_RESET_SECRET` | Ký token reset mật khẩu | bắt buộc (TTL cố định 15m) |
+| `BACKEND_URL` | Dùng ghép link verify email | `http://localhost:{PORT}` |
+| `FRONTEND_URL` | Dùng ghép link reset mật khẩu | bắt buộc để tạo link reset |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_SECURE`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | SMTP gửi mail | Nếu không đặt sẽ auto tạo tài khoản thử nghiệm Ethereal |
 
-    return this.jwtService.sign(payload, { secret, expiresIn });
-  }
+---
 
-  verifyStatelessToken(token: string, type: 'verify' | 'reset'): any {
-    const secret = type === 'verify' 
-      ? this.configService.get('JWT_VERIFICATION_SECRET')
-      : this.configService.get('JWT_RESET_SECRET');
-      
-    try {
-      return this.jwtService.verify(token, { secret });
-    } catch (e) {
-      throw new Error('Invalid token');
+## 4. Lược đồ CSDL
+### Bảng `users`
+| Cột | Kiểu | Mặc định / Ghi chú |
+| :--- | :--- | :--- |
+| `id` | UUID | PK |
+| `email` | string (unique, indexed) | lưu lowercase |
+| `password` | string | bcrypt hash, bị `@Exclude` khi serialize |
+| `firstName` / `lastName` | string | bắt buộc |
+| `phone` | string, nullable | - |
+| `role` | enum(`user`,`admin`,`staff`) | `user` |
+| `isActive` | boolean | `true` |
+| `emailVerified` | boolean | `false` |
+| `lastLoginAt` | timestamp, nullable | cập nhật khi login |
+| `createdAt` / `updatedAt` | timestamp | auto |
+
+### Bảng `refresh_tokens`
+| Cột | Kiểu | Ghi chú |
+| :--- | :--- | :--- |
+| `id` | UUID | PK |
+| `token` | string (unique, len 500) | SHA-256 của refresh token |
+| `userId` | UUID | FK -> users (cascade delete) |
+| `expiresAt` | datetime | từ `exp` của JWT |
+| `userAgent` | string, nullable | lưu device |
+| `ipAddress` | string, nullable | lưu IP |
+| `createdAt` | timestamp | auto |
+
+### Bảng `password_reset_tokens`
+| Cột | Kiểu | Ghi chú |
+| :--- | :--- | :--- |
+| `id` | UUID | PK |
+| `token` | string (unique, len 500) | SHA-256 của token reset |
+| `userId` | UUID | FK -> users (cascade delete) |
+| `expiresAt` | datetime | TTL 15 phút |
+| `usedAt` | timestamp, nullable | đánh dấu đã dùng |
+| `createdAt` | timestamp | auto |
+
+---
+
+## 5. DTO & validate
+- **RegisterDto:** `email` (IsEmail, trim, lowercase), `password` (>=8, có hoa/thường/số/ký tự đặc biệt), `firstName`, `lastName` (không rỗng, trim).
+- **LoginDto:** `email` (IsEmail, trim), `password` (bắt buộc).
+- **RefreshTokenDto:** `refreshToken` (string, không rỗng).
+- **ResendVerificationDto / ForgotPasswordDto:** `email` (IsEmail, trim, lowercase).
+- **ResetPasswordDto:** `token` (string), `newPassword` (regex mạnh như Register).
+- **ChangePasswordDto:** `oldPassword` (bắt buộc), `newPassword` (regex mạnh như Register).
+
+---
+
+## 6. Tài liệu API
+> Ghi chú: `{PREFIX}` = `/{API_PREFIX}` (mặc định `/api/v1`). Các ví dụ dưới đây bỏ qua domain/port để ngắn gọn.
+
+### 6.1 [POST] `{PREFIX}/auth/register` – Đăng ký
+- **Chức năng:** Tạo tài khoản mới, trạng thái `isActive=true`, `emailVerified=false`, gửi email xác thực (JWT 24h).  
+- **Khai báo (controller):**
+```typescript
+@Post('register')
+@HttpCode(HttpStatus.CREATED)
+@Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 req/giờ
+async register(@Body() dto: RegisterDto)
+```
+- **Luồng xử lý:**  
+  1) Kiểm tra email đã tồn tại → `409 Conflict`.  
+  2) Hash mật khẩu (bcrypt salt 12).  
+  3) Lưu user (role mặc định `user`).  
+  4) Tạo JWT verify (1 ngày, `type=verify_email`).  
+  5) Gửi mail. Nếu gửi lỗi → xóa user vừa tạo, trả `503 ServiceUnavailable`.  
+- **Request:** Body JSON gồm `email`, `password`, `firstName`, `lastName`.  
+- **Phản hồi thành công (201):**
+```json
+{
+  "statusCode": 201,
+  "success": true,
+  "message": "Registration successful. Please check your email for verification."
+}
+```
+- **Lỗi thường gặp:** 400 (validate), 409 (email trùng), 503 (gửi mail lỗi), 429 (quá giới hạn).
+
+### 6.2 [GET] `{PREFIX}/auth/verify-email` – Xác thực email
+- **Chức năng:** Kích hoạt tài khoản từ link email.  
+- **Khai báo:**
+```typescript
+@Get('verify-email')
+@HttpCode(HttpStatus.OK)
+async verifyEmail(@Query('token') token: string)
+```
+- **Luồng xử lý:**  
+  1) Giải mã JWT bằng `JWT_VERIFICATION_SECRET`, kiểm tra `type=verify_email`. Sai/hết hạn → 400.  
+  2) Tìm user, nếu không có → 400.  
+  3) Nếu đã verified → 400.  
+  4) Cập nhật `emailVerified=true`.  
+- **Request:** Query `token`.  
+- **Phản hồi thành công (200):**
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Email verified successfully!"
+}
+```
+- **Lỗi thường gặp:** 400 (token sai/hết hạn/đã xác thực), 429 (nếu bị throttle upstream).
+
+### 6.3 [POST] `{PREFIX}/auth/resend-verification` – Gửi lại email xác thực
+- **Chức năng:** Gửi lại link verify.  
+- **Khai báo:**
+```typescript
+@Post('resend-verification')
+@HttpCode(HttpStatus.OK)
+@Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 req/giờ
+async resendVerification(@Body() dto: ResendVerificationDto)
+```
+- **Luồng xử lý:**  
+  1) Tìm user theo email. Nếu không có → vẫn trả success (tránh lộ thông tin).  
+  2) Nếu đã verified → trả success với message tương ứng.  
+  3) Tạo JWT verify mới, gửi mail; lỗi gửi → `503`.  
+- **Request:** Body `email`.  
+- **Phản hồi thành công (200):** (tùy trạng thái, đều `success:true`)
+  - Email không tồn tại: `"If the account exists, a verification email has been sent."`
+  - Đã xác thực: `"Email is already verified."`
+  - Chưa xác thực, gửi mail thành công: `"Verification email sent."`
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Verification email sent."
+}
+```
+- **Lỗi thường gặp:** 503 (gửi mail lỗi), 429 (giới hạn 3/giờ).
+
+### 6.4 [POST] `{PREFIX}/auth/login` – Đăng nhập
+- **Chức năng:** Xác thực người dùng, trả Access Token (ngắn) + Refresh Token (dài, lưu DB). Yêu cầu email đã verify và tài khoản active.  
+- **Khai báo:**
+```typescript
+@Post('login')
+@HttpCode(HttpStatus.OK)
+@Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 req/5 phút
+async login(@Body() dto: LoginDto, @Req() req: Request)
+```
+- **Luồng xử lý:**  
+  1) Tìm user theo email; sai email/pass → `401 Unauthorized`.  
+  2) Kiểm tra `isActive`; nếu false → `403 Forbidden`.  
+  3) Kiểm tra `emailVerified`; nếu false → `403 Forbidden`.  
+  4) Xóa refresh token trùng `userAgent` + `ip` (tránh nhân bản).  
+  5) Giới hạn 5 phiên: xóa phiên cũ nhất nếu vượt giới hạn.  
+  6) Phát Access Token (TTL `JWT_EXPIRATION`, mặc định 15m) & Refresh Token (TTL `JWT_REFRESH_EXPIRATION`, mặc định 30d); lưu refresh token băm SHA-256 vào DB kèm `userAgent`, `ip`.  
+  7) Cập nhật `lastLoginAt`.  
+- **Request:** Body `email`, `password`; header `User-Agent` và IP sẽ được lưu.  
+- **Phản hồi thành công (200):**
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "User logged in successfully",
+  "data": {
+    "success": true,
+    "accessToken": "eyJ...",
+    "refreshToken": "eyJ...",
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "firstName": "Thanh",
+      "lastName": "Luong",
+      "phone": null,
+      "role": "user",
+      "isActive": true,
+      "emailVerified": true,
+      "lastLoginAt": "2024-01-19T10:00:00.000Z",
+      "createdAt": "2024-01-19T09:00:00.000Z",
+      "updatedAt": "2024-01-19T10:00:00.000Z"
     }
   }
 }
 ```
+- **Lỗi thường gặp:** 400 (validate), 401 (sai email/pass), 403 (email chưa verify hoặc bị khóa), 429 (quá 5 req/5 phút).
 
-### 5.2 Auth Service (Stateless Logic)
+### 6.5 [POST] `{PREFIX}/auth/refresh` – Làm mới phiên
+- **Chức năng:** Đổi refresh token hợp lệ lấy cặp access/refresh mới (xoay vòng). Bắt buộc cùng `userAgent` với phiên đã lưu.  
+- **Khai báo:**
 ```typescript
-// Partial logic for verifyEmail
-async verifyEmail(token: string) {
-  try {
-    const payload = this.tokenService.verifyStatelessToken(token, 'verify');
-    if (payload.type !== 'verify_email') throw new Error();
-
-    const user = await this.userRepository.findOne({ where: { id: payload.sub } });
-    if (!user) throw new BadRequestException('User not found');
-    if (user.emailVerified) throw new BadRequestException('Email already verified');
-
-    user.emailVerified = true;
-    await this.userRepository.save(user);
-
-    return { success: true, message: 'Email verified' };
-  } catch (e) {
-    throw new BadRequestException('Invalid or expired verification link');
-  }
-}
+@Post('refresh')
+@HttpCode(HttpStatus.OK)
+async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request)
 ```
-
----
-
-## 6. CONTROLLER IMPLEMENTATION
-
-```typescript
-// src/modules/auth/controllers/auth.controller.ts
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Query,
-  UseGuards,
-  Req,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
-import { AuthService } from '../services/auth.service';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
-import { RefreshTokenDto } from '../dto/refresh-token.dto';
-import { ForgotPasswordDto } from '../dto/forgot-password.dto';
-import { ResetPasswordDto } from '../dto/reset-password.dto';
-import { ChangePasswordDto } from '../dto/change-password.dto';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { Request } from 'express';
-
-@ApiTags('Authentication')
-@Controller('auth')
-export class AuthController {
-  constructor(private readonly authService: AuthService) {}
-
-  @Post('register')
-  @HttpCode(HttpStatus.CREATED)
-  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 req/hour
-  @ApiOperation({ summary: 'Đăng ký tài khoản mới' })
-  @ApiResponse({ status: 201, description: 'Đăng ký thành công' })
-  @ApiResponse({ status: 409, description: 'Email đã tồn tại' })
-  async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
-  }
-
-  @Get('verify-email')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Xác thực email (Link từ email)' })
-  @ApiResponse({ status: 200, description: 'Xác thực thành công' })
-  @ApiResponse({ status: 400, description: 'Token xác thực không hợp lệ' })
-  async verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
-  }
-
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 req/5min
-  @ApiOperation({ summary: 'Đăng nhập hệ thống' })
-  @ApiResponse({ status: 200, description: 'Trả về accessToken & refreshToken' })
-  @ApiResponse({ status: 401, description: 'Sai tài khoản hoặc mật khẩu' })
-  @ApiResponse({ status: 403, description: 'Email chưa được xác thực' })
-  async login(@Body() dto: LoginDto, @Req() req: Request) {
-    const userAgent = req.headers['user-agent'] || '';
-    const ipAddress = req.ip || req.connection.remoteAddress || '';
-    return this.authService.login(dto, userAgent, ipAddress);
-  }
-
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Làm mới Access Token' })
-  @ApiResponse({ status: 200, description: 'Cấp token mới thành công' })
-  @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ/hết hạn' })
-  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
-    const userAgent = req.headers['user-agent'] || '';
-    const ipAddress = req.ip || '';
-    return this.authService.refresh(dto, userAgent, ipAddress);
-  }
-
-  @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đăng xuất (Thu hồi Refresh Token)' })
-  @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
-  async logout(@Body() dto: RefreshTokenDto) {
-    return this.authService.logout(dto);
-  }
-
-  @Post('forgot-password')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 req/hour
-  @ApiOperation({ summary: 'Yêu cầu đặt lại mật khẩu' })
-  @ApiResponse({ status: 200, description: 'Gửi email thành công (nếu tồn tại)' })
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto);
-  }
-
-  @Post('reset-password')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đặt lại mật khẩu mới' })
-  @ApiResponse({ status: 200, description: 'Cập nhật mật khẩu thành công' })
-  @ApiResponse({ status: 400, description: 'Token không hợp lệ hoặc hết hạn' })
-  async resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto);
-  }
-
-  @Post('change-password')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Đổi mật khẩu (Đã đăng nhập)' })
-  @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công' })
-  @ApiResponse({ status: 401, description: 'Mật khẩu cũ không đúng' })
-  async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(req.user.id, dto);
-  }
-}
-```
-
----
-
-## 7. EMAIL TEMPLATES
-
-### 7.1 Verification Email
-```html
-<!DOCTYPE html>
-<html>
-<body>
-  <h2>Hello {{name}},</h2>
-  <p>Please verify your email using the link below (Link expires in 24h):</p>
-  <a href="{{verifyUrl}}">Verify Email</a>
-</body>
-</html>
-```
-
-### 7.2 Reset Password Email
-```html
-<!DOCTYPE html>
-<html>
-<body>
-  <h2>Hello {{name}},</h2>
-  <p>You requested a password reset. Click the link below (Expires in 15 minutes):</p>
-  <a href="{{resetUrl}}">Reset Password</a>
-  <p>If you did not request this, please ignore this email.</p>
-</body>
-</html>
-```
-
----
-
-## 8. ERROR HANDLING
-
-### Custom Filter
-Returns consistent JSON format:
+- **Luồng xử lý:**  
+  1) Verify chữ ký + hạn refresh token (`JWT_REFRESH_SECRET`); sai → `401`.  
+  2) Băm token, đối chiếu DB (kèm user). Không khớp → `401`.  
+  3) Nếu user `isActive=false` hoặc `emailVerified=false` → xóa toàn bộ refresh token user đó, trả `401`.  
+  4) Nếu `userAgent` lưu trong DB khác `User-Agent` hiện tại → xóa token đó, trả `401`.  
+  5) Xóa refresh token đang dùng (rotation).  
+  6) Phát access/refresh mới, lưu refresh mới (vẫn giới hạn 5 phiên).  
+- **Request:** Body `refreshToken`; header `User-Agent` nên giữ nguyên từ lúc login.  
+- **Phản hồi thành công (200):**
 ```json
 {
-  "success": false,
-  "statusCode": 400,
-  "message": "Validation failed",
-  "errors": [...]
+  "statusCode": 200,
+  "success": true,
+  "message": "Tokens refreshed successfully",
+  "data": {
+    "success": true,
+    "accessToken": "new-access-token",
+    "refreshToken": "new-refresh-token",
+    "user": { "id": "uuid", "email": "user@example.com", "role": "user", "emailVerified": true, "isActive": true }
+  }
 }
 ```
+- **Lỗi thường gặp:** 401 (token sai/hết hạn/không đúng thiết bị/acc bị khóa hoặc chưa verify).
+
+### 6.6 [POST] `{PREFIX}/auth/logout` – Đăng xuất
+- **Chức năng:** Thu hồi phiên hiện tại bằng refresh token cung cấp.  
+- **Khai báo:**
+```typescript
+@Post('logout')
+@HttpCode(HttpStatus.OK)
+async logout(@Body() dto: RefreshTokenDto)
+```
+- **Luồng xử lý:** Băm refresh token, xóa khỏi DB (không cần kiểm tra chữ ký; nếu token không tồn tại vẫn trả success).  
+- **Request:** Body `refreshToken`.  
+- **Phản hồi thành công (200):**
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Logout successful"
+}
+```
+- **Lỗi thường gặp:** 400 (validate sai trường), 429 (nếu bị limit upstream).
+
+### 6.7 [POST] `{PREFIX}/auth/forgot-password` – Quên mật khẩu
+- **Chức năng:** Gửi email chứa link đặt lại mật khẩu.  
+- **Khai báo:**
+```typescript
+@Post('forgot-password')
+@HttpCode(HttpStatus.OK)
+@Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 req/giờ
+async forgotPassword(@Body() dto: ForgotPasswordDto)
+```
+- **Luồng xử lý:**  
+  1) Nếu không tìm thấy email → vẫn trả success (ẩn thông tin).  
+  2) Tạo JWT reset (`type=reset_password`, TTL 15m).  
+  3) Lưu hash token vào DB với `expiresAt`, `usedAt=null`.  
+  4) Gửi mail kèm link `{FRONTEND_URL}/reset-password?token=...`; lỗi gửi → xóa bản ghi và trả `503`.  
+- **Request:** Body `email`.  
+- **Phản hồi thành công (200):**
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Check your email to reset password"
+}
+```
+- **Lỗi thường gặp:** 503 (gửi mail lỗi), 429 (quá 3 req/giờ).
+
+### 6.8 [POST] `{PREFIX}/auth/reset-password` – Đặt lại mật khẩu
+- **Chức năng:** Hoàn tất đổi mật khẩu bằng token trong email.  
+- **Khai báo:**
+```typescript
+@Post('reset-password')
+@HttpCode(HttpStatus.OK)
+async resetPassword(@Body() dto: ResetPasswordDto)
+```
+- **Luồng xử lý:**  
+  1) Verify JWT reset (`JWT_RESET_SECRET`, `type=reset_password`); sai → 400.  
+  2) Băm token, tìm bản ghi DB khớp `userId` + chưa hết hạn + `usedAt` rỗng; nếu không có → 400.  
+  3) Hash `newPassword` (bcrypt 12), cập nhật user.  
+  4) Xóa toàn bộ refresh token của user (buộc đăng nhập lại).  
+  5) Đánh dấu `usedAt` cho token hiện tại và xóa các token reset chưa dùng còn lại.  
+- **Request:** Body `token`, `newPassword`.  
+- **Phản hồi thành công (200):**
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Password updated successfully!"
+}
+```
+- **Lỗi thường gặp:** 400 (token sai/hết hạn/đã dùng, user không tồn tại).
+
+### 6.9 [POST] `{PREFIX}/auth/change-password` – Đổi mật khẩu (có đăng nhập)
+- **Chức năng:** Người dùng đã đăng nhập đổi mật khẩu; sau đó đăng xuất mọi thiết bị.  
+- **Khai báo:**
+```typescript
+@Post('change-password')
+@HttpCode(HttpStatus.OK)
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+async changePassword(@Req() req, @Body() dto: ChangePasswordDto)
+```
+- **Luồng xử lý:**  
+  1) `JwtAuthGuard` kiểm tra Access Token (Bearer).  
+  2) So sánh `oldPassword` với DB; sai → `401 Unauthorized` (hoặc 400 từ validate).  
+  3) Hash `newPassword` (bcrypt 12), lưu user.  
+  4) Xóa tất cả refresh token của user (đăng xuất toàn bộ).  
+- **Request:** Header `Authorization: Bearer <accessToken>`; Body `oldPassword`, `newPassword`.  
+- **Phản hồi thành công (200):**
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Password changed successfully"
+}
+```
+- **Lỗi thường gặp:** 400 (validate), 401 (token sai/hết hạn hoặc mật khẩu cũ không đúng).
 
 ---
 
-## 9. SECURITY & EDGE CASES
-
-- [x] **Rate Limit**: Applied via `@Throttle`.
-- [x] **Password**: Bcrypt (12 rounds) + `@Exclude()`.
-- [x] **Tokens**: Refresh tokens hashed in DB. Verification tokens stateless (JWT).
-- [x] **Generic Errors**: "Email or password incorrect" (Login).
-
----
-
-## 10. TESTING STRATEGY
-*(Standard Unit & E2E)*
+## 7. Mã lỗi tổng hợp
+| Mã | Ý nghĩa | Khi nào gặp |
+| :--- | :--- | :--- |
+| 400 | Bad Request | Token verify/reset sai/hết hạn, validate DTO lỗi, đã verify rồi |
+| 401 | Unauthorized | Login sai, refresh token không hợp lệ/khác thiết bị, access token sai/hết hạn, mật khẩu cũ sai |
+| 403 | Forbidden | Tài khoản bị khóa (`isActive=false`) hoặc email chưa verify (ở login/refresh) |
+| 409 | Conflict | Email đã tồn tại (register) |
+| 429 | Too Many Requests | Vượt giới hạn throttling |
+| 503 | Service Unavailable | Lỗi gửi email (register, resend, forgot password) |
