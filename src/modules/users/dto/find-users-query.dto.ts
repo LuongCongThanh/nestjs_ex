@@ -1,79 +1,64 @@
-/**
- * Find Users Query DTO - Query parameters cho GET /users
- *
- * DTO này định nghĩa các query parameters và validation rules
- *
- * Parameters:
- * - page: Số trang (min: 1, default: 1)
- * - limit: Số items mỗi trang (min: 1, max: 100, default: 10)
- * - search: Tìm kiếm theo email, firstName, lastName (case-insensitive)
- * - role: Lọc theo role (user | admin | staff)
- * - isActive: Lọc theo trạng thái active (true | false)
- *
- * Type Transformations:
- * - @Type(() => Number): Transform string "1" → number 1
- * - @Type(() => Boolean): Transform string "true" → boolean true
- *
- * Vì query params luôn là string, cần transform sang đúng type
- * Example: ?page=2&limit=10&isActive=true
- *   → page: string "2" → number 2
- *   → limit: string "10" → number 10
- *   → isActive: string "true" → boolean true
- */
-
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { UserRole } from '../../../entities/user.entity';
 
+/**
+ * DTO for filtering and paginating user lists.
+ */
 export class FindUsersQueryDto {
+  /** Page number for pagination. */
   @ApiPropertyOptional({
-    description: 'Page number',
+    description: 'The page number to retrieve',
     minimum: 1,
     default: 1,
   })
   @IsOptional()
-  @Type(() => Number) // Transform string → number
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number = 1;
 
+  /** Number of items per page. */
   @ApiPropertyOptional({
-    description: 'Items per page',
+    description: 'The maximum number of items per page',
     minimum: 1,
     maximum: 100,
     default: 10,
   })
   @IsOptional()
-  @Type(() => Number) // Transform string → number
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100) // Giới hạn max 100 items để tránh performance issue
+  @Max(100)
   limit?: number = 10;
 
+  /** Generic search query for email or name. */
   @ApiPropertyOptional({
-    description: 'Search by email or name',
-    example: 'john',
+    description: 'Search string to filter by email, first name, or last name',
+    example: 'thanh',
   })
   @IsOptional()
   @IsString()
-  search?: string; // Tìm kiếm trong email, firstName, lastName (ILIKE)
+  search?: string;
 
+  /** Filter users by their role. */
   @ApiPropertyOptional({
-    description: 'Filter by role',
+    description: 'Filter users by a specific role',
     enum: UserRole,
     example: UserRole.USER,
   })
   @IsOptional()
-  @IsEnum(UserRole) // Validate value phải thuộc UserRole enum
+  @IsEnum(UserRole)
   role?: UserRole;
 
+  /** Filter users by account status. */
   @ApiPropertyOptional({
-    description: 'Filter by active status',
+    description: 'Filter users by their active status',
     type: Boolean,
     example: true,
   })
   @IsOptional()
-  @Type(() => Boolean) // Transform string "true"/"false" → boolean
-  isActive?: boolean; // Nếu không gửi, mặc định filter isActive=true trong service
+  @Type(() => Boolean)
+  isActive?: boolean;
 }

@@ -1,80 +1,72 @@
-/**
- * Create User DTO - Data Transfer Object cho việc tạo user mới
- *
- * DTO này định nghĩa structure và validation rules cho request body của POST /users
- *
- * Validation decorators:
- * - @IsEmail(): Validate email format
- * - @IsNotEmpty(): Field không được rỗng
- * - @MinLength(), @MaxLength(): Validate độ dài string
- * - @Matches(): Validate theo regex pattern
- * - @IsEnum(): Value phải thuộc enum
- * - @IsOptional(): Field có thể không gửi lên
- *
- * Swagger decorators:
- * - @ApiProperty(): Field bắt buộc
- * - @ApiPropertyOptional(): Field optional
- */
-
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { UserRole } from '../../../entities/user.entity';
 
+/**
+ * DTO for creating a new user.
+ */
 export class CreateUserDto {
+  /** User's primary email address. */
   @ApiProperty({
     example: 'user@example.com',
-    description: 'User email address',
+    description: 'The unique email address of the user',
   })
-  @IsEmail({}, { message: 'Email must be a valid email address' })
-  @IsNotEmpty({ message: 'Email is required' })
+  @IsEmail({}, { message: 'Please provide a valid email address' })
+  @IsNotEmpty({ message: 'Email address is required' })
   email: string;
 
+  /** User's account password. Must be strong. */
   @ApiProperty({
-    example: 'Password@123',
-    description: 'User password (min 8 chars, must contain uppercase, lowercase, number)',
+    example: 'SecurePassword123!',
+    description: 'User password (min 8 chars, must contain uppercase, lowercase, and a number or special character)',
   })
   @IsString()
   @IsNotEmpty({ message: 'Password is required' })
-  @MinLength(8, { message: 'Password must be at least 8 characters' })
-  @MaxLength(50, { message: 'Password must not exceed 50 characters' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @MaxLength(50, { message: 'Password cannot exceed 50 characters' })
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-    message: 'Password must contain uppercase, lowercase, and number/special char',
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number or special character',
   })
   password: string;
 
+  /** User's formal first name. */
   @ApiPropertyOptional({
-    example: 'John',
-    description: 'User first name',
+    example: 'Thanh',
+    description: "The user's first name",
   })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   firstName?: string;
 
+  /** User's formal last name. */
   @ApiPropertyOptional({
-    example: 'Doe',
-    description: 'User last name',
+    example: 'Luong',
+    description: "The user's last name",
   })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   lastName?: string;
 
+  /** User's primary contact phone number. */
   @ApiPropertyOptional({
-    example: '0123456789',
-    description: 'User phone number',
+    example: '+84987654321',
+    description: 'Contact phone number of the user',
   })
   @IsOptional()
   @IsString()
   @MaxLength(20)
   phone?: string;
 
+  /** User's access role in the system. */
   @ApiPropertyOptional({
     enum: UserRole,
     default: UserRole.USER,
-    description: 'User role',
+    description: 'The role assigned to the user for access control',
   })
   @IsOptional()
-  @IsEnum(UserRole, { message: 'Role must be user, admin, or staff' })
+  @IsEnum(UserRole, { message: 'Invalid role specified' })
   role?: UserRole;
 }

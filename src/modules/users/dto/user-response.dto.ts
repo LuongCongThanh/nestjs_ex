@@ -1,99 +1,93 @@
-/**
- * User Response DTO - Data Transfer Object cho response trả về client
- *
- * DTO này định nghĩa structure của User object trong response
- *
- * Security:
- * - @Exclude(): Mặc định loại bỏ TẤT CẢ fields
- * - @Expose(): Chỉ các fields có decorator này mới được trả về
- * - Password field không có @Expose() → không bao giờ trả về client
- *
- * Cách hoạt động:
- * 1. User entity từ database có đầy đủ fields (bao gồm password)
- * 2. ClassSerializerInterceptor transform User → UserResponseDto
- * 3. Chỉ các fields có @Expose() được include trong JSON response
- * 4. Password và các sensitive fields bị loại bỏ tự động
- *
- * Swagger:
- * - Tất cả fields đều có @ApiProperty() để hiển thị trong documentation
- */
-
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
 
-@Exclude() // Mặc định loại bỏ tất cả fields
+/**
+ * DTO for user profile responses.
+ * Sensitive data like passwords are automatically excluded.
+ */
+@Exclude()
 export class UserResponseDto {
-  @Expose() // Chỉ fields có @Expose() mới được trả về
+  /** Unique identifier for the user. */
+  @Expose()
   @ApiProperty({
     example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'User unique identifier',
+    description: 'The unique UUID of the user',
   })
   id: string;
 
+  /** User's email address. */
   @Expose()
   @ApiProperty({
     example: 'user@example.com',
-    description: 'User email address',
+    description: 'Registered email address of the user',
   })
   email: string;
 
+  /** User's first name. */
   @Expose()
   @ApiProperty({
-    example: 'John',
-    description: 'User first name',
+    example: 'Thanh',
+    description: "The user's first name",
     nullable: true,
   })
   firstName: string | null;
 
+  /** User's last name. */
   @Expose()
   @ApiProperty({
-    example: 'Doe',
-    description: 'User last name',
+    example: 'Luong',
+    description: "The user's last name",
     nullable: true,
   })
   lastName: string | null;
 
+  /** User's phone number. */
   @Expose()
   @ApiProperty({
-    example: '0123456789',
-    description: 'User phone number',
+    example: '+84987654321',
+    description: 'Primary contact phone number',
     nullable: true,
   })
   phone: string | null;
 
+  /** User's access role. */
   @Expose()
   @ApiProperty({
     enum: ['user', 'admin', 'staff'],
     example: 'user',
-    description: 'User role',
+    description: 'User access role in the system',
   })
   role: string;
 
+  /** Account active status. */
   @Expose()
   @ApiProperty({
     example: true,
-    description: 'Whether user account is active',
+    description: 'Indicates if the user account is active',
   })
   isActive: boolean;
 
+  /** Email verification status. */
   @Expose()
   @ApiProperty({
     example: false,
-    description: 'Whether user email is verified',
+    description: 'Indicates if the email address has been verified',
   })
   emailVerified: boolean;
 
+  /** Account creation date. */
   @Expose()
   @ApiProperty({
     example: '2026-01-11T12:00:00.000Z',
-    description: 'User creation timestamp',
+    description: 'The date and time the user was created',
   })
   createdAt: Date;
 
+  /** Last account update date. */
   @Expose()
   @ApiProperty({
     example: '2026-01-11T12:00:00.000Z',
-    description: 'User last update timestamp',
+    description: 'The date and time the user was last updated',
   })
   updatedAt: Date;
 }

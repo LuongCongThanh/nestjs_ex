@@ -16,6 +16,9 @@ import { PasswordService } from './services/password.service';
 import { SessionService } from './services/session.service';
 import { AuthUserService } from './services/auth-user.service';
 
+import { RolesGuard } from './guards/roles.guard';
+import { VerifiedGuard } from './guards/verified.guard';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, RefreshToken, PasswordResetToken]),
@@ -33,7 +36,16 @@ import { AuthUserService } from './services/auth-user.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, TokenService, PasswordService, SessionService, AuthUserService, JwtStrategy],
-  exports: [AuthService, JwtModule],
+  providers: [
+    AuthService,
+    TokenService,
+    PasswordService,
+    SessionService,
+    AuthUserService,
+    JwtStrategy,
+    RolesGuard,
+    VerifiedGuard,
+  ],
+  exports: [AuthService, JwtModule, RolesGuard, VerifiedGuard],
 })
 export class AuthModule {}

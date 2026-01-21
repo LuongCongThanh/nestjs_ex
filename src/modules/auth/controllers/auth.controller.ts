@@ -10,6 +10,10 @@ import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { VerifiedGuard } from '../guards/verified.guard';
+import { Roles } from '../decorators/roles.decorator';
+import { UserRole } from '../../../entities/user.entity';
 import { Request } from 'express';
 import * as AuthResponses from '../docs/auth.responses';
 
@@ -142,7 +146,8 @@ export class AuthController {
    */
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, VerifiedGuard)
+  @Roles(UserRole.USER, UserRole.ADMIN, UserRole.STAFF)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change Password (Authenticated)' })
   @AuthResponses.ChangePasswordResponse

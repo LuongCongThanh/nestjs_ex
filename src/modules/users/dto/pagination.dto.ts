@@ -1,46 +1,35 @@
-/**
- * Pagination DTOs - Các DTO cho pagination và response format
- *
- * File này chứa 3 DTOs:
- * 1. PaginationQueryDto: Base query params cho pagination (page, limit)
- * 2. PaginationMetaDto: Metadata về pagination (total, totalPages, hasNext, hasPrevious)
- * 3. PaginatedResponseDto<T>: Generic response format với data + meta
- *
- * Sử dụng:
- * - Extend PaginationQueryDto trong các query DTOs khác
- * - Service trả về dạng: { data: T[], meta: PaginationMetaDto }
- */
-
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
 /**
- * Base Pagination Query DTO
- * Dùng làm base class cho các query DTOs khác
+ * Base Pagination Query parameters.
+ * Extend this DTO for any endpoint requiring simple pagination.
  */
 export class PaginationQueryDto {
+  /** The page index (starts from 1). */
   @ApiProperty({
-    description: 'Page number (starts from 1)',
+    description: 'The requested page number',
     minimum: 1,
     default: 1,
     required: false,
   })
   @IsOptional()
-  @Type(() => Number) // Transform string → number
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number = 1;
 
+  /** The maximum number of results per page. */
   @ApiProperty({
-    description: 'Number of items per page',
+    description: 'Maximum number of items to return in a single page',
     minimum: 1,
     maximum: 100,
     default: 10,
     required: false,
   })
   @IsOptional()
-  @Type(() => Number) // Transform string → number
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
@@ -48,44 +37,48 @@ export class PaginationQueryDto {
 }
 
 /**
- * Pagination Metadata DTO
- * Chứa thông tin về pagination state
+ * Pagination Metadata.
+ * Provides details about the current state of a paginated list.
  */
 export class PaginationMetaDto {
-  @ApiProperty({ example: 1, description: 'Current page number' })
-  page: number; // Trang hiện tại
+  /** Current page index. */
+  @ApiProperty({ example: 1, description: 'The current page index' })
+  page: number;
 
-  @ApiProperty({ example: 10, description: 'Items per page' })
-  limit: number; // Số items mỗi trang
+  /** Actual items per page. */
+  @ApiProperty({ example: 10, description: 'The maximum results per page' })
+  limit: number;
 
-  @ApiProperty({ example: 100, description: 'Total number of items' })
-  total: number; // Tổng số items trong database
+  /** Total number of records across all pages. */
+  @ApiProperty({ example: 100, description: 'Total record count in the database' })
+  total: number;
 
-  @ApiProperty({ example: 10, description: 'Total number of pages' })
-  totalPages: number; // Tổng số pages (Math.ceil(total / limit))
+  /** Calculated total page count. */
+  @ApiProperty({ example: 10, description: 'Total number of available pages' })
+  totalPages: number;
 
-  @ApiProperty({ example: true, description: 'Whether there is a next page' })
-  hasNextPage: boolean; // page < totalPages
+  /** Indicates if there is a following page. */
+  @ApiProperty({ example: true, description: 'Whether a next page exists' })
+  hasNextPage: boolean;
 
+  /** Indicates if there is a preceding page. */
   @ApiProperty({
     example: false,
-    description: 'Whether there is a previous page',
+    description: 'Whether a previous page exists',
   })
-  hasPreviousPage: boolean; // page > 1
+  hasPreviousPage: boolean;
 }
 
 /**
- * Generic Paginated Response DTO
- * Format chuẩn cho response có pagination
- *
- * Usage:
- * - GET /users → PaginatedResponseDto<User>
- * - GET /products → PaginatedResponseDto<Product>
+ * Generic Paginated Response structure.
+ * Wraps list data with pagination metadata for client use.
  */
 export class PaginatedResponseDto<T> {
-  @ApiProperty({ description: 'Array of items' })
-  data: T[]; // Danh sách items
+  /** List of entity data for the current page. */
+  @ApiProperty({ description: 'The paginated results array' })
+  data: T[];
 
-  @ApiProperty({ type: PaginationMetaDto })
-  meta: PaginationMetaDto; // Pagination metadata
+  /** Pagination details for the returned data. */
+  @ApiProperty({ type: PaginationMetaDto, description: 'Metadata for navigation' })
+  meta: PaginationMetaDto;
 }
