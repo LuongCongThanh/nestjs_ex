@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
-import { TokenBlacklist } from '../entities/token-blacklist.entity';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 /**
  * Token Blacklist Service
@@ -9,30 +7,27 @@ import { TokenBlacklist } from '../entities/token-blacklist.entity';
  */
 @Injectable()
 export class TokenBlacklistService {
-  constructor(
-    @InjectRepository(TokenBlacklist)
-    private readonly tokenBlacklistRepository: Repository<TokenBlacklist>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Add token to blacklist
    */
   async addToBlacklist(token: string, userId: string, reason: string, expiresAt: Date): Promise<void> {
-    const blacklistedToken = this.tokenBlacklistRepository.create({
-      token,
-      userId,
-      reason,
-      expiresAt,
+    await this.prisma.tokenBlacklist.create({
+      data: {
+        token,
+        userId,
+        reason,
+        expiresAt,
+      },
     });
-
-    await this.tokenBlacklistRepository.save(blacklistedToken);
   }
 
   /**
    * Check if token is blacklisted
    */
   async isBlacklisted(token: string): Promise<boolean> {
-    const found = await this.tokenBlacklistRepository.findOne({
+    const found = await this.prisma.tokenBlacklist.findUnique({
       where: { token },
     });
 
@@ -43,8 +38,10 @@ export class TokenBlacklistService {
    * Clean up expired tokens (run periodically)
    */
   async cleanupExpiredTokens(): Promise<void> {
-    await this.tokenBlacklistRepository.delete({
-      expiresAt: LessThan(new Date()),
+    await this.prisma.tokenBlacklist.deleteMany({
+      where: {
+        expiresAt: { lt: new Date() },
+      },
     });
   }
 
@@ -52,8 +49,6 @@ export class TokenBlacklistService {
    * Revoke all tokens for a user
    */
   async revokeUserTokens(userId: string, reason: string): Promise<void> {
-    // This would typically be implemented with a cache or database query
-    // to invalidate all active sessions for a user
-    // Implementation depends on your token storage strategy
+    // Optional: Implementation for user-wide revocation
   }
 }

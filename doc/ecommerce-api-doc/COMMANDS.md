@@ -1,58 +1,94 @@
-# Lệnh thường dùng cho Ecommerce API
+# E-Commerce API Commands Reference
 
-Tài liệu này tập trung liệt kê các câu lệnh quan trọng trong repo và giải thích nhanh tác dụng của từng lệnh.
+> [!NOTE]
+> This document acts as the central command registry for managing the E-commerce API project lifecycle, including building, testing, database management, and orchestration. All NPM commands should be executed from the `ecommerce-api/` root directory.
 
-## 1) NPM scripts (package.json)
+---
 
-> Chạy từ thư mục `ecommerce-api/`.
+## Executive Summary
+A streamlined developer experience requires predictable, standardized tooling. This repository leverages `npm scripts` combined with Docker to encapsulate complex build processes, testing suites, and database migration lifecycles, ensuring consistency from local development to CI/CD pipelines.
 
-- `npm run build` - Build ứng dụng NestJS ra thư mục `dist/`.
-- `npm run format` - Format code bằng Prettier trong `src/` và `test/`.
-- `npm run start` - Chạy app theo chế độ mặc định (NestJS).
-- `npm run start:dev` - Chạy dev mode có watch (tự reload khi đổi code).
-- `npm run start:debug` - Chạy dev mode kèm debug (Node inspector).
-- `npm run start:prod` - Chạy bản build đã có trong `dist/`.
-- `npm run lint` - Lint code bằng ESLint và tự fix lỗi có thể.
+---
 
-### Test
+## Application Lifecycle Commands
 
-- `npm run test` - Chạy unit tests với Jest.
-- `npm run test:watch` - Chạy test ở chế độ watch.
-- `npm run test:cov` - Chạy test và xuất báo cáo coverage.
-- `npm run test:debug` - Chạy test với debug (Node inspector).
-- `npm run test:e2e` - Chạy end-to-end tests.
+Control the core NestJS application process.
 
-### TypeORM / Migration
+| Command | Environment | Purpose |
+|---------|-------------|---------|
+| `npm run start` | Local | Start the application normally without watch mode. |
+| `npm run start:dev` | Development | Start the app in watch mode with hot-reloading. |
+| `npm run start:debug` | Development | Start the app with the Node Inspector enabled for attaching debuggers. |
+| `npm run start:prod` | Production | Execute the compiled JavaScript bundle from the `dist/` directory. |
+| `npm run build` | Pipeline | Compile the TypeScript source code into optimized JavaScript in `dist/`. |
 
-- `npm run typeorm -- <args>` - Gọi CLI TypeORM với args tùy chọn.
-- `npm run migration:create` - Tạo file migration rỗng trong `src/migrations/`.
-- `npm run migration:generate` - Tự generate migration dựa trên thay đổi entity.
-- `npm run migration:run` - Chạy các migration chưa chạy.
-- `npm run migration:revert` - Rollback migration cuối cùng.
-- `npm run migration:show` - Xem trạng thái migration.
+---
 
-### Seeder
+## Code Quality & Testing
 
-- `npm run seed` - Seed dữ liệu mẫu (admin, categories, products, ...).
+Guarantee code integrity before commits and deployments.
 
-## 2) Docker (PostgreSQL + pgAdmin)
+| Command | Scope | Purpose |
+|---------|-------|---------|
+| `npm run format` | Global | Reformat the entire `src/` and `test/` tree using Prettier rules. |
+| `npm run lint` | Global | Scan for ESLint violations and automatically fix solvable issues. |
+| `npm run test` | Unit | Execute the Jest unit testing suite. |
+| `npm run test:watch` | Unit | Run Jest in interactive watch mode (ideal for TDD). |
+| `npm run test:cov` | Unit | Run Jest and generate a comprehensive Istanbul test coverage HTML report. |
+| `npm run test:e2e` | E2E | Run the End-to-End integration test suite against the application shell. |
 
-> Các lệnh này được dùng trong `ecommerce-api/`.
+---
 
-- `docker-compose up -d` - Khởi động các container ở chế độ nền.
-- `docker ps` - Kiểm tra container đang chạy.
-- `docker-compose down` - Dừng và remove container.
-- `docker-compose logs -f postgres` - Xem log realtime của Postgres.
+## Database & TypeORM Migrations
 
-### Truy cập DB
+> [!IMPORTANT]
+> The database schema is strictly controlled via TypeORM migrations. Never modify the production database directly without a migration file.
 
-- `docker exec -it ecommerce-api-postgres-1 psql -U postgres -d ecommerce_db` - Vào CLI psql trong container.
-- `docker exec -t ecommerce-api-postgres-1 pg_dump -U postgres ecommerce_db > backup.sql` - Backup database ra file.
-- `docker exec -i ecommerce-api-postgres-1 psql -U postgres -d ecommerce_db < backup.sql` - Restore database từ file backup.
+| Command | Action | Purpose |
+|---------|--------|---------|
+| `npm run typeorm -- <args>` | Proxy | Pass raw arguments directly to the TypeORM CLI. |
+| `npm run migration:create -- src/migrations/Name` | Scaffold | Create an empty migration template for custom SQL. |
+| `npm run migration:generate -- src/migrations/Name` | Automate | Diff the entity files against the current DB schema and generate migration SQL. |
+| `npm run migration:run` | Execute | Apply all pending migrations sequentially. |
+| `npm run migration:revert` | Rollback | Revert the most recently executed migration. |
+| `npm run migration:show` | Audit | Display the execution status of all configured migrations. |
+| `npm run seed` | Populate | Inject default roles, catalog metadata, and test accounts. |
 
-## 3) Database workflow (tóm tắt)
+---
 
-- `docker-compose up -d` - Mở DB.
-- `npm run migration:run` - Tạo bảng từ migration.
-- `npm run seed` - Seed dữ liệu mẫu.
-- `npm run start:dev` - Chạy app để test.
+## Infrastructure Orchestration (Docker)
+
+> [!TIP]
+> Ensure the Docker daemon is actively running before executing these container commands.
+
+Control the underlying PostgreSQL and pgAdmin infrastructure.
+
+```bash
+# Spin up the background database services
+docker-compose up -d
+
+# Tail the realtime output logs of the database engine
+docker-compose logs -f postgres
+
+# Completely spin down and remove the service network
+docker-compose down
+```
+
+### Low-Level Container Access
+
+```bash
+# Attach an interactive PSQL session directly inside the container
+docker exec -it ecommerce-api-postgres-1 psql -U postgres -d ecommerce_db
+
+# Perform a raw SQL dump backing up the database
+docker exec -t ecommerce-api-postgres-1 pg_dump -U postgres ecommerce_db > backup.sql
+
+# Restore a raw SQL dump into the active container
+docker exec -i ecommerce-api-postgres-1 psql -U postgres -d ecommerce_db < backup.sql
+```
+
+---
+
+## Security & Performance Notes
+- **Security**: Never commit `backup.sql` files or database dumps to version control, as they may contain sensitive customer data or password hashes.
+- **Performance**: Use `npm run start:dev` exclusively for local development. In production Dockerfiles, always use `npm run build` followed by `node dist/main` for optimal V8 engine memory performance.

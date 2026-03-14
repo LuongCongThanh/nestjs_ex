@@ -1,24 +1,6 @@
-/**
- * Create User DTO - Data Transfer Object cho việc tạo user mới
- *
- * DTO này định nghĩa structure và validation rules cho request body của POST /users
- *
- * Validation decorators:
- * - @IsEmail(): Validate email format
- * - @IsNotEmpty(): Field không được rỗng
- * - @MinLength(), @MaxLength(): Validate độ dài string
- * - @Matches(): Validate theo regex pattern
- * - @IsEnum(): Value phải thuộc enum
- * - @IsOptional(): Field có thể không gửi lên
- *
- * Swagger decorators:
- * - @ApiProperty(): Field bắt buộc
- * - @ApiPropertyOptional(): Field optional
- */
-
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
-import { UserRole } from '../../../entities/user.entity';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -71,7 +53,7 @@ export class CreateUserDto {
 
   @ApiPropertyOptional({
     enum: UserRole,
-    default: UserRole.USER,
+    default: UserRole.user,
     description: 'User role',
   })
   @IsOptional()

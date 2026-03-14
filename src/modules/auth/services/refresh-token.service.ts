@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
-import { RefreshToken } from '../entities/refresh-token.entity';
+import { RefreshToken } from '@prisma/client';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 /**
  * RefreshTokenService
@@ -11,10 +10,7 @@ import { RefreshToken } from '../entities/refresh-token.entity';
 export class RefreshTokenService {
   private readonly logger = new Logger(RefreshTokenService.name);
 
-  constructor(
-    @InjectRepository(RefreshToken)
-    private readonly refreshTokenRepository: Repository<RefreshToken>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Create and store a new refresh token
@@ -26,25 +22,25 @@ export class RefreshTokenService {
     deviceInfo?: string,
     ipAddress?: string,
   ): Promise<RefreshToken> {
-    const refreshToken = this.refreshTokenRepository.create({
-      token,
-      userId,
-      expiresAt,
-      deviceInfo,
-      ipAddress,
-      isRevoked: false,
+    return await this.prisma.refreshToken.create({
+      data: {
+        token,
+        userId,
+        expiresAt,
+        deviceInfo,
+        ipAddress,
+        isRevoked: false,
+      },
     });
-
-    return await this.refreshTokenRepository.save(refreshToken);
   }
 
   /**
    * Find refresh token by token string
    */
   async findByToken(token: string): Promise<RefreshToken | null> {
-    return await this.refreshTokenRepository.findOne({
+    return await this.prisma.refreshToken.findUnique({
       where: { token },
-      relations: ['user'],
+      include: { user: true },
     });
   }
 
@@ -75,52 +71,68 @@ export class RefreshTokenService {
    * Revoke a specific refresh token (for logout)
    */
   async revokeToken(token: string): Promise<boolean> {
-    const result = await this.refreshTokenRepository.update({ token }, { isRevoked: true });
-
-    return (result.affected ?? 0) > 0;
+    try {
+      await this.prisma.refreshToken.update({
+        where: { token },
+        data: { isRevoked: true },
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
    * Revoke all refresh tokens for a user (for logout all devices)
    */
   async revokeAllUserTokens(userId: string): Promise<number> {
-    const result = await this.refreshTokenRepository.update({ userId, isRevoked: false }, { isRevoked: true });
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { userId, isRevoked: false },
+      data: { isRevoked: true },
+    });
 
-    return result.affected || 0;
+    return result.count;
   }
 
   /**
    * Delete a refresh token from database (for token rotation)
    */
   async deleteToken(token: string): Promise<boolean> {
-    const result = await this.refreshTokenRepository.delete({ token });
-    return (result.affected ?? 0) > 0;
+    try {
+      await this.prisma.refreshToken.delete({
+        where: { token },
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
    * Clean up expired tokens (should be called by cron job)
    */
   async cleanupExpiredTokens(): Promise<number> {
-    const result = await this.refreshTokenRepository.delete({
-      expiresAt: LessThan(new Date()),
+    const result = await this.prisma.refreshToken.deleteMany({
+      where: {
+        expiresAt: { lt: new Date() },
+      },
     });
 
-    const count = result.affected || 0;
-    this.logger.log(`Cleaned up ${count} expired refresh tokens`);
-    return count;
+    this.logger.log(`Cleaned up ${result.count} expired refresh tokens`);
+    return result.count;
   }
 
   /**
    * Get all active tokens for a user
    */
   async getUserActiveTokens(userId: string): Promise<RefreshToken[]> {
-    return await this.refreshTokenRepository.find({
+    return await this.prisma.refreshToken.findMany({
       where: {
         userId,
         isRevoked: false,
       },
-      order: {
-        createdAt: 'DESC',
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
@@ -129,7 +141,7 @@ export class RefreshTokenService {
    * Count active tokens for a user
    */
   async countUserActiveTokens(userId: string): Promise<number> {
-    return await this.refreshTokenRepository.count({
+    return await this.prisma.refreshToken.count({
       where: {
         userId,
         isRevoked: false,

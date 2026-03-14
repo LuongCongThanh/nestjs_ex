@@ -1,6 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -17,7 +17,9 @@ async function bootstrap() {
   app.use(helmet());
 
   // Global prefix
-  app.setGlobalPrefix(configService.get('API_PREFIX') || 'api/v1');
+  app.setGlobalPrefix(configService.get<string>('API_PREFIX') || 'api/v1', {
+    exclude: ['/', 'health'],
+  });
 
   // Global Validation Pipe
   app.useGlobalPipes(
@@ -35,11 +37,12 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // Global Response Transform Interceptor
-  app.useGlobalInterceptors(new TransformResponseInterceptor());
+  const reflector = app.get(Reflector);
+  app.useGlobalInterceptors(new TransformResponseInterceptor(reflector));
 
   // CORS
   app.enableCors({
-    origin: (configService.get('CORS_ORIGIN') || 'http://localhost:3000').split(','),
+    origin: (configService.get<string>('CORS_ORIGIN') || 'http://localhost:3000').split(','),
     credentials: true,
   });
 
@@ -53,11 +56,16 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  const port = configService.get('PORT') || 3000;
+  const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
 
-  console.log(`🚀 Application is running on: http://localhost:${port}/${configService.get('API_PREFIX') || 'api/v1'}`);
+  console.log(
+    `🚀 Application is running on: http://localhost:${port}/${configService.get<string>('API_PREFIX') || 'api/v1'}`,
+  );
   console.log(`🏥 Health check: http://localhost:${port}/health`);
   console.log(`📚 Swagger docs: http://localhost:${port}/api`);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Error during application bootstrap', err);
+  process.exit(1);
+});

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude, Expose, Type } from 'class-transformer';
 import { UserResponseDto } from '../../users/dto/user-response.dto';
 
 /**
@@ -26,6 +27,7 @@ import { UserResponseDto } from '../../users/dto/user-response.dto';
  * - DTO này chỉ định nghĩa phần "data" bên trong
  * - Password KHÔNG BAO GIỜ có trong response
  */
+@Exclude()
 export class AuthResponseDto {
   /**
    * ACCESS TOKEN - JWT Token để authentication
@@ -48,6 +50,7 @@ export class AuthResponseDto {
    * - Sau khi hết hạn → User phải login lại
    * - Server tự động reject token hết hạn
    */
+  @Expose()
   @ApiProperty({
     example:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
@@ -73,6 +76,7 @@ export class AuthResponseDto {
    * Body: { "refreshToken": "<refresh_token>" }
    * Response: { access_token: "...", refresh_token: "..." }
    */
+  @Expose()
   @ApiProperty({
     example:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE1MTYyMzkwMjJ9.xyz',
@@ -100,6 +104,8 @@ export class AuthResponseDto {
    * - const { password: _, ...userWithoutPassword } = user
    * - KHÔNG BAO GIỜ trả password về client
    */
+  @Expose()
+  @Type(() => UserResponseDto)
   @ApiProperty({
     type: UserResponseDto,
     description: 'User information (password excluded)',

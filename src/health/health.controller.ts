@@ -1,11 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { DataSource } from 'typeorm';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   @Get()
   @ApiOperation({ summary: 'Health check endpoint' })
@@ -23,12 +23,13 @@ export class HealthController {
   })
   async check() {
     try {
-      const isConnected = this.dataSource.isInitialized;
+      // Simple query to check database connection
+      await this.prisma.$queryRaw`SELECT 1`;
 
       return {
-        status: isConnected ? 'ok' : 'error',
+        status: 'ok',
         timestamp: new Date().toISOString(),
-        database: isConnected ? 'connected' : 'disconnected',
+        database: 'connected',
         uptime: process.uptime(),
         environment: process.env.NODE_ENV,
       };

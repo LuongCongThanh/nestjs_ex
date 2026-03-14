@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { User } from '../../../entities/user.entity';
+import { User } from '@prisma/client';
 
 /**
  * Get User Decorator
@@ -8,20 +8,6 @@ import { User } from '../../../entities/user.entity';
  * User is set by JwtAuthGuard after successful authentication.
  *
  * @returns The authenticated User object
- *
- * @example
- * @UseGuards(JwtAuthGuard)
- * @Get('profile')
- * getProfile(@GetUser() user: User) {
- *   return user;
- * }
- *
- * @example
- * // Get specific property
- * @Get('my-id')
- * getMyId(@GetUser('id') userId: string) {
- *   return userId;
- * }
  */
 export const GetUser = createParamDecorator((data: keyof User | undefined, ctx: ExecutionContext) => {
   const request = ctx.switchToHttp().getRequest();
