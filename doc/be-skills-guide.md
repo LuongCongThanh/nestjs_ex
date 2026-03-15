@@ -21,6 +21,7 @@ Kỹ năng viết API chuẩn công nghiệp, dễ sử dụng và có khả nă
 - **[api-design-principles](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/api-design-principles/SKILL.md)**: Các nguyên tắc thiết kế API REST & GraphQL trực quan, bền vững và tuân thủ chuẩn cộng đồng.
 - **[api-patterns](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/api-patterns/SKILL.md)**: Áp dụng các pattern nâng cao: HATEOAS, Versioning, Cursor-based Pagination và API Gateway.
 - **[graphql-architect](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/graphql-architect/SKILL.md)**: Thiết kế Schema, Resolver và Federation cho các hệ thống lớn đòi hỏi linh hoạt dữ liệu.
+- **[error-handling-patterns](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/error-handling-patterns/SKILL.md)**: Xây dựng hệ thống xử lý lỗi nhất quán, chuyên nghiệp giúp API tin cậy và dễ debug.
 
 ## 🏗️ 3. Kiến trúc & Mở rộng (Senior Level)
 
@@ -30,6 +31,7 @@ Tầm nhìn của một kiến trúc sư - thiết kế hệ thống có thể c
 - **[architecture-patterns](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/architecture-patterns/SKILL.md)**: Làm chủ các architecture patterns: Event-driven, Microservices, Hexagonal, Clean Architecture.
 - **[architecture-decision-records](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/architecture-decision-records/SKILL.md)**: Kỹ năng ghi chép và quản lý ADRs để theo dõi lịch sử và lý do của các quyết định kiến trúc.
 - **[backend-architect](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/backend-architect/SKILL.md)**: Thiết kế service boundaries, định nghĩa giao tiếp giữa các services và mở rộng quy mô.
+- **[cqrs-implementation](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/cqrs-implementation/SKILL.md)**: Tách biệt mô hình Đọc và Ghi để tối ưu hiệu năng và khả năng mở rộng cho hệ thống lớn.
 
 ## 💾 4. Quản trị Dữ liệu (Deep Review)
 
@@ -38,6 +40,7 @@ Dữ liệu là trái tim của Ecommerce. Làm chủ DB là bắt buộc để 
 - **[prisma-expert](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/prisma-expert/SKILL.md)**: Chuyên gia sử dụng Prisma ORM. Giải quyết triệt để N+1, migration an toàn và tối ưu hóa quan hệ phức tạp.
 - **[sql-pro](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/sql-pro/SKILL.md)**: Master SQL nâng cao: CTEs, Window functions, tối ưu hóa Query Plans và thiết kế Schema chuẩn hóa.
 - **[postgresql-optimization](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/postgresql-optimization/SKILL.md)**: Quy trình tối ưu hóa hiệu năng Database toàn diện cho các hệ thống eCommerce chịu tải cao.
+- **[sql-optimization-patterns](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/sql-optimization-patterns/SKILL.md)**: Các mẫu tối ưu hóa SQL, chiến lược đánh Index và phân tích Query Plan chuyên sâu.
 - **[database-design](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/database-design/SKILL.md)**: Thiết kế mô hình dữ liệu Ecommerce (Product, Order, Inventory) linh hoạt và tối ưu Index.
 - **[algolia-search](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/algolia-search/SKILL.md)**: Tích hợp công cụ tìm kiếm mạnh mẽ, giúp khách hàng tìm thấy sản phẩm nhanh nhất.
 
@@ -65,6 +68,7 @@ Viết code sạch và làm việc nhóm hiệu quả là dấu ấn của một
 - **[code-refactoring-refactor-clean](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/code-refactoring-refactor-clean/SKILL.md)**: Kỹ năng Refactor chuyên sâu: Biến code rối thành code sạch, xử lý code smell và tech debt.
 - **[code-review-ai-ai-review](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/code-review-ai-ai-review/SKILL.md)**: Tận dụng sức mạnh AI để tự động hóa việc soát lỗi, đề xuất tối ưu hóa logic và đảm bảo chuẩn quy trình.
 - **[code-review-excellence](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/code-review-excellence/SKILL.md)**: Quy trình Code Review chuẩn mực giúp nâng cao chất lượng code của toàn team.
+- **[test-driven-development](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/test-driven-development/SKILL.md)**: Quy trình Red-Green-Refactor giúp viết code chính xác, giảm thiểu bug và tự tin khi refactor.
 - **[javascript-testing-patterns](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/javascript-testing-patterns/SKILL.md)**: Chiến lược kiểm thử toàn diện: Unit Test, Integration Test và E2E Test cho Backend.
 
 ## ⚙️ 8. Git & Workflow
@@ -90,7 +94,9 @@ Xây dựng nền móng dự án vững chắc, tiết kiệm thời gian khởi
 - **[deployment-pipeline-design](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/deployment-pipeline-design/SKILL.md)**: Thiết kế các luồng CI/CD (GitHub Actions) để tự động hóa build/test/deploy.
 - **[docker-expert](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/docker-expert/SKILL.md)**: Container hóa ứng dụng, tối ưu hóa Dockerfile và quản lý các services môi trường local/staging.
 - **[kubernetes-architect](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/kubernetes-architect/SKILL.md)**: Triển khai và vận hành hệ thống trên K8s, quản lý Auto-scaling và Resilience.
+- **[k6-load-testing](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/k6-load-testing/SKILL.md)**: Viết script và thực hiện kiểm thử tải (Load/Stress Testing) để đảm bảo hệ thống chịu tải tốt.
 - **[observability-engineer](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/observability-engineer/SKILL.md)**: Xây dựng hệ thống giám sát (Monitoring), quản lý Log tập trung và truy vết lỗi (Tracing).
+- **[sentry-automation](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/sentry-automation/SKILL.md)**: Tự động hóa việc theo dõi lỗi, cảnh báo và triệt tiêu các vấn đề phát sinh trong production.
 
 ## 🛠️ 11. Meta-Skills & Công cụ
 
@@ -106,18 +112,40 @@ Kỹ năng giúp bạn làm việc thông minh hơn và mở rộng khả năng 
 
 - **[gemini-api-dev](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/gemini-api-dev/SKILL.md)**: Tích hợp Google Gemini vào Backend để xây dựng Chatbot tư vấn, gợi ý sản phẩm cá nhân hóa.
 
-## 📝 13. Tài liệu & Đặc tả
+## 📝 13. Quản lý Yêu cầu & Tài liệu (Requirements & Documentation)
 
-Tài liệu tốt giúp hệ thống sống lâu hơn và hỗ trợ đội ngũ cộng tác hiệu quả.
+Kỹ năng quan trọng để chuyển đổi ý tưởng kinh doanh thành đặc tả kỹ thuật chính xác.
 
-- **[docs-architect](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/docs-architect/SKILL.md)**: Kỹ năng viết tài liệu kiến trúc toàn diện cho hệ thống, phù hợp cho onboarding và audit lâu dài.
-- **[code-documentation-doc-generate](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/code-documentation-doc-generate/SKILL.md)**: Sử dụng JSDoc và tự động hóa việc xuất tài liệu kỹ thuật trực tiếp từ mã nguồn.
-- **[writing-plans](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/writing-plans/SKILL.md)**: Kỹ năng viết PRD (Product Requirement Document), đặc tả kỹ thuật và kế hoạch thực thi chi tiết.
-- **[api-documentation-generator](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/api-documentation-generator/SKILL.md)**: Tự động hóa việc tạo tài liệu Swagger/OpenAPI từ code NestJS giúp Front-end dễ dàng tích hợp.
-- **[openapi-spec-generation](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/openapi-spec-generation/SKILL.md)**: Gen và tối ưu hóa file đặc tả OpenAPI.
+- **[requirements-doc-expert](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/requirements-doc-expert/SKILL.md)**: 🔥 **Master Skill** - Điều phối tất cả các kỹ năng bên dưới để Review, Đánh giá và Hoàn thiện tài liệu chuyên nghiệp.
+- **[writing-plans](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/writing-plans/SKILL.md)**: Kỹ năng viết PRD (Product Requirement Document), đặc tả kỹ thuật và lộ trình thực thi chi tiết.
+- **[api-documenter](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/api-documenter/SKILL.md)**: Chuyên gia đặc tả API chuyên nghiệp với OpenAPI 3.1, xây dựng developer portals và hướng dẫn tích hợp.
+- **[wiki-architect](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/wiki-architect/SKILL.md)**: Thiết kế cấu trúc Wiki, tạo hướng dẫn Onboarding và bản đồ hóa kiến trúc mã nguồn.
+- **[docs-architect](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/docs-architect/SKILL.md)**: Tư duy kiến trúc sư tài liệu, tổ chức thông tin khoa học và dễ tra cứu lâu dài.
+- **[openapi-spec-generation](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/openapi-spec-generation/SKILL.md)**: Tối ưu hóa file đặc tả OpenAPI giúp đồng bộ hóa giữa thiết kế và thực thi.
+- **[api-documentation-generator](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/api-documentation-generator/SKILL.md)**: Tự động hóa việc tạo tài liệu Swagger/OpenAPI từ code NestJS.
+- **[code-documentation-doc-generate](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/code-documentation-doc-generate/SKILL.md)**: Sử dụng JSDoc và các công cụ tự động chiết xuất tài liệu từ comment trong mã nguồn.
+
+## 📦 14. Hệ thống Background & Queue
+
+Xử lý các tác vụ nặng một cách bất đồng bộ để giữ API luôn phản hồi nhanh.
+
+- **[bullmq-specialist](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/bullmq-specialist/SKILL.md)**: Chuyên gia xử lý hàng đợi (Redis-backed queue). Quản lý job, retry và xử lý tác vụ nền (gửi mail, xử lý ảnh).
+
+## 🛠️ 15. Bảo trì & Nâng cấp
+
+Duy trì sự ổn định và hiện đại cho hệ thống thông qua kiểm soát dependencies.
+
+- **[dependency-management-deps-audit](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/dependency-management-deps-audit/SKILL.md)**: Quy trình audit và cập nhật thư viện hệ thống chuyên nghiệp, tránh các lỗ hổng bảo mật và code lỗi thời.
+
+## 📊 16. Phân tích Nghiệp vụ & Sản phẩm (Business Analysis)
+
+Hiểu sâu về sản phẩm và yêu cầu kinh doanh để xây dựng giải pháp kỹ thuật sát thực tế.
+
+- **[business-analyst](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/business-analyst/SKILL.md)**: Kỹ năng khơi gợi yêu cầu, xác định KPI và chuyển đổi nhu cầu kinh doanh thành giải pháp kỹ thuật.
+- **[product-manager](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/product-manager/SKILL.md)**: Tư duy sản phẩm, quản lý yêu cầu ưu tiên (Backlog) và định hướng lộ trình phát triển.
+- **[product-manager-toolkit](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/product-manager-toolkit/SKILL.md)**: Công cụ hỗ trợ viết PRD, phân tích phỏng vấn khách hàng và ưu tiên tính năng theo RICE.
+- **[competitive-landscape](file:///e:/my-pj/nestjs_ex/ecommerce-api/.agents/awesome-skills/skills/competitive-landscape/SKILL.md)**: Nghiên cứu đối thủ để làm rõ các yêu cầu tính năng cạnh tranh cho Ecommerce.
 
 ---
-*Chúc bạn gặt hái nhiều thành công trên con đường trở thành một Master Backend Engineer!*
 
----
 *Chúc bạn gặt hái nhiều thành công trên con đường trở thành một Master Backend Engineer!*
