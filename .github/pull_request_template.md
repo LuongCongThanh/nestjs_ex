@@ -33,12 +33,26 @@
 - [ ] No breaking changes
 - [ ] Yes — describe impact and migration steps below
 
-## Checklist
+## Deployment notes
 
-- [ ] PR title follows Conventional Commits (`feat: ...`, `fix: ...`)
-- [ ] New code has no `console.log` / debug artifacts
-- [ ] Sensitive data not hardcoded or logged
-- [ ] Related issues linked below
+<!-- Anything ops/infra needs to know before or after merging. Delete if not applicable. -->
+
+- [ ] No special deployment steps
+- [ ] Requires env variable changes — list them:
+- [ ] Requires database migration — migration name:
+- [ ] Requires service restart / cache flush
+- [ ] Must deploy in order (e.g. backend before frontend)
+
+## Rollback plan
+
+<!-- How to revert if this goes wrong in production. -->
+
+- [ ] Safe to revert PR — no schema changes
+- [ ] Requires manual rollback steps:
+
+## Screenshots
+
+<!-- For API changes: before/after response shape. For UI: before/after screenshots. Delete if not applicable. -->
 
 ## PR Assessment
 
@@ -48,8 +62,16 @@
 | **Risk**       | `Low` — isolated change, well-tested / `Medium` — touches shared code / `High` — DB schema, auth, payments |
 | **Confidence** | 🟢 High — fully tested, no edge cases / 🟡 Medium — some uncertainty / 🔴 Low — needs extra eyes           |
 
-<!-- Fill in your values, e.g: Size: S | Risk: Low | Confidence: 🟢 High -->
+<!-- Fill in, e.g: Size: S | Risk: Low | Confidence: 🟢 High -->
+
+## Checklist
+
+- [ ] PR title follows Conventional Commits (`feat: ...`, `fix: ...`)
+- [ ] New code has no `console.log` / debug artifacts
+- [ ] Sensitive data not hardcoded or logged
+- [ ] Related issues linked below
 
 ## Related issues
 
 <!-- Closes #123 -->
+<!-- Refs #456 -->
