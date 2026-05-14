@@ -1,61 +1,100 @@
-# TASK-00024: Lưu giữ Mua sắm: Quản trị Giỏ hàng & Vật phẩm (Shopping Persistence: Personal Cart & Items Governance)
+# TASK-207: Lưu giữ Mua sắm — Quản trị Giỏ hàng & Vật phẩm
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00024
+- **Task ID**: TASK-207
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Conversion Rate)
-- **Phụ thuộc**: TASK-00021 (Product Governance)
-- **Trạng thái**: ✅ Done
+- **Phụ thuộc**: TASK-203 (Product CRUD)
+- **Trạng thái**: ⏳ Not started
 
 ---
 
-## 🎯 CHIẾN LƯỢC LƯU GIỮ MUA SẮM (Persistence Strategy)
+## 🎯 CHIẾN LƯỢC GIỎ HÀNG
 
-### 💡 Tại sao Giỏ hàng quan trọng?
-Giỏ hàng không chỉ là nơi chứa hàng; nó là bằng chứng của ý định mua hàng. Một giỏ hàng không ổn định hoặc hay gặp lỗi sẽ làm mất khách hàng ngay lập tức.
-- **Identity-based Persistence**: Giỏ hàng phải được gắn chặt với danh tính người dùng (TASK-107), cho phép họ tiếp tục mua sắm trên nhiều thiết bị.
-- **Item Aging Policy**: Định nghĩa thời gian tồn tại của vật phẩm trong giỏ hàng nếu không phát sinh đơn hàng (ví dụ: Tự động xóa sau 30 ngày).
-- **Stock Pre-validation**: Kiểm tra tính sẵn có của sản phẩm ngay khi thêm vào giỏ để cung cấp phản hồi tức thì.
+Giỏ hàng không chỉ là nơi chứa hàng — nó là bằng chứng của ý định mua hàng. Một giỏ hàng không ổn định sẽ làm mất khách hàng ngay lập tức.
+
+- **Identity-based Persistence**: Cart gắn với User đã đăng nhập. Guest User có Cart riêng được định danh bằng session cookie.
+- **Merge on Login**: Khi Guest đăng nhập, guest cart được merge vào user cart bằng cách cộng dồn quantity.
+- **Stock Pre-validation**: Kiểm tra tồn kho ngay khi thêm item để trả phản hồi tức thì.
 
 ---
 
-## 🏗️ VÒNG ĐỜI VẬT PHẨM GIỎ HÀNG (Item Lifecycle)
+## 🏗️ VÒNG ĐỜI VẬT PHẨM GIỎ HÀNG
 
 ```mermaid
 graph LR
-    Add[Thêm vào giỏ] --> Validate[Xác thực Tồn kho]
-    Validate --> Persist[Lưu giữ State]
-    Persist --> Sync[Đồng bộ số lượng]
-    Sync --> Merge[Gộp Giỏ hàng - Nếu cần]
-    Merge --> Checkout[Chuyển sang Thanh toán]
-    Persist --> Expired[Hết hạn/Clear]
+    Add[Thêm vào giỏ] --> Exists{Đã có item?}
+    Exists -- Có --> Merge[Tăng quantity]
+    Exists -- Không --> Validate[Kiểm tra tồn kho]
+    Validate --> Persist[Lưu CartItem]
+    Merge --> Persist
+    Persist --> Checkout[Chuyển sang Checkout]
+    Persist --> Remove[User xoá item]
 ```
 
 ---
 
-## 📄 QUY TẮC VẬN HÀNH (Operational Rules)
+## 📄 QUY TẮC VẬN HÀNH
 
-### 1. Quản trị Số lượng (Quantity Governance)
-- Số lượng mua tối thiểu là 1 và tối đa không vượt quá tồn kho khả dụng (TASK-00023).
-- Nếu giá sản phẩm thay đổi trong khi nằm trong giỏ, hệ thống phải cập nhật giá mới nhất và thông báo cho người dùng trước khi thanh toán.
+### 1. Guest Cart & Session
+- Guest User được cấp một anonymous session token (cookie) khi lần đầu thêm item vào giỏ.
+- Cart của guest được lưu trong DB gắn với session token đó, không gắn với userId.
+- Khi guest đăng nhập, backend tìm guest cart theo session token và merge vào user cart.
 
-### 2. Chính sách Gộp giỏ (Merging Policy)
-- Khi người dùng đăng nhập, nếu có giỏ hàng khách (Guest cart) hiện hữu, hệ thống hỗ trợ gộp các vật phẩm vào giỏ hàng chính thức.
+### 2. Merge Logic khi Đăng nhập
+- Với mỗi CartItem trong guest cart: nếu User cart đã có cùng `productId`, **cộng dồn quantity**. Nếu chưa có, chuyển item sang user cart.
+- Guest cart bị xoá sau khi merge thành công.
+
+### 3. Quản trị Quantity
+- Thêm cùng một Product đã có trong Cart → **tăng quantity** (không tạo dòng mới).
+- Quantity tối thiểu: 1. Tối đa: không vượt quá tồn kho khả dụng.
+- Nếu giá Product thay đổi trong khi nằm trong Cart, hệ thống dùng giá mới nhất khi tính tổng — thông báo cho User trước khi checkout.
+
+### 4. Soft-deleted Product
+- Khi Product bị soft-delete, CartItem vẫn được giữ trong DB.
+- Khi User fetch Cart, item đó được đánh dấu `unavailable: true` kèm thông báo "Sản phẩm này hiện không còn bán".
+- Item `unavailable` không được tính vào tổng tiền và không thể checkout.
+
+### 5. Cart Expiry
+- Không có auto-expiry cho MVP. Cart tồn tại cho đến khi checkout hoặc User tự xoá.
 
 ---
 
-## ✅ TIÊU CHUẨN THÀNH CÔNG (Definition of Success)
+## 🔌 API ENDPOINTS
 
-- [x] **Zero Data Loss**: Vật phẩm giỏ hàng không bị mất khi người dùng Refresh hoặc chuyển trình duyệt.
-- [x] **Ownership Guard**: Chỉ chủ sở hữu giỏ hàng mới có quyền xem và sửa đổi các vật phẩm bên trong.
-- [x] **Relational Sync**: Xóa sản phẩm khỏi hệ thống (Soft-delete) phải tự động vô hiệu hóa vật phẩm đó trong mọi giỏ hàng.
+| Method | Route | Auth | Mô tả |
+|--------|-------|------|--------|
+| `GET` | `/cart` | User hoặc Guest session | Lấy cart hiện tại kèm trạng thái từng item |
+| `POST` | `/cart/items` | User hoặc Guest session | Thêm item; merge nếu productId đã tồn tại |
+| `PATCH` | `/cart/items/:productId` | Owner only | Cập nhật quantity |
+| `DELETE` | `/cart/items/:productId` | Owner only | Xoá 1 item |
+| `DELETE` | `/cart` | Owner only | Xoá toàn bộ cart |
+
+**GET /cart response** phải bao gồm:
+- Danh sách items, mỗi item kèm `unavailable: boolean`
+- Tổng tiền (chỉ tính items available)
+- Số lượng items
 
 ---
 
-## 🧪 TDD PLANNING (Shopping Scenarios)
+## ✅ TIÊU CHUẨN THÀNH CÔNG
+
+- [ ] User đăng nhập trên 2 thiết bị khác nhau thấy cùng Cart
+- [ ] Thêm cùng Product 2 lần → quantity tăng, không tạo dòng mới
+- [ ] Guest đăng nhập → guest cart merge vào user cart (quantity cộng dồn)
+- [ ] Product bị ẩn → Cart vẫn hiển thị item đó với `unavailable: true`
+- [ ] Truy cập Cart của User khác → 403 Forbidden
+- [ ] Checkout với item `unavailable` → blocked, trả lỗi rõ ràng
+
+---
+
+## 🧪 TDD SCENARIOS
 
 | Kịch bản | Mong đợi |
-| :--- | :--- |
-| **Out of Stock Sync** | Thêm 5 sản phẩm vào giỏ nhưng kho chỉ còn 2 -> Chỉ thêm 2 hoặc trả lỗi thông báo số lượng tối đa. |
-| **Unauthorized Access** | Cố gắng truy cập giỏ hàng của User khác qua ID -> Trả lỗi 403 Forbidden. |
-| **Price volatility** | Sản phẩm giảm giá khi đang trong giỏ -> Tổng tiền phải được tính toán lại theo giá mới nhất. |
+|----------|----------|
+| Thêm Product đã có trong Cart | Quantity tăng lên, không tạo CartItem mới |
+| Thêm Product vượt quá tồn kho | Trả lỗi với số lượng tối đa có thể thêm |
+| Guest đăng nhập, cả 2 cart có Áo thun (guest: ×2, user: ×3) | Cart sau merge: Áo thun ×5 |
+| Fetch Cart sau khi Product bị soft-delete | Item xuất hiện với `unavailable: true`, không tính vào tổng tiền |
+| PATCH quantity về 0 | Xoá CartItem khỏi Cart |
+| Truy cập Cart của User khác | 403 Forbidden |
