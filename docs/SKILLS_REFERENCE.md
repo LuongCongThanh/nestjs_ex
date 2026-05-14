@@ -33,4 +33,4 @@ Tài liệu mô tả 24 skill cục bộ trong dự án.
 
 ---
 
-_Cập nhật lần cuối: 2026-05-14_
+_Cập nhật lần cuối: 2026-05-15_
