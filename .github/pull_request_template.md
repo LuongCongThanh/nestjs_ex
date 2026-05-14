@@ -40,6 +40,16 @@
 - [ ] Sensitive data not hardcoded or logged
 - [ ] Related issues linked below
 
+## PR Assessment
+
+| Dimension      | Rating                                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Size**       | `XS` (<50 lines) / `S` (<200) / `M` (<500) / `L` (<1000) / `XL` (1000+)                                    |
+| **Risk**       | `Low` — isolated change, well-tested / `Medium` — touches shared code / `High` — DB schema, auth, payments |
+| **Confidence** | 🟢 High — fully tested, no edge cases / 🟡 Medium — some uncertainty / 🔴 Low — needs extra eyes           |
+
+<!-- Fill in your values, e.g: Size: S | Risk: Low | Confidence: 🟢 High -->
+
 ## Related issues
 
 <!-- Closes #123 -->
