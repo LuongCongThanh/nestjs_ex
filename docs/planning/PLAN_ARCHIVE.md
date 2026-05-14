@@ -11,13 +11,13 @@ Historically, this 3,800+ line document contained the entire system blueprint. T
 
 ## Where to find the new plans
 
-The new source of truth for the project timeline, database architecture, and granular task execution is located in the `doc/ecommerce-api-doc/` directory.
+The new source of truth for the project timeline, database architecture, and granular task execution is located in the `docs/planning/ecommerce-api-doc/` directory.
 
 > [!TIP]
-> **To see what to build next:** Read `doc/ecommerce-api-doc/PROJECT_STATUS.md`
-> **To see the critical path dependency graph:** Read `doc/ecommerce-api-doc/PROJECT_ROADMAP.md`
-> **To view the database schema:** Read `doc/ecommerce-api-doc/DATABASE_SCHEMA.md`
-> **To view all 76 individual execution plans:** List the `doc/ecommerce-api-doc/tasks/` directory.
+> **To see what to build next:** Read `docs/planning/ecommerce-api-doc/PROJECT_STATUS.md`
+> **To see the critical path dependency graph:** Read `docs/planning/ecommerce-api-doc/PROJECT_ROADMAP.md`
+> **To view the database schema:** Read `docs/planning/ecommerce-api-doc/DATABASE_SCHEMA.md`
+> **To view all 76 individual execution plans:** List the `docs/planning/ecommerce-api-doc/tasks/` directory.
 
 ---
 

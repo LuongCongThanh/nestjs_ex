@@ -13,14 +13,14 @@ Chào mừng đến với tài liệu E-Commerce API. Tài liệu này được 
 | Tìm một task cụ thể để implement             | [`ecommerce-api-doc/TASK_INDEX.md`](./ecommerce-api-doc/TASK_INDEX.md)                                         |
 | Hiểu cấu trúc database                       | [`ecommerce-api-doc/DATABASE_SCHEMA.md`](./ecommerce-api-doc/DATABASE_SCHEMA.md)                               |
 | Chạy lệnh dev / migration / seed             | [`ecommerce-api-doc/COMMANDS.md`](./ecommerce-api-doc/COMMANDS.md)                                             |
-| Hiểu ngôn ngữ domain (Order, Cart, User...)  | [`../CONTEXT.md`](../CONTEXT.md)                                                                               |
+| Hiểu ngôn ngữ domain (Order, Cart, User...)  | [`../../CONTEXT.md`](../../CONTEXT.md)                                                                         |
 
 ---
 
 ## Cấu trúc tài liệu
 
 ```
-doc/
+docs/planning/
 ├── QUICKSTART.md                    ← Bạn đang ở đây
 ├── be-skills-guide.md               ← Danh sách skill kỹ thuật tham khảo
 ├── project-conventions.vi.md        ← Quy ước code (tiếng Việt)
