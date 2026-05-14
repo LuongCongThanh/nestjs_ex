@@ -11,8 +11,21 @@ services:
         value: production
       - key: PORT
         value: 3000
+      # Prisma migration
       - key: DATABASE_URL
         sync: false
+      # NestJS app database (same Neon credentials)
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 5432
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_DATABASE
+        sync: false
+      # JWT
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
@@ -21,8 +34,10 @@ services:
         generateValue: true
       - key: JWT_REFRESH_EXPIRATION
         value: 7d
+      # CORS
       - key: CORS_ORIGIN
         sync: false
+      # Rate Limiting
       - key: THROTTLE_TTL
         value: 60
       - key: THROTTLE_LIMIT
