@@ -29,14 +29,13 @@ export class ProductsService {
           name,
           slug: productSlug,
           category: { connect: { id: categoryId } },
-          images: (data.images as unknown as Prisma.InputJsonValue) || [],
-          tags: (data.tags as unknown as Prisma.InputJsonValue) || [],
-          dimensions: data.dimensions as unknown as Prisma.InputJsonValue,
-          seo: data.seo as unknown as Prisma.InputJsonValue,
-        } as Prisma.ProductCreateInput,
+          dimensions: data.dimensions ? (data.dimensions as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+          seo: data.seo ? (data.seo as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+        },
+        select: this.getProductSelect(),
       });
     } catch (error) {
-      if (error.code === 'P2002') {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Product slug or SKU already exists');
       }
       throw error;
@@ -78,7 +77,7 @@ export class ProductsService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: { category: true },
+        select: this.getProductSelect(),
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -101,7 +100,7 @@ export class ProductsService {
   async findOne(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { category: true },
+      select: this.getProductSelect(),
     });
 
     if (!product) {
@@ -119,12 +118,31 @@ export class ProductsService {
     }
 
     try {
+      const { categoryId, dimensions, seo, ...restData } = updateProductDto;
+
+      const updateData: Prisma.ProductUpdateInput = {
+        ...restData,
+      };
+
+      if (categoryId) {
+        updateData.category = { connect: { id: categoryId } };
+      }
+
+      if (dimensions) {
+        updateData.dimensions = dimensions as unknown as Prisma.InputJsonValue;
+      }
+
+      if (seo) {
+        updateData.seo = seo as unknown as Prisma.InputJsonValue;
+      }
+
       return await this.prisma.product.update({
         where: { id },
-        data: updateProductDto as Prisma.ProductUpdateInput,
+        data: updateData,
+        select: this.getProductSelect(),
       });
     } catch (error) {
-      if (error.code === 'P2002') {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Product slug or SKU already exists');
       }
       throw error;
@@ -136,7 +154,38 @@ export class ProductsService {
     return await this.prisma.product.update({
       where: { id },
       data: { isActive: false, deletedAt: new Date() },
+      select: { id: true, isActive: true },
     });
+  }
+
+  private getProductSelect() {
+    return {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      price: true,
+      comparePrice: true,
+      stock: true,
+      sku: true,
+      images: true,
+      categoryId: true,
+      weight: true,
+      dimensions: true,
+      tags: true,
+      seo: true,
+      isActive: true,
+      isFeatured: true,
+      createdAt: true,
+      updatedAt: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    };
   }
 
   private generateSlug(text: string): string {

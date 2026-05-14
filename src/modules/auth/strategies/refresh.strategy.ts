@@ -23,7 +23,7 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<User> {
+  async validate(payload: JwtPayload): Promise<Pick<User, 'id' | 'email' | 'role' | 'isActive'>> {
     const user = await this.authService.validateUser(payload);
 
     if (!user) {

@@ -10,8 +10,8 @@ import { User } from '@prisma/client';
  * @returns The authenticated User object
  */
 export const GetUser = createParamDecorator((data: keyof User | undefined, ctx: ExecutionContext) => {
-  const request = ctx.switchToHttp().getRequest();
-  const user = request.user as User;
+  const request = ctx.switchToHttp().getRequest<Request & { user: User }>();
+  const user = request.user;
 
   // If specific property is requested, return that property
   return data ? user?.[data] : user;

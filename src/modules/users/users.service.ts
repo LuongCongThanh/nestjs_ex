@@ -35,12 +35,13 @@ export class UsersService {
 
     const hashedPassword = await this.passwordService.hash(createUserDto.password);
 
-    return await this.prisma.user.create({
+    return (await this.prisma.user.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
       },
-    });
+      select: this.getUserSelect(),
+    })) as unknown as User;
   }
 
   /**
@@ -73,6 +74,7 @@ export class UsersService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        select: this.getUserSelect(),
       }),
       this.prisma.user.count({ where }),
     ]);
@@ -103,22 +105,25 @@ export class UsersService {
 
     const user = await this.prisma.user.findUnique({
       where: { id },
+      select: this.getUserSelect(),
     });
 
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return user;
+    return user as unknown as User;
   }
 
   /**
    * Tìm user theo email (dùng cho authentication)
    */
   async findByEmail(email: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { email },
+      select: this.getUserSelect(),
     });
+    return user ? (user as unknown as User) : null;
   }
 
   /**
@@ -127,10 +132,11 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     await this.findOne(id);
 
-    return await this.prisma.user.update({
+    return (await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
-    });
+      select: this.getUserSelect(),
+    })) as unknown as User;
   }
 
   /**
@@ -151,10 +157,11 @@ export class UsersService {
   async verifyEmail(id: string): Promise<User> {
     await this.findOne(id);
 
-    return await this.prisma.user.update({
+    return (await this.prisma.user.update({
       where: { id },
       data: { emailVerified: true },
-    });
+      select: this.getUserSelect(),
+    })) as unknown as User;
   }
 
   /**
@@ -180,5 +187,21 @@ export class UsersService {
       where: { id: id },
       data: { password: hashedPassword },
     });
+  }
+
+  private getUserSelect() {
+    return {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      role: true,
+      isActive: true,
+      emailVerified: true,
+      lastLoginAt: true,
+      createdAt: true,
+      updatedAt: true,
+    };
   }
 }

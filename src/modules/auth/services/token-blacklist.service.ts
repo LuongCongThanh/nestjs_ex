@@ -48,6 +48,7 @@ export class TokenBlacklistService {
   /**
    * Revoke all tokens for a user
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async revokeUserTokens(userId: string, reason: string): Promise<void> {
     // Optional: Implementation for user-wide revocation
   }

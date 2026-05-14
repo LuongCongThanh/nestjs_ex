@@ -96,6 +96,7 @@ async function seed() {
     ];
 
     for (const prod of products) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       await prisma.product.create({ data: prod as any });
     }
 
@@ -109,4 +110,4 @@ async function seed() {
   }
 }
 
-seed();
+void seed();

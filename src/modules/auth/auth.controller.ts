@@ -1,19 +1,62 @@
-import { AuthResponseDto } from '@modules/auth/dto/auth-response.dto';
-import { ForgotPasswordDto } from '@modules/auth/dto/forgot-password.dto';
-import { LoginDto } from '@modules/auth/dto/login.dto';
-import { RegisterDto } from '@modules/auth/dto/register.dto';
-import { RegistrationResponseDto } from '@modules/auth/dto/registration-response.dto';
-import { Body, Controller, Headers, HttpCode, HttpStatus, Ip, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Ip, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { plainToInstance } from 'class-transformer';
 import { Request } from 'express';
-// ... (rest of imports)
+import { AuthService } from './auth.service';
+import { BadRequestResponse, LoginResponse, UnauthorizedResponse } from './docs/auth.responses';
+import { AuthResponseDto } from './dto/auth-response.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
+import { RegistrationResponseDto } from './dto/registration-response.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+
 @ApiTags('Authentication')
 @Controller('auth')
+@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // ... (register)
+  @Post('register')
+  @ApiOperation({
+    summary: 'Register new user',
+    description: 'Creates a new user account. Returns success message and sends verification email.',
+  })
+  async register(@Body() registerDto: RegisterDto): Promise<RegistrationResponseDto> {
+    return this.authService.register(registerDto);
+  }
+
+  @Get('verify-email')
+  @ApiOperation({
+    summary: 'Verify email',
+    description: 'Verifies user email using the token sent during registration.',
+  })
+  async verifyEmail(@Query('token') token: string): Promise<{ message: string }> {
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request password reset',
+    description: 'Sends a password reset link to the user email if it exists.',
+  })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+    await this.authService.forgotPassword(forgotPasswordDto);
+    return { message: 'If an account exists with this email, a reset link has been sent.' };
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reset password',
+    description: 'Resets user password using the token sent in the reset email.',
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+    return this.authService.resetPassword(resetPasswordDto);
+  }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -25,11 +68,8 @@ export class AuthController {
   @UnauthorizedResponse
   @BadRequestResponse
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-    const result = await this.authService.login(loginDto);
-    return plainToInstance(AuthResponseDto, result);
+    return this.authService.login(loginDto);
   }
-
-  // ... (forgotPassword)
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -44,8 +84,7 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
   ): Promise<AuthResponseDto> {
-    const result = await this.authService.refreshToken(refreshTokenDto.refreshToken, userAgent, ipAddress);
-    return plainToInstance(AuthResponseDto, result);
+    return this.authService.refreshToken(refreshTokenDto.refreshToken, userAgent, ipAddress);
   }
 
   /**
@@ -65,8 +104,11 @@ export class AuthController {
     summary: 'Logout from current device',
     description: 'Logs out user from current device. Revokes refresh token and blacklists access token.',
   })
-  async logout(@Req() req: Request, @Body() refreshTokenDto: RefreshTokenDto): Promise<{ message: string }> {
-    const user = req.user as any;
+  async logout(
+    @Req() req: Request & { user: { id: string } },
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<{ message: string }> {
+    const { user } = req;
     const accessToken = req.headers.authorization?.replace('Bearer ', '') || '';
 
     await this.authService.logout(user.id, accessToken, refreshTokenDto.refreshToken);
@@ -91,8 +133,8 @@ export class AuthController {
     summary: 'Logout from all devices',
     description: 'Logs out user from all devices. Revokes all refresh tokens and blacklists current access token.',
   })
-  async logoutAll(@Req() req: Request): Promise<{ message: string }> {
-    const user = req.user as any;
+  async logoutAll(@Req() req: Request & { user: { id: string } }): Promise<{ message: string }> {
+    const { user } = req;
     const accessToken = req.headers.authorization?.replace('Bearer ', '') || '';
 
     await this.authService.logoutAll(user.id, accessToken);

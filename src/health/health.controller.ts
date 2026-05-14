@@ -33,12 +33,13 @@ export class HealthController {
         uptime: process.uptime(),
         environment: process.env.NODE_ENV,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         status: 'error',
         timestamp: new Date().toISOString(),
         database: 'disconnected',
-        message: error.message,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        message: (error as any).message,
       };
     }
   }

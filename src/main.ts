@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -8,6 +8,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
   // Get ConfigService
@@ -18,7 +19,7 @@ async function bootstrap() {
 
   // Global prefix
   app.setGlobalPrefix(configService.get<string>('API_PREFIX') || 'api/v1', {
-    exclude: ['/', 'health'],
+    exclude: ['health'],
   });
 
   // Global Validation Pipe
@@ -36,9 +37,9 @@ async function bootstrap() {
   // Global Exception Filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Global Response Transform Interceptor
+  // Global Interceptors
   const reflector = app.get(Reflector);
-  app.useGlobalInterceptors(new TransformResponseInterceptor(reflector));
+  app.useGlobalInterceptors(new TransformResponseInterceptor(reflector), new ClassSerializerInterceptor(reflector));
 
   // CORS
   app.enableCors({
@@ -59,13 +60,14 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
 
-  console.log(
+  logger.log(
     `🚀 Application is running on: http://localhost:${port}/${configService.get<string>('API_PREFIX') || 'api/v1'}`,
   );
-  console.log(`🏥 Health check: http://localhost:${port}/health`);
-  console.log(`📚 Swagger docs: http://localhost:${port}/api`);
+  logger.log(`🏥 Health check: http://localhost:${port}/health`);
+  logger.log(`📚 Swagger docs: http://localhost:${port}/api`);
 }
 bootstrap().catch((err) => {
-  console.error('Error during application bootstrap', err);
+  const logger = new Logger('Bootstrap');
+  logger.error('Error during application bootstrap', err);
   process.exit(1);
 });

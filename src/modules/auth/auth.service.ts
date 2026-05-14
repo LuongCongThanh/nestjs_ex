@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import * as cryptoNode from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { EmailVerificationService } from './services/email-verification.service';
 import { PasswordService } from './services/password.service';
@@ -27,14 +28,29 @@ export class AuthService {
     private readonly emailVerificationService: EmailVerificationService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly tokenBlacklistService: TokenBlacklistService,
-  ) {}
+  ) { }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  private hashToken(token: string): string {
+    return cryptoNode.createHash('sha256').update(token).digest('hex');
+  }
+
+  private getTokenLookupVariants(token: string): string[] {
+    const hashedToken = this.hashToken(token);
+    return hashedToken === token ? [token] : [token, hashedToken];
+  }
 
   /**
    * Register a new user
    */
   async register(registerDto: RegisterDto): Promise<RegistrationResponseDto> {
+    const normalizedEmail = this.normalizeEmail(registerDto.email);
+
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: registerDto.email },
+      where: { email: normalizedEmail },
       select: { id: true },
     });
 
@@ -47,6 +63,7 @@ export class AuthService {
     const savedUser = await this.prisma.user.create({
       data: {
         ...registerDto,
+        email: normalizedEmail,
         password: hashedPassword,
         emailVerified: false,
         isActive: true,
@@ -59,7 +76,7 @@ export class AuthService {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
 
-    console.log(`[EMAIL SIMULATION] To: ${savedUser.email}, Link: ${verificationLink}`);
+    this.logger.log(`[EMAIL SIMULATION] To: ${savedUser.email}, Link: ${verificationLink}`);
 
     return {
       statusCode: 201,
@@ -76,8 +93,23 @@ export class AuthService {
    * Login user
    */
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
+    const normalizedEmail = this.normalizeEmail(loginDto.email);
+
     const user = await this.prisma.user.findUnique({
-      where: { email: loginDto.email },
+      where: { email: normalizedEmail },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        emailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (!user) {
@@ -107,20 +139,27 @@ export class AuthService {
     const tokens = await this.generateTokens(user);
 
     // Exclude password
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
 
     return {
       ...tokens,
-      user: userWithoutPassword as any,
+      user: userWithoutPassword,
     };
   }
 
-  async validateUser(payload: JwtPayload): Promise<User | null> {
+  async validateUser(payload: JwtPayload): Promise<Pick<User, 'id' | 'email' | 'role' | 'isActive'> | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isActive: true,
+      },
     });
 
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       return null;
     }
 
@@ -131,7 +170,7 @@ export class AuthService {
    * Generate tokens
    */
   async generateTokens(
-    user: User,
+    user: Pick<User, 'id' | 'email' | 'role'>,
     deviceInfo?: string,
     ipAddress?: string,
   ): Promise<{ access_token: string; refresh_token: string }> {
@@ -147,7 +186,7 @@ export class AuthService {
     const refreshExpirationString = this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d';
     const refresh_token = this.jwtService.sign(refreshPayload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: refreshExpirationString as any,
+      expiresIn: Math.floor(this.parseJwtExpiration(refreshExpirationString) / 1000),
     });
 
     const expiresAt = this.calculateExpirationDate(refreshExpirationString);
@@ -159,7 +198,7 @@ export class AuthService {
   private calculateExpirationDate(expirationString: string): Date {
     const now = new Date();
     const unit = expirationString.slice(-1);
-    const value = parseInt(expirationString.slice(0, -1), 10);
+    const value = Number.parseInt(expirationString.slice(0, -1), 10);
 
     switch (unit) {
       case 'd':
@@ -175,7 +214,7 @@ export class AuthService {
 
   private parseJwtExpiration(expirationString: string): number {
     const unit = expirationString.slice(-1);
-    const value = parseInt(expirationString.slice(0, -1), 10);
+    const value = Number.parseInt(expirationString.slice(0, -1), 10);
     switch (unit) {
       case 'd':
         return value * 24 * 60 * 60 * 1000;
@@ -189,60 +228,129 @@ export class AuthService {
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+    const normalizedEmail = this.normalizeEmail(forgotPasswordDto.email);
+
     const user = await this.prisma.user.findUnique({
-      where: { email: forgotPasswordDto.email },
+      where: { email: normalizedEmail },
+      select: { id: true, email: true },
     });
 
     if (!user) {
-      this.logger.warn(`Password reset requested for non-existent email: ${forgotPasswordDto.email}`);
+      this.logger.warn(`Password reset requested for non-existent email: ${normalizedEmail}`);
       return;
     }
 
     const token = cryptoNode.randomBytes(32).toString('hex');
+    const hashedToken = this.hashToken(token);
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getHours() + 1); // 1 hour for reset
+    expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour for reset
 
     await this.prisma.resetToken.create({
       data: {
         userId: user.id,
-        token: token,
+        token: hashedToken,
         expiresAt: expiresAt,
       },
     });
 
-    console.log(`[EMAIL SIMULATION] Reset link: https://example.com/reset-password?token=${token}`);
+    this.logger.log(`[EMAIL SIMULATION] Reset link: https://example.com/reset-password?token=${token}`);
+  }
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const verificationToken = await this.emailVerificationService.validateToken(token);
+
+    if (!verificationToken) {
+      throw new UnauthorizedException('Invalid or expired verification token');
+    }
+
+    await this.prisma.user.update({
+      where: { id: verificationToken.userId },
+      data: { emailVerified: true },
+    });
+
+    await this.emailVerificationService.markAsUsed(verificationToken.id);
+
+    return { message: 'Email verified successfully! You can now login.' };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+    const tokenVariants = this.getTokenLookupVariants(resetPasswordDto.token);
+
+    const resetToken = await this.prisma.resetToken.findFirst({
+      where: {
+        token: {
+          in: tokenVariants,
+        },
+      },
+    });
+
+    if (!resetToken) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Reset token has expired');
+    }
+
+    const hashedPassword = await this.passwordService.hash(resetPasswordDto.newPassword);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: resetToken.userId, isRevoked: false },
+        data: { isRevoked: true },
+      }),
+      this.prisma.resetToken.delete({
+        where: { id: resetToken.id },
+      }),
+    ]);
+
+    return { message: 'Password has been reset successfully' };
   }
 
   async refreshToken(refreshToken: string, deviceInfo?: string, ipAddress?: string): Promise<AuthResponseDto> {
-    let payload: { sub: string; type: string };
+    let payload: JwtPayload;
     try {
-      payload = this.jwtService.verify(refreshToken, {
+      payload = this.jwtService.verify<JwtPayload>(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
-    } catch (e) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const storedToken = await this.refreshTokenService.validateRefreshToken(refreshToken);
-    if (!storedToken) {
+    const isConsumed = await this.refreshTokenService.consumeRefreshToken(refreshToken);
+    if (!isConsumed) {
       throw new UnauthorizedException('Refresh token invalid');
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        emailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       throw new UnauthorizedException('User not found or disabled');
     }
 
-    await this.refreshTokenService.deleteToken(refreshToken);
     const tokens = await this.generateTokens(user, deviceInfo, ipAddress);
 
-    const { password, ...userWithoutPassword } = user;
     return {
       ...tokens,
-      user: userWithoutPassword as any,
+      user: user,
     };
   }
 

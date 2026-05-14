@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
+import { IsOptional } from 'class-validator';
 import { CategoryResponseDto } from '@modules/categories/dto/category-response.dto';
+import { ProductDimensionsDto } from './product-dimensions.dto';
+import { ProductSeoDto } from './product-seo.dto';
 
 @Exclude()
 export class ProductResponseDto {
@@ -9,7 +12,7 @@ export class ProductResponseDto {
   id: number;
 
   @Expose()
-// ... (rest same, except types)
+  // ... (rest same, except types)
   @ApiProperty({ example: 'iPhone 15 Pro Max' })
   name: string;
 
@@ -51,7 +54,9 @@ export class ProductResponseDto {
 
   @Expose()
   @ApiPropertyOptional()
-  dimensions?: any;
+  @IsOptional()
+  @Type(() => ProductDimensionsDto)
+  dimensions?: ProductDimensionsDto;
 
   @Expose()
   @ApiPropertyOptional({ type: [String] })
@@ -59,7 +64,9 @@ export class ProductResponseDto {
 
   @Expose()
   @ApiPropertyOptional()
-  seo?: any;
+  @IsOptional()
+  @Type(() => ProductSeoDto)
+  seo?: ProductSeoDto;
 
   @Expose()
   @ApiProperty({ example: true })

@@ -1,5 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { ProductDimensionsDto } from './product-dimensions.dto';
+import { ProductSeoDto } from './product-seo.dto';
 
 export class CreateProductDto {
   @ApiProperty({
@@ -93,7 +106,9 @@ export class CreateProductDto {
     description: 'Product dimensions',
   })
   @IsOptional()
-  dimensions?: any;
+  @ValidateNested()
+  @Type(() => ProductDimensionsDto)
+  dimensions?: ProductDimensionsDto;
 
   @ApiPropertyOptional({
     example: ['apple', 'phone'],
@@ -109,7 +124,9 @@ export class CreateProductDto {
     description: 'SEO metadata',
   })
   @IsOptional()
-  seo?: any;
+  @ValidateNested()
+  @Type(() => ProductSeoDto)
+  seo?: ProductSeoDto;
 
   @ApiPropertyOptional({
     example: true,

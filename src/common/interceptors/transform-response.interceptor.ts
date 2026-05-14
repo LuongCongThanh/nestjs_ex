@@ -2,6 +2,7 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { Request } from 'express';
 import { RESPONSE_MESSAGE } from '../decorators/response-message.decorator';
 
 export interface Response<T> {
@@ -31,8 +32,8 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
   constructor(private reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
-    const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
+    const request = context.switchToHttp().getRequest<Request>();
+    const response = context.switchToHttp().getResponse<{ statusCode: number }>();
     const method = request.method;
     const path = request.url;
 
@@ -40,7 +41,7 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
       this.reflector.get<string>(RESPONSE_MESSAGE, context.getHandler()) || this.getDefaultMessage(method, path);
 
     return next.handle().pipe(
-      map((data) => {
+      map((data: unknown) => {
         const statusCode = response.statusCode;
 
         // If data is null or undefined, return simple success message
@@ -53,11 +54,16 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
         }
 
         // If data already has success/message/data structure, return as is
-        if (typeof data === 'object' && 'success' in data && 'message' in data) {
+        if (
+          typeof data === 'object' &&
+          data !== null &&
+          'success' in data &&
+          'message' in (data as Record<string, unknown>)
+        ) {
           return {
             statusCode,
-            ...data,
-          };
+            ...(data as any),
+          } as Response<T>;
         }
 
         // Wrap data in standard format
@@ -65,7 +71,7 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
           statusCode,
           success: true,
           message,
-          data,
+          data: data as T,
         };
       }),
     );

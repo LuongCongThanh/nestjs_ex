@@ -1,54 +1,59 @@
-# TASK-00004.1: Quản trị Chất lượng & Kiến trúc Phòng thủ (Global Quality & Defensive Governance)
+# TASK-104: Kết nối NestJS với PostgreSQL
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00004.1
-- **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Quality Core)
-- **Phụ thuộc**: TASK-00001
+- **Task ID**: TASK-104
+- **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Persistence Foundation)
+- **Phụ thuộc**: TASK-103
 - **Trạng thái**: ✅ Done
 
 ---
 
-## 🎯 CHIẾN LƯỢC PHÒNG THỦ (Defensive Coding Strategy)
+## 🎯 CHIẾN LƯỢC DỮ LIỆU (Data Persistence Strategy)
 
 ### 💡 Tại sao Task này quan trọng?
-Validation và Error Handling là "hàng rào bảo vệ" đầu tiên, ngăn chặn dữ liệu rác và các cuộc tấn công injection từ vòng ngoài.
-- **Data Integrity (Whitelist)**: Áp dụng chính sách "Chỉ chấp nhận dữ liệu đã đăng ký". Mọi thuộc tính dư thừa trong request sẽ bị loại bỏ tự động, ngăn chặn các cuộc tấn công Mass Assignment.
-- **Zero-Trust Validation**: Mọi dữ liệu đi vào (Input) từ Client phải được kiểm tra kiểu dữ liệu và ràng buộc logic (Regex, Range, Enum) trước khi chạm tới Business Logic.
-- **Consistent DX (Developer Experience)**: Cung cấp một cấu trúc phản hồi lỗi (Error Schema) đồng nhất cho toàn bộ API, giúp đội ngũ Frontend xử lý exception một cách tự động và chính xác.
+
+Tích hợp Prisma và kết nối database là bước then chốt để NestJS có thể tương tác với PostgreSQL, đảm bảo dữ liệu được lưu trữ bền vững và truy vấn hiệu quả.
+
+1. Cấu hình `PrismaModule` và `PrismaService` để quản lý lifecycle kết nối.
+2. Khai báo `DATABASE_URL` và kiểm tra schema Prisma có thể kết nối PostgreSQL.
+3. Test kết nối bằng cách chạy app: `npm run start:dev`
+4. Kiểm tra logs xem kết nối database thành công
+5. Setup logging cho development environment
 
 ---
 
-## 🏗️ TIÊU CHUẨN CHẤT LƯỢNG (Quality Standards)
+## 📝 Implementation Notes
 
-### 1. Chính sách Xác thực Dữ liệu (Validation Policy)
-- **Automatic Transformation**: Dữ liệu từ URL (String) phải được tự động chuyển đổi sang đúng kiểu dữ liệu nghiệp vụ (Number, Date, ID) để đảm bảo tính nhất quán.
-- **Whitelist Enforcement**: Hệ thống từ chối mọi thuộc tính không được định nghĩa trong mô hình dữ liệu (DTO).
-- **Custom Guardrails**: Xây dựng các bộ quy tắc riêng cho thông tin nhạy cảm:
-    - **Strong Password**: Ràng buộc về độ dài, ký tự đặc biệt và độ phức tạp.
-    - **Identity Formats**: Ràng buộc cho số điện thoại, Email, và Slugs (SEO-friendly).
+**Pre-requisites:**
 
-### 2. Quản trị Ngoại lệ (Exception Governance)
-- **Unified Error Schema**: Mọi lỗi (404, 401, 500) phải trả về cùng một format JSON bao gồm: `statusCode`, `message`, `error` (type), và `timestamp`.
-- **Sensitive Shielding**: Trong môi trường Production, các thông tin chi tiết về lỗi hệ thống (Stack-trace) phải được ẩn đi để không tiết lộ cấu trúc hạ tầng.
-- **Audit Logging**: Mọi Exception phải được ghi nhật ký (Internal Log) kèm theo Path và Method để phục vụ truy vết.
+- [x] Review task requirements carefully
+- [x] Check dependencies on other tasks
+- [x] Setup development environment
 
----
+**Implementation Checklist:**
 
-## ✅ ĐÁNH GIÁ KẾT QUẢ (Definition of Done)
+- [x] Khởi tạo PrismaModule trong app.module.ts
+- [x] Cấu hình PrismaService cho connection lifecycle
+- [x] Setup logging cho development environment
+- [x] Tạo health check endpoint
+- [x] Prisma schema và migration flow sẵn sàng cho entity modeling
 
-- [x] **Defensive**: Hệ thống tự động từ chối request nếu chứa field lạ.
-- [x] **Consistent**: Response lỗi của hệ thống đồng nhất trên toàn bộ các Endpoint.
-- [x] **Secure**: Các quy tắc cho mật khẩu mạnh và định dạng dữ liệu đã được áp dụng.
-- [x] **Clean**: Class-transformer được tích hợp để xử lý chuyển đổi kiểu dữ liệu tự động.
+**Completed:**
 
----
+- ✅ PrismaModule đã được setup trong app.module.ts
+- ✅ ConfigService integration hoàn tất
+- ✅ PrismaService đảm nhiệm kết nối database theo application lifecycle
+- ✅ Health check endpoint tại /health
+- ✅ Logging enabled cho development mode
 
-## 🧪 TDD Planning (Validation Logic)
+**Post-completion:**
 
-| Kịch bản | Mong đợi |
-| :--- | :--- |
-| **Field Injection Attack** | Gửi kèm field `isAdmin: true` trong request đăng ký -> Hệ thống phải loại bỏ field này. |
-| **Logic Validation** | Nhập mật khẩu là `123456` -> Hệ thống trả lỗi "Password too weak" (400). |
-| **Structural Integrity** | Truy cập link không tồn tại -> Trả về JSON chuẩn (không phải HTML error của Server). |
-| **Type Resilience** | Gửi `page="abc"` thay vì số -> Trả lỗi 400 kèm thông báo kiểu dữ liệu không hợp lệ. |
+- [x] Update task status to ✅ Done
+- [x] Database connection ready
+- [x] Ready for entity creation
+
+**Time Tracking:**
+
+- Estimated: 2 hours
+- Actual: 1.5 hours

@@ -3,9 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { User } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Request } from 'express';
 import { AuthService } from '../auth.service';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { TokenBlacklistService } from '../services/token-blacklist.service';
+
+interface RequestWithAuth extends Request {
+  user?: Pick<User, 'id' | 'email' | 'role' | 'isActive'>;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -22,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(req: any, payload: JwtPayload): Promise<User> {
+  async validate(req: RequestWithAuth, payload: JwtPayload): Promise<Pick<User, 'id' | 'email' | 'role' | 'isActive'>> {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
     if (token && (await this.tokenBlacklistService.isBlacklisted(token))) {

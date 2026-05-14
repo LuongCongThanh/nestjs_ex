@@ -20,7 +20,6 @@
 
 import {
   Body,
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -31,20 +30,17 @@ import {
   Patch,
   Post,
   Query,
-  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ConflictErrorResponseDto, ErrorResponseDto, NotFoundErrorResponseDto } from './dto/error-response.dto';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users') // Nhóm các API endpoints trong Swagger UI
 @Controller('users') // Base route: /users
-@UseInterceptors(ClassSerializerInterceptor) // Tự động loại bỏ các field có @Exclude decorator
 export class UsersController {
   // Inject UsersService để xử lý business logic
   constructor(private readonly usersService: UsersService) {}
@@ -71,8 +67,7 @@ export class UsersController {
   @ApiResponse({ status: 400, type: ErrorResponseDto })
   @ApiResponse({ status: 409, type: ConflictErrorResponseDto })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    const user = await this.usersService.create(createUserDto);
-    return plainToInstance(UserResponseDto, user);
+    return this.usersService.create(createUserDto);
   }
 
   /**
@@ -97,11 +92,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get all users with pagination' })
   @ApiResponse({ status: 200 })
   async findAll(@Query() query: FindUsersQueryDto) {
-    const result = await this.usersService.findAll(query);
-    return {
-      ...result,
-      data: plainToInstance(UserResponseDto, result.data),
-    };
+    return this.usersService.findAll(query);
   }
 
   /**
@@ -126,8 +117,7 @@ export class UsersController {
   async findOne(
     @Param('id', ParseUUIDPipe) id: string, // ParseUUIDPipe tự động validate UUID format
   ): Promise<UserResponseDto> {
-    const user = await this.usersService.findOne(id);
-    return plainToInstance(UserResponseDto, user);
+    return this.usersService.findOne(id);
   }
 
   /**
@@ -159,8 +149,7 @@ export class UsersController {
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiResponse({ status: 404, type: NotFoundErrorResponseDto })
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
-    const user = await this.usersService.update(id, updateUserDto);
-    return plainToInstance(UserResponseDto, user);
+    return this.usersService.update(id, updateUserDto);
   }
 
   /**

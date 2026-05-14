@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 
 @Exclude()
 export class CategoryResponseDto {
@@ -24,8 +24,22 @@ export class CategoryResponseDto {
   image?: string;
 
   @Expose()
+  @ApiPropertyOptional({ example: 1 })
+  parentId?: number;
+
+  @Expose()
   @ApiProperty({ example: true })
   isActive: boolean;
+
+  @Expose()
+  @Type(() => CategoryResponseDto)
+  @ApiPropertyOptional({ type: () => CategoryResponseDto })
+  parent?: CategoryResponseDto;
+
+  @Expose()
+  @Type(() => CategoryResponseDto)
+  @ApiPropertyOptional({ type: () => [CategoryResponseDto] })
+  children?: CategoryResponseDto[];
 
   @Expose()
   @ApiProperty()

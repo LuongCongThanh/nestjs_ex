@@ -1,10 +1,10 @@
-# TASK-00002: Khung An ninh & Quản trị Hệ thống (Security & Governance Framework)
+# TASK-102: Khung An ninh & Quản trị Hệ thống (Security & Governance Framework)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00002
+- **Task ID**: TASK-102
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Governance)
-- **Phụ thuộc**: TASK-00001
+- **Phụ thuộc**: TASK-101
 - **Trạng thái**: ✅ Done
 
 ---
@@ -12,7 +12,9 @@
 ## 🎯 TẦM NHÌN CHIẾN LƯỢC (Strategic Governance)
 
 ### 💡 Tại sao Task này quan trọng?
-Quản lý cấu hình và an ninh là ranh giới giữa một code script và một **Enterprise System**. 
+
+Quản lý cấu hình và an ninh là ranh giới giữa một code script và một **Enterprise System**.
+
 - **Fail-Fast Defense**: Nguyên tắc ứng dụng phải dừng lại ngay lập tức nếu thiếu các cấu hình trọng yếu (Database, JWT Secret).
 - **Environment Parity**: Đảm bảo tính nhất quán giữa các môi trường Development, Staging và Production.
 - **Identity Integrity**: Ép buộc các chuẩn bảo mật cho Token và mật khẩu ngay từ tầng cấu hình.
@@ -30,7 +32,7 @@ sequenceDiagram
     participant User as Client
     participant API as Security Guard
     participant DB as Database
-    
+
     User->>API: Login (Email/Password)
     API->>DB: Verify Credentials
     DB-->>API: User Data & Roles
@@ -45,23 +47,25 @@ sequenceDiagram
 
 Định nghĩa rõ ràng quyền hạn của các nhóm người dùng:
 
-| Role | Permissions | Description |
-| :--- | :--- | :--- |
-| **Guest** | View Products, View Categories | Người dùng chưa đăng nhập. |
-| **User** | Manage Profile, Checkout, Manage Cart | Khách hàng đã có tài khoản. |
-| **Staff** | Manage Products, Update Order Status | Nhân viên vận hành cửa hàng. |
-| **Admin** | Full Access, System Config, Admin User | Quản trị viên tối cao. |
+| Role      | Permissions                            | Description                  |
+| :-------- | :------------------------------------- | :--------------------------- |
+| **Guest** | View Products, View Categories         | Người dùng chưa đăng nhập.   |
+| **User**  | Manage Profile, Checkout, Manage Cart  | Khách hàng đã có tài khoản.  |
+| **Staff** | Manage Products, Update Order Status   | Nhân viên vận hành cửa hàng. |
+| **Admin** | Full Access, System Config, Admin User | Quản trị viên tối cao.       |
 
 ---
 
 ## 📋 CHÍNH SÁCH CẤU HÌNH (Configuration Policy)
 
 ### 1. Nguyên tắc Biến môi trường (.env)
+
 - **Security Check**: `JWT_SECRET` bắt buộc >= 32 ký tự.
 - **Strict Validation**: Toàn bộ biến môi trường phải được validate kiểu dữ liệu (String, Number, Enum) trước khi hệ thống khởi động.
 - **Fail-Safe**: Các giá trị mặc định phải an toàn nhất (e.g., `Synchronize: false` cho Production).
 
 ### 2. Quy trình Xử lý Sự cố (Defensive Tactics)
+
 - **Abort Early**: Nếu cấu hình sai, app không được phép khởi chạy để tránh rò rỉ dữ liệu.
 - **Health Check Boundary**: Định nghĩa các endpoint giám sát sức khỏe hệ thống (Database connection status, Memory usage).
 
@@ -78,12 +82,13 @@ sequenceDiagram
 
 ## 🧪 TDD Planning (Configuration Layer)
 
-| Kịch bản | Mong đợi |
-| :--- | :--- |
-| **Thiếu biến Trọng yếu** | Hệ thống báo lỗi rõ ràng tên biến thiếu và dừng khởi động. |
-| **Security Breach** | Nếu `JWT_SECRET` yếu, hệ thống từ chối start để bảo vệ user. |
-| **CORS Policy** | Chỉ cho phép các domain được định nghĩa trong config truy cập API. |
-| **Rate Limit** | Hệ thống phải có cấu hình chặn Brute-force/DDoS ở mức ngưỡng an toàn. |
+| Kịch bản                 | Mong đợi                                                              |
+| :----------------------- | :-------------------------------------------------------------------- |
+| **Thiếu biến Trọng yếu** | Hệ thống báo lỗi rõ ràng tên biến thiếu và dừng khởi động.            |
+| **Security Breach**      | Nếu `JWT_SECRET` yếu, hệ thống từ chối start để bảo vệ user.          |
+| **CORS Policy**          | Chỉ cho phép các domain được định nghĩa trong config truy cập API.    |
+| **Rate Limit**           | Hệ thống phải có cấu hình chặn Brute-force/DDoS ở mức ngưỡng an toàn. |
+
 nh công với valid .env  
 ✅ Application crash với clear error khi thiếu env vars
 

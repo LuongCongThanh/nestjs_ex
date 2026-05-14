@@ -92,7 +92,7 @@ export class PasswordService {
     const hasUppercase = /[A-Z]/.test(password);
     const hasLowercase = /[a-z]/.test(password);
     const hasNumber = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
 
     return password.length >= minLength && hasUppercase && hasLowercase && hasNumber && hasSpecialChar;
   }
@@ -118,7 +118,7 @@ export class PasswordService {
       // Check if hash uses current bcrypt rounds
       const rounds = bcrypt.getRounds(hashedPassword);
       return rounds < this.BCRYPT_ROUNDS;
-    } catch (error) {
+    } catch {
       // If error (e.g., not a bcrypt hash), assume it needs rehashing
       return true;
     }

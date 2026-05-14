@@ -1,10 +1,10 @@
-# TASK-00010: Đặc tả Đơn hàng & Tính toàn vẹn Giao dịch (Order Processing & Transactional Integrity Specification)
+# TASK-111: Đặc tả Đơn hàng & Tính toàn vẹn Giao dịch (Order Processing & Transactional Integrity Specification)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00010
+- **Task ID**: TASK-111
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Revenue & Legal)
-- **Phụ thuộc**: TASK-00009 (Cart)
+- **Phụ thuộc**: TASK-110 (Cart)
 - **Trạng thái**: ✅ Done
 
 ---
@@ -12,7 +12,9 @@
 ## 🎯 PHÂN TÍCH NGHIỆP VỤ (Business Analysis)
 
 ### 💡 Tại sao Task này quan trọng?
+
 Đơn hàng (Order) không chỉ là một giao dịch, nó là tài liệu pháp lý và tài chính ràng buộc giữa khách hàng và nhà bán hàng.
+
 - **Data Immortality (Snapshot Strategy)**: Thông tin tại thời điểm mua hàng phải được bảo tồn vĩnh viễn. Hệ thống lưu trữ `AddressSnapshot` và `ProductSnapshot` (Tên, SKU, Giá, Thuộc tính) để đảm bảo rằng ngay cả khi sản phẩm gốc bị xóa hoặc thay đổi giá trong tương lai, hóa đơn cũ vẫn hiển thị đúng giữ liệu lịch sử.
 - **Transactional Atomic Governance**: Quá trình đặt hàng (Checkout) phải được thực hiện theo nguyên tắc "Tất cả hoặc không là gì". Một lỗi xảy ra ở bất kỳ bước nào (Trừ tồn kho, Tạo Order, Tạo OrderItems, Xóa Giỏ hàng) đều phải khiến toàn bộ quy trình được hoàn trả (Rollback).
 - **Workflow State Machine**: Quản trị vòng đời đơn hàng nghiêm ngặt (ví dụ: `PENDING` -> `PAID` -> `SHIPPING` -> `DELIVERED`). Chặn mọi hành động vi phạm logic (ví dụ: Không thể giao hàng nếu đơn hàng chưa được thanh toán hoặc xác nhận).
@@ -41,6 +43,7 @@
 | **unitPrice** | Decimal | Not Null | Giá tại thời điểm giao dịch. |
 
 ### 2. Quan hệ Thực thể (Entity Relationships)
+
 - **N-1 (User)**: Một người dùng có nhiều đơn hàng.
 - **1-N (Order -> OrderItems)**: Một đơn hàng bao gồm nhiều dòng sản phẩm.
 - **N-1 (OrderItem -> Product)**: Tham chiếu để phục vụ báo cáo và phân tích sản phẩm (Soft link).
@@ -58,9 +61,9 @@
 
 ## 🧪 TDD Planning (Transactional Logic)
 
-| Kịch bản | Mong đợi |
-| :--- | :--- |
-| **Stock Lock Failure** | Một SP trong giỏ hết hàng ngay lúc nhấn mua -> Hệ thống Rollback và báo lỗi cho khách. |
-| **Price Stability Test** | Đặt hàng xong -> Admin thay đổi giá SP -> Xem lại đơn hàng, giá tiền vẫn phải giữ nguyên như lúc mua. |
-| **Invalid State Transition** | Cố tình cập nhật trạng thái từ `PENDING` sang `DELIVERED` -> Trả lỗi 400 (Bad Request). |
-| **Concurrency Safeguard** | Hai khách cùng mua SP cuối cùng -> Chỉ một người thành công, người kia nhận thông báo hết hàng. |
+| Kịch bản                     | Mong đợi                                                                                              |
+| :--------------------------- | :---------------------------------------------------------------------------------------------------- |
+| **Stock Lock Failure**       | Một SP trong giỏ hết hàng ngay lúc nhấn mua -> Hệ thống Rollback và báo lỗi cho khách.                |
+| **Price Stability Test**     | Đặt hàng xong -> Admin thay đổi giá SP -> Xem lại đơn hàng, giá tiền vẫn phải giữ nguyên như lúc mua. |
+| **Invalid State Transition** | Cố tình cập nhật trạng thái từ `PENDING` sang `DELIVERED` -> Trả lỗi 400 (Bad Request).               |
+| **Concurrency Safeguard**    | Hai khách cùng mua SP cuối cùng -> Chỉ một người thành công, người kia nhận thông báo hết hàng.       |

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RefreshToken } from '@prisma/client';
+import * as crypto from 'node:crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 /**
@@ -10,7 +11,16 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class RefreshTokenService {
   private readonly logger = new Logger(RefreshTokenService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
+
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private getTokenLookupVariants(token: string): string[] {
+    const hashedToken = this.hashToken(token);
+    return hashedToken === token ? [token] : [token, hashedToken];
+  }
 
   /**
    * Create and store a new refresh token
@@ -22,9 +32,11 @@ export class RefreshTokenService {
     deviceInfo?: string,
     ipAddress?: string,
   ): Promise<RefreshToken> {
+    const hashedToken = this.hashToken(token);
+
     return await this.prisma.refreshToken.create({
       data: {
-        token,
+        token: hashedToken,
         userId,
         expiresAt,
         deviceInfo,
@@ -38,8 +50,14 @@ export class RefreshTokenService {
    * Find refresh token by token string
    */
   async findByToken(token: string): Promise<RefreshToken | null> {
-    return await this.prisma.refreshToken.findUnique({
-      where: { token },
+    const tokenVariants = this.getTokenLookupVariants(token);
+
+    return await this.prisma.refreshToken.findFirst({
+      where: {
+        token: {
+          in: tokenVariants,
+        },
+      },
       include: { user: true },
     });
   }
@@ -71,15 +89,18 @@ export class RefreshTokenService {
    * Revoke a specific refresh token (for logout)
    */
   async revokeToken(token: string): Promise<boolean> {
-    try {
-      await this.prisma.refreshToken.update({
-        where: { token },
-        data: { isRevoked: true },
-      });
-      return true;
-    } catch (error) {
-      return false;
-    }
+    const tokenVariants = this.getTokenLookupVariants(token);
+
+    const result = await this.prisma.refreshToken.updateMany({
+      where: {
+        token: {
+          in: tokenVariants,
+        },
+      },
+      data: { isRevoked: true },
+    });
+
+    return result.count > 0;
   }
 
   /**
@@ -98,14 +119,44 @@ export class RefreshTokenService {
    * Delete a refresh token from database (for token rotation)
    */
   async deleteToken(token: string): Promise<boolean> {
-    try {
-      await this.prisma.refreshToken.delete({
-        where: { token },
-      });
-      return true;
-    } catch (error) {
-      return false;
-    }
+    const tokenVariants = this.getTokenLookupVariants(token);
+
+    const result = await this.prisma.refreshToken.deleteMany({
+      where: {
+        token: {
+          in: tokenVariants,
+        },
+      },
+    });
+
+    return result.count > 0;
+  }
+
+  /**
+   * Consume a refresh token exactly once.
+   *
+   * This atomic update prevents the same token from being used twice in
+   * concurrent refresh requests.
+   */
+  async consumeRefreshToken(token: string): Promise<boolean> {
+    const tokenVariants = this.getTokenLookupVariants(token);
+
+    const result = await this.prisma.refreshToken.updateMany({
+      where: {
+        token: {
+          in: tokenVariants,
+        },
+        isRevoked: false,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
+
+    return result.count === 1;
   }
 
   /**

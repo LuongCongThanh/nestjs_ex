@@ -61,10 +61,13 @@ model Category {
   slug        String    @unique @db.VarChar(255)
   image       String?
   description String?   @db.Text
+  parentId    Int?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  parent   Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToCategory")
   products Product[]
 
   @@map("categories")

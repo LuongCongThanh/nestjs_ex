@@ -1,10 +1,10 @@
-# TASK-00005: Thiết kế Database Schema (Master Blueprint)
+# TASK-106: Thiết kế Database Schema (Master Blueprint)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00005
+- **Task ID**: TASK-106
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Foundational Architecture)
-- **Phụ thuộc**: TASK-00001, TASK-00002
+- **Phụ thuộc**: TASK-101, TASK-102
 - **Trạng thái**: ✅ Done
 
 ---
@@ -12,7 +12,9 @@
 ## 🎯 CHIẾN LƯỢC THIẾT KẾ (Database Strategy)
 
 ### 💡 Tại sao Task này quan trọng? (Strategic Impact)
+
 Database Schema là "xương sống" của hệ thống E-commerce. Một thiết kế bền vững giúp hệ thống mở rộng từ 1,000 lên 1,000,000 đơn hàng mà không cần tái cấu trúc lớn.
+
 - **Data Integrity (Tính toàn vẹn)**: Sử dụng Foreign Key constraints để ngăn chặn dữ liệu "mồ côi".
 - **History Preservation (Bảo toàn lịch sử)**: Sử dụng cơ chế Snapshot (AddressSnapshot, PriceSnapshot) để đơn hàng không bị thay đổi khi thông tin gốc cập nhật.
 - **Scalability (Khả năng mở rộng)**: Thiết kế modular, tách biệt User, Catalog, và Transactional data.
@@ -26,17 +28,17 @@ erDiagram
     USER ||--o{ ADDRESS : "has"
     USER ||--o{ ORDER : "places"
     USER ||--o{ REFRESH_TOKEN : "owns"
-    
+
     CATEGORY ||--o{ PRODUCT : "contains"
     CATEGORY ||--o{ CATEGORY : "parent-child"
-    
+
     PRODUCT ||--o{ PRODUCT_VARIANT : "has"
     PRODUCT ||--o{ CART_ITEM : "in"
     PRODUCT ||--o{ ORDER_ITEM : "in"
-    
+
     CART ||--|{ CART_ITEM : "contains"
     USER ||--o{ CART : "has"
-    
+
     ORDER ||--|{ ORDER_ITEM : "contains"
     ORDER ||--o{ PAYMENT : "has"
 
@@ -82,16 +84,20 @@ erDiagram
 ## 🛡️ RÀNG BUỘC & QUY TẮC DỮ LIỆU (Constraints & Rules)
 
 ### 1. Quy tắc Xóa (Delete Strategy)
+
 - **RESTRICT**: Không cho phép xóa `Product` nếu đã tồn tại trong `OrderItem`.
 - **CASCADE**: Khi xóa `User`, tự động xóa các `RefreshToken` và `Cart` liên quan.
 - **SET NULL**: Khi xóa `Category`, các `Product` thuộc về nó sẽ được chuyển về "Uncategorized" (`categoryId = null`).
 
 ### 2. Chiến lược Snapshot (The Snapshot Pattern)
+
 Để đảm bảo tính trung thực của hóa đơn (Invoice Integrity):
+
 - `OrderItem` **BẮT BUỘC** lưu `priceSnapshot` và `productNameSnapshot`.
 - `Order` **BẮT BUỘC** lưu `shippingAddressSnapshot` dưới dạng JSON thay vì link trực tiếp đến `Address` entity.
 
 ### 3. Đánh chỉ mục chiến lược (Indexing Strategy)
+
 - **Unique Indexes**: `User(email)`, `Product(slug)`, `Order(orderNumber)`.
 - **Foreign Key Indexes**: Tự động đánh index cho tất cả FK để tối ưu các câu lệnh `JOIN`.
 - **Full-Text Search**: Áp dụng trên `Product(name, description)` để hỗ trợ tìm kiếm nhanh.
@@ -109,11 +115,11 @@ erDiagram
 
 ## 🧪 TDD Planning (Database Layer)
 
-| Kịch bản | Kỳ vọng |
-| :--- | :--- |
-| **Integrity Check** | Thử xóa một sản phẩm đang có đơn hàng -> DB phải chặn lại (Restrict). |
-| **History Check** | User đổi địa chỉ sau khi đặt hàng -> Địa chỉ trong đơn hàng cũ không thay đổi. |
-| **Performance** | Truy vấn sản phẩm theo Slug phải thực thi trong < 10ms nhờ Index. |
+| Kịch bản               | Kỳ vọng                                                                                                |
+| :--------------------- | :----------------------------------------------------------------------------------------------------- |
+| **Integrity Check**    | Thử xóa một sản phẩm đang có đơn hàng -> DB phải chặn lại (Restrict).                                  |
+| **History Check**      | User đổi địa chỉ sau khi đặt hàng -> Địa chỉ trong đơn hàng cũ không thay đổi.                         |
+| **Performance**        | Truy vấn sản phẩm theo Slug phải thực thi trong < 10ms nhờ Index.                                      |
 | **Atomic Transaction** | Luồng Checkout phải đảm bảo: Trừ kho + Tạo đơn hàng + Xóa giỏ hàng cùng thành công hoặc cùng thất bại. |
 
 ---
@@ -1154,7 +1160,7 @@ erDiagram
 - Ownership (cart, order ownership tracking)
 - Profile management
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field       | Type         | Decorators                                                  | Validation                      | Description                      |
 | ----------- | ------------ | ----------------------------------------------------------- | ------------------------------- | -------------------------------- |
@@ -1278,7 +1284,7 @@ Hiểu cách **business requirements** được chuyển đổi thành **databas
 //    - Overkill nếu không query by image
 // ✅ JSON array: ['img1.jpg', 'img2.jpg']
 //    - Simple, compact
-//    - TypeORM built-in JSON support
+//    - Prisma JSON support
 //    - Caveats: Không index được, không query WHERE image = 'x'
 ```
 
@@ -1288,13 +1294,13 @@ Hiểu cách **business requirements** được chuyển đổi thành **databas
 // Requirement: "Danh mục phân cấp: Electronics > Smartphones > iPhone"
 // ✅ Self-referencing FK:
 categories: [
-  { id: 1, name: "Electronics", parentId: null },
-  { id: 2, name: "Smartphones", parentId: 1 },
-  { id: 3, name: "iPhone", parentId: 2 },
+  { id: 1, name: 'Electronics', parentId: null },
+  { id: 2, name: 'Smartphones', parentId: 1 },
+  { id: 3, name: 'iPhone', parentId: 2 },
 ];
 // - Simple structure
 // - Recursive queries với CTE
-// - TypeORM self-referencing support
+// - Prisma self-referencing relation support
 
 // ❌ Alternative: Adjacency list table
 // - More complex, rarely needed
@@ -1352,13 +1358,13 @@ sequenceDiagram
     O-->>U: Return Order confirmation
 ```
 
-**Step-by-Step SQL & TypeORM:**
+**Step-by-Step SQL & Prisma:**
 
 ```typescript
 // Step 1: Load Cart với price snapshots
 const cart = await cartRepo.findOne({
   where: { userId, isActive: true },
-  relations: ["cartItems", "cartItems.product"],
+  relations: ['cartItems', 'cartItems.product'],
 });
 
 // Step 2: Get default address
@@ -1395,7 +1401,7 @@ await dataSource.transaction(async (manager) => {
   for (const cartItem of cart.cartItems) {
     // Validate stock
     if (cartItem.product.stock < cartItem.quantity) {
-      throw new BadRequestException("Insufficient stock");
+      throw new BadRequestException('Insufficient stock');
     }
 
     // Create OrderItem với price snapshot từ CartItem
@@ -1571,7 +1577,7 @@ await productRepo.update(123, { deletedAt: new Date() });
 **Soft Delete Implementation:**
 
 ```typescript
-@Entity("products")
+@Entity('products')
 export class Product {
   // ... other fields
 
@@ -1579,7 +1585,7 @@ export class Product {
   deletedAt: Date; // NULL = active, có giá trị = deleted
 }
 
-// Query active products only (TypeORM tự động filter)
+// Query active products only (Prisma filter at query layer)
 const products = await productRepo.find(); // WHERE deletedAt IS NULL
 
 // Query including deleted (admin view)
@@ -1594,7 +1600,7 @@ await productRepo.restore(123); // deletedAt = NULL
 ```typescript
 // User views order from 2025
 const order = await orderRepo.findOne(456, {
-  relations: ["orderItems", "orderItems.product"],
+  relations: ['orderItems', 'orderItems.product'],
 });
 
 // Product đã bị soft delete nhưng:
@@ -1662,16 +1668,14 @@ class OrderService {
     // Validate transition
     const allowedStatuses = this.VALID_TRANSITIONS[order.status];
     if (!allowedStatuses.includes(newStatus)) {
-      throw new BadRequestException(
-        `Cannot transition from ${order.status} to ${newStatus}`
-      );
+      throw new BadRequestException(`Cannot transition from ${order.status} to ${newStatus}`);
     }
 
     // Additional business rules
     if (newStatus === OrderStatus.CONFIRMED) {
       // Rule 1: Payment must be completed
       if (order.paymentStatus !== PaymentStatus.PAID) {
-        throw new BadRequestException("Cannot confirm order without payment");
+        throw new BadRequestException('Cannot confirm order without payment');
       }
 
       // Rule 2: Decrease product stock
@@ -1680,7 +1684,7 @@ class OrderService {
 
     if (newStatus === OrderStatus.CANCELLED) {
       // Rule 3: Save cancel reason
-      order.cancelReason = reason || "Customer cancelled";
+      order.cancelReason = reason || 'Customer cancelled';
 
       // Rule 4: Restore stock if order was CONFIRMED
       if (order.status === OrderStatus.CONFIRMED) {
@@ -1693,7 +1697,7 @@ class OrderService {
       }
     }
 
-    if (newStatus === OrderStatus.DELIVERED && order.paymentMethod === "COD") {
+    if (newStatus === OrderStatus.DELIVERED && order.paymentMethod === 'COD') {
       // Rule 6: Mark COD payment as PAID
       await this.paymentService.markCODPaid(order.id);
     }
@@ -1758,7 +1762,7 @@ await orderService.updateStatus(order.id, OrderStatus.PENDING);
 - Revoke compromised tokens
 - Multi-device session management
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field       | Type         | Decorators                                  | Validation | Description                  |
 | ----------- | ------------ | ------------------------------------------- | ---------- | ---------------------------- |
@@ -1803,7 +1807,7 @@ user: User;
 - Prevent fake accounts
 - One-time use token
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field       | Type         | Decorators                    | Validation | Description           |
 | ----------- | ------------ | ----------------------------- | ---------- | --------------------- |
@@ -1847,7 +1851,7 @@ user: User;
 - Secure password reset
 - One-time use token
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field       | Type         | Decorators                    | Validation | Description           |
 | ----------- | ------------ | ----------------------------- | ---------- | --------------------- |
@@ -1893,7 +1897,7 @@ user: User;
 - Security monitoring
 - Suspicious activity detection
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field           | Type         | Decorators                                  | Validation | Description           |
 | --------------- | ------------ | ------------------------------------------- | ---------- | --------------------- |
@@ -1941,7 +1945,7 @@ user: User;
 - Session expiration
 - Security monitoring
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field            | Type         | Decorators                    | Validation | Description         |
 | ---------------- | ------------ | ----------------------------- | ---------- | ------------------- |
@@ -1989,7 +1993,7 @@ user: User;
 - Role hierarchy
 - Permission grouping
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field         | Type        | Decorators                                  | Validation | Description             |
 | ------------- | ----------- | ------------------------------------------- | ---------- | ----------------------- |
@@ -2014,10 +2018,10 @@ rolePermissions: RolePermission[];
 
 ```typescript
 const DEFAULT_ROLES = [
-  { name: "USER", description: "Regular customer" },
-  { name: "ADMIN", description: "Administrator with full access" },
-  { name: "SELLER", description: "Product manager (optional)" },
-  { name: "STAFF", description: "Customer support (optional)" },
+  { name: 'USER', description: 'Regular customer' },
+  { name: 'ADMIN', description: 'Administrator with full access' },
+  { name: 'SELLER', description: 'Product manager (optional)' },
+  { name: 'STAFF', description: 'Customer support (optional)' },
 ];
 ```
 
@@ -2031,7 +2035,7 @@ const DEFAULT_ROLES = [
 - Resource-level permissions
 - Action-based authorization
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field         | Type         | Decorators                                  | Validation | Description                 |
 | ------------- | ------------ | ------------------------------------------- | ---------- | --------------------------- |
@@ -2053,11 +2057,11 @@ rolePermissions: RolePermission[];
 
 ```typescript
 const PERMISSIONS = [
-  { name: "product.create", resource: "product", action: "create" },
-  { name: "product.update", resource: "product", action: "update" },
-  { name: "product.delete", resource: "product", action: "delete" },
-  { name: "order.refund", resource: "order", action: "refund" },
-  { name: "user.manage", resource: "user", action: "manage" },
+  { name: 'product.create', resource: 'product', action: 'create' },
+  { name: 'product.update', resource: 'product', action: 'update' },
+  { name: 'product.delete', resource: 'product', action: 'delete' },
+  { name: 'order.refund', resource: 'order', action: 'refund' },
+  { name: 'user.manage', resource: 'user', action: 'manage' },
 ];
 ```
 
@@ -2071,7 +2075,7 @@ const PERMISSIONS = [
 - Many-to-many relationship
 - Dynamic permission assignment
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field          | Type | Decorators                  | Validation | Description               |
 | -------------- | ---- | --------------------------- | ---------- | ------------------------- |
@@ -2105,7 +2109,7 @@ permission: Permission;
 - Link multiple providers
 - Provider profile sync
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field           | Type         | Decorators                                                         | Validation | Description              |
 | --------------- | ------------ | ------------------------------------------------------------------ | ---------- | ------------------------ |
@@ -2149,7 +2153,7 @@ user: User;
 - Forensic analysis
 - User activity monitoring
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field        | Type         | Decorators                                  | Validation | Description             |
 | ------------ | ------------ | ------------------------------------------- | ---------- | ----------------------- |
@@ -2174,16 +2178,16 @@ user: User;
 
 ```typescript
 const AUDIT_ACTIONS = [
-  "user.login",
-  "user.logout",
-  "user.register",
-  "user.changePassword",
-  "user.update",
-  "order.create",
-  "order.cancel",
-  "product.create",
-  "product.update",
-  "product.delete",
+  'user.login',
+  'user.logout',
+  'user.register',
+  'user.changePassword',
+  'user.update',
+  'order.create',
+  'order.cancel',
+  'product.create',
+  'product.update',
+  'product.delete',
 ];
 ```
 
@@ -2199,7 +2203,7 @@ const AUDIT_ACTIONS = [
 - Hierarchical structure (cây danh mục, hỗ trợ parent-child)
 - SEO-friendly slugs
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field         | Type         | Decorators                                  | Validation                      | Description                |
 | ------------- | ------------ | ------------------------------------------- | ------------------------------- | -------------------------- |
@@ -2253,7 +2257,7 @@ products: Product[];
 - Multi-image support
 - SKU management
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field          | Type          | Decorators                                                              | Validation                      | Description                            |
 | -------------- | ------------- | ----------------------------------------------------------------------- | ------------------------------- | -------------------------------------- |
@@ -2320,7 +2324,7 @@ orderItems: OrderItem[];
 - One active cart per user
 - Track cart creation/update time
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field       | Type      | Decorators                   | Validation | Description         |
 | ----------- | --------- | ---------------------------- | ---------- | ------------------- |
@@ -2365,7 +2369,7 @@ cartItems: CartItem[];
 - Link cart to products
 - Price snapshot (lưu giá khi add to cart)
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field       | Type          | Decorators                                              | Validation            | Description                                |
 | ----------- | ------------- | ------------------------------------------------------- | --------------------- | ------------------------------------------ |
@@ -2417,7 +2421,7 @@ product: Product;
 - Shipping information snapshot
 - Order history
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field                     | Type          | Decorators                                                                       | Validation    | Description                                     |
 | ------------------------- | ------------- | -------------------------------------------------------------------------------- | ------------- | ----------------------------------------------- |
@@ -2446,20 +2450,20 @@ product: Product;
 
 ```typescript
 enum OrderStatus {
-  PENDING = "pending",
-  CONFIRMED = "confirmed",
-  PROCESSING = "processing",
-  SHIPPED = "shipped",
-  DELIVERED = "delivered",
-  CANCELLED = "cancelled",
-  REFUNDED = "refunded",
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  PROCESSING = 'processing',
+  SHIPPED = 'shipped',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded',
 }
 
 enum PaymentStatus {
-  PENDING = "pending",
-  PAID = "paid",
-  FAILED = "failed",
-  REFUNDED = "refunded",
+  PENDING = 'pending',
+  PAID = 'paid',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
 }
 ```
 
@@ -2510,7 +2514,7 @@ orderItems: OrderItem[];
 - Price snapshot (lưu giá tại thời điểm order)
 - Product information snapshot
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field         | Type          | Decorators                                              | Validation            | Description                            |
 | ------------- | ------------- | ------------------------------------------------------- | --------------------- | -------------------------------------- |
@@ -2723,422 +2727,197 @@ CREATE INDEX idx_products_description_trgm ON products USING GIN (description gi
 
 ---
 
-## 🛠️ TYPEORM IMPLEMENTATION EXAMPLES
+## 🛠️ PRISMA IMPLEMENTATION EXAMPLES
 
-### Example 1: User Entity (Complete)
+### Example 1: User Model (Complete)
 
-```typescript
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  OneToMany,
-  Index,
-} from "typeorm";
-import { Exclude } from "class-transformer";
-import {
-  IsEmail,
-  IsEnum,
-  IsString,
-  Length,
-  IsPhoneNumber,
-} from "class-validator";
-
-export enum Role {
-  USER = "user",
-  ADMIN = "admin",
+```prisma
+enum UserRole {
+  user
+  admin
+  staff
 }
 
-@Entity("users")
-export class User {
-  @PrimaryGeneratedColumn("uuid")
-  id: string;
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  password      String
+  firstName     String?   @db.VarChar(100)
+  lastName      String?   @db.VarChar(100)
+  phone         String?   @db.VarChar(20)
+  role          UserRole  @default(user)
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  @Column({ unique: true, length: 255 })
-  @Index()
-  @IsEmail()
-  email: string;
+  orders    Order[]
+  addresses Address[]
+  cart      Cart?
 
-  @Column({ length: 255 })
-  @Exclude()
-  password: string;
-
-  @Column({ length: 100, nullable: true })
-  @IsString()
-  @Length(1, 100)
-  firstName: string;
-
-  @Column({ length: 100, nullable: true })
-  @IsString()
-  @Length(1, 100)
-  lastName: string;
-
-  @Column({ length: 20, nullable: true })
-  @IsPhoneNumber("VN")
-  phone: string;
-
-  @Column({ type: "text", nullable: true })
-  address: string;
-
-  @Column({
-    type: "enum",
-    enum: Role,
-    default: Role.USER,
-  })
-  @IsEnum(Role)
-  role: Role;
-
-  @Column({ default: true })
-  @Index()
-  isActive: boolean;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  // Relationships
-  @OneToMany(() => Cart, (cart) => cart.user)
-  carts: Cart[];
-
-  @OneToMany(() => Order, (order) => order.user)
-  orders: Order[];
+  @@map("users")
 }
 ```
 
-### Example 2: Category Entity (Self-Referencing)
+### Example 2: Category Model (Self-Referencing)
 
-```typescript
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
-  Index,
-} from "typeorm";
-import { IsString, Length, IsUrl, IsBoolean } from "class-validator";
+```prisma
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  slug        String    @unique @db.VarChar(255)
+  image       String?
+  description String?   @db.Text
+  parentId    Int?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-@Entity("categories")
-export class Category {
-  @PrimaryGeneratedColumn()
-  id: number;
+  parent   Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToCategory")
+  products Product[]
 
-  @Column({ unique: true, length: 255 })
-  @Index()
-  @IsString()
-  @Length(1, 255)
-  name: string;
-
-  @Column({ unique: true, length: 255 })
-  @Index()
-  @IsString()
-  slug: string;
-
-  @Column({ type: "text", nullable: true })
-  @IsString()
-  description: string;
-
-  @Column({ nullable: true, length: 500 })
-  @IsUrl()
-  image: string;
-
-  @Column({ nullable: true })
-  @Index()
-  parentId: number;
-
-  @Column({ default: true })
-  @Index()
-  @IsBoolean()
-  isActive: boolean;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  // Self-referencing relationship
-  @ManyToOne(() => Category, (category) => category.children, {
-    nullable: true,
-    onDelete: "SET NULL",
-  })
-  @JoinColumn({ name: "parentId" })
-  parent: Category;
-
-  @OneToMany(() => Category, (category) => category.parent)
-  children: Category[];
-
-  @OneToMany(() => Product, (product) => product.category)
-  products: Product[];
+  @@map("categories")
 }
 ```
 
-### Example 3: Product Entity (JSON Column)
+### Example 3: Product Model (JSON Fields)
 
-```typescript
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
-  Index,
-} from "typeorm";
-import {
-  IsString,
-  Length,
-  IsPositive,
-  Min,
-  IsInt,
-  IsArray,
-  IsBoolean,
-} from "class-validator";
+```prisma
+model Product {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(500)
+  slug         String    @unique @db.VarChar(500)
+  description  String?   @db.Text
+  price        Decimal   @db.Decimal(10, 2)
+  comparePrice Decimal?  @db.Decimal(10, 2)
+  stock        Int       @default(0)
+  sku          String    @unique @db.VarChar(100)
+  images       Json?     @default("[]")
+  categoryId   Int
+  weight       Decimal?  @db.Decimal(8, 2)
+  dimensions   Json?
+  tags         Json?     @default("[]")
+  seo          Json?
+  isActive     Boolean   @default(true)
+  isFeatured   Boolean   @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-@Entity("products")
-@Index(["categoryId", "isActive"])
-@Index(["isFeatured", "isActive"])
-export class Product {
-  @PrimaryGeneratedColumn()
-  id: number;
+  category   Category    @relation(fields: [categoryId], references: [id])
+  cartItems  CartItem[]
+  orderItems OrderItem[]
 
-  @Column({ length: 500 })
-  @IsString()
-  @Length(1, 500)
-  name: string;
-
-  @Column({ unique: true, length: 500 })
-  @Index()
-  @IsString()
-  slug: string;
-
-  @Column({ type: "text", nullable: true })
-  description: string;
-
-  @Column({ type: "decimal", precision: 10, scale: 2 })
-  @Index()
-  @IsPositive()
-  @Min(0)
-  price: number;
-
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: true })
-  @Min(0)
-  comparePrice: number;
-
-  @Column({ default: 0 })
-  @IsInt()
-  @Min(0)
-  stock: number;
-
-  @Column({ unique: true, length: 100 })
-  @Index()
-  @IsString()
-  sku: string;
-
-  @Column({ type: "json", default: [] })
-  @IsArray()
-  images: string[];
-
-  @Column()
-  @Index()
-  categoryId: number;
-
-  @Column({ default: true })
-  @Index()
-  @IsBoolean()
-  isActive: boolean;
-
-  @Column({ default: false })
-  @Index()
-  @IsBoolean()
-  isFeatured: boolean;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  // Relationships
-  @ManyToOne(() => Category, (category) => category.products, {
-    onDelete: "SET NULL",
-  })
-  @JoinColumn({ name: "categoryId" })
-  category: Category;
-
-  @OneToMany(() => CartItem, (cartItem) => cartItem.product)
-  cartItems: CartItem[];
-
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
-  orderItems: OrderItem[];
+  @@map("products")
 }
 ```
 
-### Example 4: Order & OrderItem (Cascade Delete)
+### Example 4: Order And OrderItem Models
+
+```prisma
+enum OrderStatus {
+  pending
+  confirmed
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+model Order {
+  id                      Int           @id @default(autoincrement())
+  orderNumber             String        @unique @db.VarChar(50)
+  userId                  String        @db.Uuid
+  subtotal                Decimal       @db.Decimal(10, 2)
+  tax                     Decimal       @db.Decimal(10, 2) @default(0)
+  shippingFee             Decimal       @db.Decimal(10, 2) @default(0)
+  total                   Decimal       @db.Decimal(10, 2)
+  status                  OrderStatus   @default(pending)
+  paymentStatus           PaymentStatus @default(pending)
+  shippingAddressSnapshot Json
+  notes                   String?       @db.Text
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  payments   Payment[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+```
+
+### Example 5: Prisma Client Query Patterns
 
 ```typescript
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
-  Index,
-} from "typeorm";
-import { IsEnum, IsString, Min } from "class-validator";
+// Restrict payload size for catalog endpoints
+const products = await prisma.product.findMany({
+  where: {
+    categoryId: 5,
+    isActive: true,
+    price: {
+      gte: 100000,
+      lte: 500000,
+    },
+  },
+  select: {
+    id: true,
+    name: true,
+    slug: true,
+    price: true,
+    images: true,
+  },
+  orderBy: { createdAt: 'desc' },
+  take: 20,
+  skip: 0,
+});
 
-export enum OrderStatus {
-  PENDING = "pending",
-  CONFIRMED = "confirmed",
-  PROCESSING = "processing",
-  SHIPPED = "shipped",
-  DELIVERED = "delivered",
-  CANCELLED = "cancelled",
-  REFUNDED = "refunded",
-}
+// Avoid N+1 by loading required relations explicitly
+const orders = await prisma.order.findMany({
+  take: 10,
+  include: {
+    user: {
+      select: {
+        id: true,
+        email: true,
+      },
+    },
+  },
+});
 
-export enum PaymentStatus {
-  PENDING = "pending",
-  PAID = "paid",
-  FAILED = "failed",
-  REFUNDED = "refunded",
-}
-
-@Entity("orders")
-export class Order {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column({ unique: true, length: 50 })
-  @Index()
-  orderNumber: string;
-
-  @Column({ type: "uuid" })
-  @Index()
-  userId: string;
-
-  @Column({ type: "decimal", precision: 10, scale: 2 })
-  @Min(0)
-  subtotal: number;
-
-  @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
-  @Min(0)
-  tax: number;
-
-  @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
-  @Min(0)
-  shippingFee: number;
-
-  @Column({ type: "decimal", precision: 10, scale: 2 })
-  @Min(0)
-  total: number;
-
-  @Column({
-    type: "enum",
-    enum: OrderStatus,
-    default: OrderStatus.PENDING,
-  })
-  @Index()
-  @IsEnum(OrderStatus)
-  status: OrderStatus;
-
-  @Column({
-    type: "enum",
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
-  })
-  @Index()
-  @IsEnum(PaymentStatus)
-  paymentStatus: PaymentStatus;
-
-  @Column({ length: 500 })
-  @IsString()
-  shippingAddress: string;
-
-  @Column({ length: 100 })
-  @IsString()
-  shippingCity: string;
-
-  @Column({ length: 100 })
-  @IsString()
-  shippingCountry: string;
-
-  @Column({ length: 20 })
-  @IsString()
-  shippingPostalCode: string;
-
-  @Column({ type: "text", nullable: true })
-  notes: string;
-
-  @CreateDateColumn()
-  @Index()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  // Relationships
-  @ManyToOne(() => User, (user) => user.orders)
-  @JoinColumn({ name: "userId" })
-  user: User;
-
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, {
-    cascade: true, // CASCADE DELETE
-  })
-  orderItems: OrderItem[];
-}
-
-@Entity("order_items")
-export class OrderItem {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column()
-  @Index()
-  orderId: number;
-
-  @Column()
-  @Index()
-  productId: number;
-
-  @Column({ length: 500 })
-  productName: string;
-
-  @Column({ type: "decimal", precision: 10, scale: 2 })
-  @Min(0)
-  price: number;
-
-  @Column()
-  @Min(1)
-  quantity: number;
-
-  @Column({ type: "decimal", precision: 10, scale: 2 })
-  @Min(0)
-  total: number;
-
-  // Relationships
-  @ManyToOne(() => Order, (order) => order.orderItems, {
-    onDelete: "CASCADE", // Auto-delete when Order deleted
-  })
-  @JoinColumn({ name: "orderId" })
-  order: Order;
-
-  @ManyToOne(() => Product, (product) => product.orderItems)
-  @JoinColumn({ name: "productId" })
-  product: Product;
-}
+// Full-text style search can still be executed with raw SQL when needed
+const searchKeyword = 'laptop';
+const result = await prisma.$queryRaw`
+  SELECT id, name, slug, price
+  FROM products
+  WHERE name ILIKE ${`%${searchKeyword}%`}
+     OR description ILIKE ${`%${searchKeyword}%`}
+  ORDER BY "createdAt" DESC
+  LIMIT 20
+`;
 ```
 
 ---
@@ -3159,28 +2938,28 @@ Thứ tự tạo entities phải tuân theo dependency graph để tránh lỗi 
 7. OrderItem (depends on Order, Product)
 ```
 
-### TypeORM Migration Commands
+### Prisma Migration Commands
 
 ```bash
-# 1. Generate migration từ entity changes
-npm run migration:generate -- src/migrations/InitialSchema
+# 1. Generate migration từ schema changes
+npx prisma migrate dev --name initial_schema
 
-# 2. Run migrations
-npm run migration:run
+# 2. Apply committed migrations
+npx prisma migrate deploy
 
-# 3. Revert last migration (nếu có lỗi)
-npm run migration:revert
+# 3. Check migration state
+npx prisma migrate status
 
-# 4. Show migration status
-npm run migration:show
+# 4. Regenerate Prisma Client
+npx prisma generate
 ```
 
 ### Important Notes
 
-⚠️ **DO NOT use `synchronize: true` in production!**
+⚠️ **DO NOT use destructive development commands on shared databases!**
 
-- Chỉ dùng trong development
-- Production phải dùng migrations
+- `prisma migrate reset` chỉ dùng trong development local
+- Shared environments phải dùng committed migrations
 
 ✅ **Best Practices:**
 
@@ -3190,34 +2969,30 @@ npm run migration:show
 - Có rollback plan (revert migration)
 - Document migration changes trong commit message
 
-### Sample Migration File Structure
+### Sample Migration Workflow
 
-```typescript
-import { MigrationInterface, QueryRunner } from "typeorm";
+```bash
+# Update prisma/schema.prisma
 
-export class CreateUsersTable1234567890123 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
-      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-      
-      CREATE TABLE "users" (
-        "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-        "email" varchar(255) UNIQUE NOT NULL,
-        "password" varchar(255) NOT NULL,
-        -- ... other columns
-        "createdAt" timestamp DEFAULT now(),
-        "updatedAt" timestamp DEFAULT now()
-      );
-      
-      CREATE INDEX "idx_users_email" ON "users" ("email");
-      CREATE INDEX "idx_users_isActive" ON "users" ("isActive");
-    `);
-  }
+# Create and apply a migration
+npx prisma migrate dev --name create_users_table
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE "users"`);
-  }
-}
+# Inspect generated SQL in:
+# prisma/migrations/<timestamp>_create_users_table/migration.sql
+```
+
+```sql
+-- Example generated SQL fragment
+CREATE TABLE "users" (
+  "id" UUID NOT NULL,
+  "email" TEXT NOT NULL,
+  "password" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 ```
 
 ---
@@ -3239,32 +3014,27 @@ export class CreateUsersTable1234567890123 implements MigrationInterface {
 ✅ Implement trong Service, không trong database:
 
 1. **User Registration:**
-
    - Email format validation
    - Password strength (min 8 chars, uppercase, lowercase, number, special char)
    - Email uniqueness check
 
 2. **Category Management:**
-
    - Slug auto-generation từ name
    - Prevent circular parent-child references
    - Check if category has products before delete
 
 3. **Product Management:**
-
    - SKU auto-generation (nếu không provide)
    - Slug auto-generation
    - comparePrice >= price validation
    - Stock không âm
 
 4. **Cart Operations:**
-
    - Check product stock before add to cart
    - Merge cart on user login
    - Clear cart after checkout
 
 5. **Order Creation:**
-
    - Validate stock availability
    - Calculate totals: subtotal, tax (10%), shippingFee, total
    - Generate unique orderNumber
@@ -3288,15 +3058,15 @@ Khi cần mở rộng, có thể thêm các entities sau:
 #### 1. **Review & Rating System**
 
 ```typescript
-@Entity("reviews")
+@Entity('reviews')
 class Review {
   @PrimaryGeneratedColumn() id: number;
   @Column() userId: string;
   @Column() productId: number;
   @Column() orderId: number; // Only verified purchases
-  @Column({ type: "int" }) rating: number; // 1-5
-  @Column({ type: "text", nullable: true }) comment: string;
-  @Column({ type: "json", default: [] }) images: string[]; // Review images
+  @Column({ type: 'int' }) rating: number; // 1-5
+  @Column({ type: 'text', nullable: true }) comment: string;
+  @Column({ type: 'json', default: [] }) images: string[]; // Review images
   @Column({ default: 0 }) helpfulCount: number; // Votes
   @Column({ default: true }) isVerified: boolean;
   @Column({ default: true }) isActive: boolean; // Moderation
@@ -3313,36 +3083,36 @@ class Review {
 
 ```typescript
 enum CouponType {
-  PERCENTAGE = "percentage",
-  FIXED = "fixed",
-  FREE_SHIPPING = "free_shipping",
+  PERCENTAGE = 'percentage',
+  FIXED = 'fixed',
+  FREE_SHIPPING = 'free_shipping',
 }
 
-@Entity("coupons")
+@Entity('coupons')
 class Coupon {
   @PrimaryGeneratedColumn() id: number;
   @Column({ unique: true }) code: string;
-  @Column({ type: "enum", enum: CouponType }) type: CouponType;
-  @Column({ type: "decimal" }) value: number;
-  @Column({ type: "decimal", nullable: true }) minOrderValue: number;
-  @Column({ type: "decimal", nullable: true }) maxDiscount: number;
+  @Column({ type: 'enum', enum: CouponType }) type: CouponType;
+  @Column({ type: 'decimal' }) value: number;
+  @Column({ type: 'decimal', nullable: true }) minOrderValue: number;
+  @Column({ type: 'decimal', nullable: true }) maxDiscount: number;
   @Column() startDate: Date;
   @Column() endDate: Date;
   @Column({ nullable: true }) usageLimit: number; // Total uses
   @Column({ default: 0 }) usedCount: number;
   @Column({ nullable: true }) perUserLimit: number;
-  @Column({ type: "json", nullable: true }) applicableCategories: number[];
-  @Column({ type: "json", nullable: true }) applicableProducts: number[];
+  @Column({ type: 'json', nullable: true }) applicableCategories: number[];
+  @Column({ type: 'json', nullable: true }) applicableProducts: number[];
   @Column({ default: true }) isActive: boolean;
   @CreateDateColumn() createdAt: Date;
 }
 
-@Entity("order_coupons")
+@Entity('order_coupons')
 class OrderCoupon {
   @PrimaryGeneratedColumn() id: number;
   @Column() orderId: number;
   @Column() couponId: number;
-  @Column({ type: "decimal" }) discountAmount: number;
+  @Column({ type: 'decimal' }) discountAmount: number;
   @CreateDateColumn() appliedAt: Date;
 
   @ManyToOne(() => Order) order: Order;
@@ -3372,7 +3142,7 @@ class WishlistItem {
 #### 4. **Address Book**
 
 ```typescript
-@Entity("addresses")
+@Entity('addresses')
 class Address {
   @PrimaryGeneratedColumn() id: number;
   @Column() userId: string;
@@ -3395,14 +3165,14 @@ class Address {
 #### 5. **Product Variants (Size, Color)**
 
 ```typescript
-@Entity("product_variants")
+@Entity('product_variants')
 class ProductVariant {
   @PrimaryGeneratedColumn() id: number;
   @Column() productId: number;
   @Column({ unique: true }) sku: string;
-  @Column({ type: "decimal" }) price: number;
+  @Column({ type: 'decimal' }) price: number;
   @Column() stock: number;
-  @Column({ type: "json" }) attributes: any; // { size: 'M', color: 'Red' }
+  @Column({ type: 'json' }) attributes: any; // { size: 'M', color: 'Red' }
   @Column({ nullable: true }) image: string;
   @Column({ default: true }) isActive: boolean;
   @CreateDateColumn() createdAt: Date;
@@ -3415,17 +3185,17 @@ class ProductVariant {
 
 ```typescript
 enum InventoryAction {
-  IN = "in",
-  OUT = "out",
-  ADJUSTMENT = "adjustment",
-  RETURN = "return",
+  IN = 'in',
+  OUT = 'out',
+  ADJUSTMENT = 'adjustment',
+  RETURN = 'return',
 }
 
-@Entity("inventory_logs")
+@Entity('inventory_logs')
 class InventoryLog {
   @PrimaryGeneratedColumn() id: number;
   @Column() productId: number;
-  @Column({ type: "enum", enum: InventoryAction }) action: InventoryAction;
+  @Column({ type: 'enum', enum: InventoryAction }) action: InventoryAction;
   @Column() quantity: number;
   @Column() previousStock: number;
   @Column() newStock: number;
@@ -3443,23 +3213,23 @@ class InventoryLog {
 
 ```typescript
 enum NotificationType {
-  ORDER_CONFIRMED = "order_confirmed",
-  ORDER_SHIPPED = "order_shipped",
-  ORDER_DELIVERED = "order_delivered",
-  PRICE_DROP = "price_drop",
-  BACK_IN_STOCK = "back_in_stock",
-  PROMOTION = "promotion",
-  REVIEW_REQUEST = "review_request",
+  ORDER_CONFIRMED = 'order_confirmed',
+  ORDER_SHIPPED = 'order_shipped',
+  ORDER_DELIVERED = 'order_delivered',
+  PRICE_DROP = 'price_drop',
+  BACK_IN_STOCK = 'back_in_stock',
+  PROMOTION = 'promotion',
+  REVIEW_REQUEST = 'review_request',
 }
 
-@Entity("notifications")
+@Entity('notifications')
 class Notification {
   @PrimaryGeneratedColumn() id: number;
   @Column() userId: string;
-  @Column({ type: "enum", enum: NotificationType }) type: NotificationType;
+  @Column({ type: 'enum', enum: NotificationType }) type: NotificationType;
   @Column() title: string;
-  @Column({ type: "text" }) message: string;
-  @Column({ type: "json", nullable: true }) data: any; // Additional metadata
+  @Column({ type: 'text' }) message: string;
+  @Column({ type: 'json', nullable: true }) data: any; // Additional metadata
   @Column({ default: false }) isRead: boolean;
   @Column({ nullable: true }) actionUrl: string;
   @CreateDateColumn() createdAt: Date;
@@ -3475,7 +3245,7 @@ class Notification {
 
 ```typescript
 // Product View Tracking
-@Entity("product_views")
+@Entity('product_views')
 class ProductView {
   @PrimaryGeneratedColumn() id: number;
   @Column() productId: number;
@@ -3484,7 +3254,7 @@ class ProductView {
   @Column({ nullable: true }) ipAddress: string;
   @Column({ nullable: true }) userAgent: string;
   @Column({ nullable: true }) referrer: string;
-  @Column({ type: "int", default: 0 }) timeSpent: number; // seconds
+  @Column({ type: 'int', default: 0 }) timeSpent: number; // seconds
   @CreateDateColumn() viewedAt: Date;
 
   @ManyToOne(() => Product) product: Product;
@@ -3492,7 +3262,7 @@ class ProductView {
 }
 
 // Search Analytics
-@Entity("search_history")
+@Entity('search_history')
 class SearchHistory {
   @PrimaryGeneratedColumn() id: number;
   @Column() query: string;
@@ -3507,14 +3277,14 @@ class SearchHistory {
 }
 
 // Product Recommendations (AI-generated)
-@Entity("product_recommendations")
+@Entity('product_recommendations')
 class ProductRecommendation {
   @PrimaryGeneratedColumn() id: number;
   @Column() userId: string;
   @Column() productId: number;
-  @Column({ type: "decimal", precision: 5, scale: 4 }) score: number; // 0-1
+  @Column({ type: 'decimal', precision: 5, scale: 4 }) score: number; // 0-1
   @Column() algorithm: string; // collaborative_filtering, content_based
-  @Column({ type: "json" }) metadata: any;
+  @Column({ type: 'json' }) metadata: any;
   @CreateDateColumn() generatedAt: Date;
   @Column({ nullable: true }) clickedAt: Date;
   @Column({ default: false }) purchased: boolean;
@@ -3527,12 +3297,12 @@ class ProductRecommendation {
 #### 💬 **Q&A System**
 
 ```typescript
-@Entity("product_questions")
+@Entity('product_questions')
 class ProductQuestion {
   @PrimaryGeneratedColumn() id: number;
   @Column() productId: number;
   @Column() userId: string;
-  @Column({ type: "text" }) question: string;
+  @Column({ type: 'text' }) question: string;
   @Column({ default: 0 }) answersCount: number;
   @Column({ default: 0 }) helpfulCount: number;
   @Column({ default: true }) isActive: boolean;
@@ -3544,12 +3314,12 @@ class ProductQuestion {
   answers: ProductAnswer[];
 }
 
-@Entity("product_answers")
+@Entity('product_answers')
 class ProductAnswer {
   @PrimaryGeneratedColumn() id: number;
   @Column() questionId: number;
   @Column() userId: string;
-  @Column({ type: "text" }) answer: string;
+  @Column({ type: 'text' }) answer: string;
   @Column({ default: 0 }) helpfulCount: number;
   @Column({ default: false }) isSeller: boolean; // Official answer
   @Column({ default: true }) isActive: boolean;
@@ -3564,18 +3334,18 @@ class ProductAnswer {
 #### 💎 **Loyalty & Rewards**
 
 ```typescript
-@Entity("membership_tiers")
+@Entity('membership_tiers')
 class MembershipTier {
   @PrimaryGeneratedColumn() id: number;
   @Column({ unique: true }) name: string; // Bronze, Silver, Gold
   @Column() minPoints: number;
-  @Column({ type: "json" }) benefits: any; // Discount %, free shipping, etc.
+  @Column({ type: 'json' }) benefits: any; // Discount %, free shipping, etc.
   @Column() color: string;
   @Column({ nullable: true }) icon: string;
   @CreateDateColumn() createdAt: Date;
 }
 
-@Entity("user_memberships")
+@Entity('user_memberships')
 class UserMembership {
   @PrimaryGeneratedColumn() id: number;
   @Column() userId: string;
@@ -3590,11 +3360,11 @@ class UserMembership {
   @ManyToOne(() => MembershipTier) tier: MembershipTier;
 }
 
-@Entity("loyalty_transactions")
+@Entity('loyalty_transactions')
 class LoyaltyTransaction {
   @PrimaryGeneratedColumn() id: number;
   @Column() userId: string;
-  @Column({ type: "enum", enum: ["earn", "spend", "expire", "refund"] })
+  @Column({ type: 'enum', enum: ['earn', 'spend', 'expire', 'refund'] })
   type: string;
   @Column() points: number;
   @Column({ nullable: true }) referenceType: string; // Order, Review, Referral
@@ -3606,14 +3376,14 @@ class LoyaltyTransaction {
 }
 
 // Referral Program
-@Entity("referral_codes")
+@Entity('referral_codes')
 class ReferralCode {
   @PrimaryGeneratedColumn() id: number;
   @Column() userId: string;
   @Column({ unique: true }) code: string;
   @Column({ default: 0 }) usageCount: number;
-  @Column({ type: "decimal" }) referrerReward: number;
-  @Column({ type: "decimal" }) refereeReward: number;
+  @Column({ type: 'decimal' }) referrerReward: number;
+  @Column({ type: 'decimal' }) refereeReward: number;
   @Column({ default: true }) isActive: boolean;
   @CreateDateColumn() createdAt: Date;
 
@@ -3621,12 +3391,12 @@ class ReferralCode {
 }
 
 // Gift Cards
-@Entity("gift_cards")
+@Entity('gift_cards')
 class GiftCard {
   @PrimaryGeneratedColumn() id: number;
   @Column({ unique: true }) code: string;
-  @Column({ type: "decimal", precision: 10, scale: 2 }) initialBalance: number;
-  @Column({ type: "decimal", precision: 10, scale: 2 }) currentBalance: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2 }) initialBalance: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2 }) currentBalance: number;
   @Column({ nullable: true }) purchasedBy: string;
   @Column({ nullable: true }) recipientEmail: string;
   @Column({ nullable: true }) expiryDate: Date;
@@ -3639,13 +3409,13 @@ class GiftCard {
 #### ⚡ **Flash Sales & Marketing**
 
 ```typescript
-@Entity("flash_sales")
+@Entity('flash_sales')
 class FlashSale {
   @PrimaryGeneratedColumn() id: number;
   @Column() name: string;
   @Column() productId: number;
-  @Column({ type: "decimal" }) originalPrice: number;
-  @Column({ type: "decimal" }) salePrice: number;
+  @Column({ type: 'decimal' }) originalPrice: number;
+  @Column({ type: 'decimal' }) salePrice: number;
   @Column() stockLimit: number;
   @Column({ default: 0 }) soldCount: number;
   @Column() startTime: Date;
@@ -3657,26 +3427,26 @@ class FlashSale {
 }
 
 // Product Bundles
-@Entity("product_bundles")
+@Entity('product_bundles')
 class ProductBundle {
   @PrimaryGeneratedColumn() id: number;
   @Column() name: string;
-  @Column({ type: "text", nullable: true }) description: string;
-  @Column({ type: "json" }) productIds: number[]; // Array of product IDs
-  @Column({ type: "decimal" }) originalTotal: number;
-  @Column({ type: "decimal" }) bundlePrice: number;
-  @Column({ type: "decimal" }) discountPercent: number;
+  @Column({ type: 'text', nullable: true }) description: string;
+  @Column({ type: 'json' }) productIds: number[]; // Array of product IDs
+  @Column({ type: 'decimal' }) originalTotal: number;
+  @Column({ type: 'decimal' }) bundlePrice: number;
+  @Column({ type: 'decimal' }) discountPercent: number;
   @Column({ default: true }) isActive: boolean;
   @CreateDateColumn() createdAt: Date;
 }
 
 // Cart Abandonment Tracking
-@Entity("cart_abandonments")
+@Entity('cart_abandonments')
 class CartAbandonment {
   @PrimaryGeneratedColumn() id: number;
   @Column() cartId: number;
   @Column() userId: string;
-  @Column({ type: "decimal" }) cartValue: number;
+  @Column({ type: 'decimal' }) cartValue: number;
   @Column({ default: 0 }) itemsCount: number;
   @Column({ nullable: true }) recoveryEmailSent: Date;
   @Column({ default: false }) recovered: boolean;
@@ -3691,7 +3461,7 @@ class CartAbandonment {
 #### 🔔 **Back-in-Stock Alerts**
 
 ```typescript
-@Entity("back_in_stock_alerts")
+@Entity('back_in_stock_alerts')
 class BackInStockAlert {
   @PrimaryGeneratedColumn() id: number;
   @Column() productId: number;
@@ -3820,19 +3590,19 @@ class TwoFactorAuth {
 #### 📊 **Analytics & A/B Testing**
 
 ```typescript
-@Entity("ab_tests")
+@Entity('ab_tests')
 class ABTest {
   @PrimaryGeneratedColumn() id: number;
   @Column() name: string;
   @Column() description: string;
-  @Column({ type: "json" }) variants: any; // [{ name: 'A', config: {} }]
+  @Column({ type: 'json' }) variants: any; // [{ name: 'A', config: {} }]
   @Column() startDate: Date;
   @Column({ nullable: true }) endDate: Date;
   @Column({ default: true }) isActive: boolean;
   @CreateDateColumn() createdAt: Date;
 }
 
-@Entity("ab_test_assignments")
+@Entity('ab_test_assignments')
 class ABTestAssignment {
   @PrimaryGeneratedColumn() id: number;
   @Column() testId: number;
@@ -3847,27 +3617,27 @@ class ABTestAssignment {
 }
 
 // Cohort Analysis
-@Entity("cohort_data")
+@Entity('cohort_data')
 class CohortData {
   @PrimaryGeneratedColumn() id: number;
-  @Column({ type: "date" }) cohortDate: Date;
+  @Column({ type: 'date' }) cohortDate: Date;
   @Column() metric: string; // retention, revenue, orders
   @Column() periodOffset: number; // Days/weeks/months since cohort
-  @Column({ type: "decimal" }) value: number;
+  @Column({ type: 'decimal' }) value: number;
   @Column() usersCount: number;
   @CreateDateColumn() calculatedAt: Date;
 }
 
 // Heatmap Data
-@Entity("heatmap_data")
+@Entity('heatmap_data')
 class HeatmapData {
   @PrimaryGeneratedColumn() id: number;
   @Column() page: string;
   @Column() element: string; // CSS selector or element ID
   @Column({ default: 0 }) clicks: number;
   @Column({ default: 0 }) views: number;
-  @Column({ type: "decimal", nullable: true }) avgScrollDepth: number;
-  @Column({ type: "date" }) date: Date;
+  @Column({ type: 'decimal', nullable: true }) avgScrollDepth: number;
+  @Column({ type: 'date' }) date: Date;
   @CreateDateColumn() createdAt: Date;
 }
 ```
@@ -3875,11 +3645,11 @@ class HeatmapData {
 #### 📱 **Mobile & PWA**
 
 ```typescript
-@Entity("push_subscriptions")
+@Entity('push_subscriptions')
 class PushSubscription {
   @PrimaryGeneratedColumn() id: number;
   @Column() userId: string;
-  @Column({ type: "json" }) subscription: any; // Push API subscription object
+  @Column({ type: 'json' }) subscription: any; // Push API subscription object
   @Column() deviceType: string; // mobile, desktop
   @Column({ nullable: true }) deviceName: string;
   @Column({ default: true }) isActive: boolean;
@@ -3890,7 +3660,7 @@ class PushSubscription {
 }
 
 // Voice Search
-@Entity("voice_search_logs")
+@Entity('voice_search_logs')
 class VoiceSearchLog {
   @PrimaryGeneratedColumn() id: number;
   @Column({ nullable: true }) userId: string;
@@ -3902,13 +3672,13 @@ class VoiceSearchLog {
 }
 
 // Image Search
-@Entity("image_search_logs")
+@Entity('image_search_logs')
 class ImageSearchLog {
   @PrimaryGeneratedColumn() id: number;
   @Column({ nullable: true }) userId: string;
   @Column() imageUrl: string;
   @Column() resultsCount: number;
-  @Column({ type: "json", nullable: true }) topMatches: any;
+  @Column({ type: 'json', nullable: true }) topMatches: any;
   @CreateDateColumn() searchedAt: Date;
 }
 ```
@@ -3943,7 +3713,7 @@ Khi cần breaking changes:
 - [ ] Setup Redis cho caching (Phase 2+)
 - [ ] Setup Elasticsearch cho advanced search (Phase 3+)
 
-### Phase 1: Entity Implementation - MVP (TASK-00006 to TASK-00010)
+### Phase 1: Entity Implementation - MVP (TASK-107 to TASK-111)
 
 - [ ] Create User entity
 - [ ] Create Category entity (với self-referencing)
@@ -4029,7 +3799,7 @@ Khi cần breaking changes:
 - [ ] Create UserSegment entity
 - [ ] Implement marketing automation
 
-### Migration (TASK-00011)
+### Migration (TASK-112)
 
 - [ ] Generate Phase 1 migration (Core MVP)
 - [ ] Generate Phase 2 migration (Extended features)
@@ -4098,18 +3868,18 @@ Khi cần breaking changes:
 
 ### Related Tasks
 
-- **TASK-00004**: Kết nối NestJS với PostgreSQL
-- **TASK-00006**: Tạo User Entity
-- **TASK-00007**: Tạo Category Entity
-- **TASK-00008**: Tạo Product Entity
-- **TASK-00009**: Tạo Cart & CartItem Entities
-- **TASK-00010**: Tạo Order & OrderItem Entities
-- **TASK-00011**: Generate và Run Migrations
-- **TASK-00011.1**: Migration Best Practices
+- **TASK-104**: Kết nối NestJS với PostgreSQL
+- **TASK-107**: Tạo User Entity
+- **TASK-108**: Tạo Category Entity
+- **TASK-109**: Tạo Product Entity
+- **TASK-110**: Tạo Cart & CartItem Entities
+- **TASK-111**: Tạo Order & OrderItem Entities
+- **TASK-112**: Generate và Run Migrations
+- **TASK-113**: Migration Best Practices
 
 ### External Documentation
 
-- [TypeORM Documentation](https://typeorm.io/)
+- [Prisma Documentation](https://www.prisma.io/docs)
 - [PostgreSQL Data Types](https://www.postgresql.org/docs/current/datatype.html)
 - [class-validator Decorators](https://github.com/typestack/class-validator)
 - [NestJS Database Guide](https://docs.nestjs.com/techniques/database)
@@ -4121,11 +3891,11 @@ Khi cần breaking changes:
 Sau khi hoàn thành task này, bạn sẽ hiểu:
 
 ✅ Cách thiết kế database schema cho e-commerce application
-✅ Relationships trong TypeORM (1:1, 1:N, N:N, self-referencing)
+✅ Relationships trong Prisma schema (1:1, 1:N, N:N, self-referencing)
 ✅ Cascade behaviors và referential integrity
 ✅ Indexes và performance optimization strategies
 ✅ Data validation với class-validator
-✅ Migration strategies với TypeORM
+✅ Migration strategies với Prisma Migrate
 ✅ Business rules implementation
 ✅ Data modeling best practices
 
@@ -4140,11 +3910,11 @@ Task này được coi là hoàn thành khi:
 1. ✅ ERD diagram rõ ràng cho 7 core entities
 2. ✅ Tất cả 7 core entities được document chi tiết
 3. ✅ Relationships, constraints và indexes được định nghĩa
-4. ✅ Code examples đầy đủ cho TypeORM implementation
+4. ✅ Code examples đầy đủ cho Prisma implementation
 5. ✅ Migration strategy được document
 6. ✅ Business rules được liệt kê đầy đủ
 7. ✅ Team review và approve design
-8. ✅ Ready để implement trong TASK-00006 đến TASK-00011
+8. ✅ Ready để implement trong TASK-107 đến TASK-112
 
 ### Phase 2: Growth Features
 
@@ -4356,7 +4126,6 @@ Task này được coi là hoàn thành khi:
 ### Database Migrations Best Practices
 
 1. **Incremental Migrations**
-
    - Tạo migrations cho mỗi phase riêng biệt
    - Không bao giờ edit migrations đã deployed
    - Luôn có rollback plan
@@ -4389,7 +4158,6 @@ Task này được coi là hoàn thành khi:
    ```
 
 4. **Zero-Downtime Migrations**
-
    - Add columns as nullable first
    - Backfill data
    - Add constraints after
@@ -4478,23 +4246,20 @@ Planning Time: 0.085 ms
 Execution Time: 0.124 ms ← 365x FASTER!
 ```
 
-**TypeORM Implementation:**
+**Prisma Implementation:**
 
 ```typescript
-@Entity("products")
-@Index(["categoryId", "isActive", "price"]) // Composite index
-export class Product {
-  // ...
-}
-
-// Query with proper index usage
-const products = await productRepo.find({
+// Query with proper index usage through Prisma Client
+const products = await prisma.product.findMany({
   where: {
     categoryId: 5,
     isActive: true,
-    price: Between(100000, 500000),
+    price: {
+      gte: 100000,
+      lte: 500000,
+    },
   },
-  order: { createdAt: "DESC" },
+  orderBy: { createdAt: 'desc' },
   take: 20,
   skip: 0,
 });
@@ -4525,7 +4290,7 @@ for (const order of orders) {
 ```typescript
 // Single query with JOIN
 const orders = await orderRepo.find({
-  relations: ["user"],
+  relations: ['user'],
   take: 10,
 });
 // SELECT orders.*, users.*
@@ -4542,7 +4307,7 @@ orders.forEach((order) => {
 **✅ BETTER: DataLoader (for GraphQL)**
 
 ```typescript
-import DataLoader from "dataloader";
+import DataLoader from 'dataloader';
 
 const userLoader = new DataLoader(async (userIds: string[]) => {
   const users = await userRepo.findByIds(userIds);
@@ -4551,9 +4316,7 @@ const userLoader = new DataLoader(async (userIds: string[]) => {
 
 // Batches queries automatically
 const orders = await orderRepo.find({ take: 10 });
-const users = await Promise.all(
-  orders.map((order) => userLoader.load(order.userId))
-);
+const users = await Promise.all(orders.map((order) => userLoader.load(order.userId)));
 // Total: 2 queries (orders + batch users)
 ```
 
@@ -4588,21 +4351,18 @@ WHERE name ILIKE '%laptop%' OR description ILIKE '%laptop%';
 -- Index Scan: 15ms (166x faster!)
 ```
 
-**TypeORM Implementation:**
+**Prisma Implementation:**
 
 ```typescript
-// In migration
-await queryRunner.query(`
-  CREATE EXTENSION IF NOT EXISTS pg_trgm;
-  CREATE INDEX idx_products_name_trgm ON products USING GIN (name gin_trgm_ops);
-`);
+// In a Prisma migration SQL file
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX idx_products_name_trgm ON products USING GIN (name gin_trgm_ops);
 
-// Query
-const products = await productRepo
-  .createQueryBuilder("product")
-  .where("product.name ILIKE :search", { search: "%laptop%" })
-  .orWhere("product.description ILIKE :search", { search: "%laptop%" })
-  .getMany();
+// Query with Prisma raw SQL when full-text tuning is required
+const products = await prisma.$queryRaw`
+  SELECT * FROM products
+  WHERE name ILIKE ${'%laptop%'} OR description ILIKE ${'%laptop%'}
+`;
 ```
 
 ---
@@ -4780,12 +4540,20 @@ wrk -t10 -c100 -d30s http://localhost:3000/api/products/search?q=laptop
 **Monitoring:**
 
 ```typescript
-// TypeORM query logging
-{
-  type: 'postgres',
-  logging: ['error', 'warn', 'query'],
-  maxQueryExecutionTime: 100, // Log queries > 100ms
-}
+// Prisma query logging
+const prisma = new PrismaClient({
+  log: [
+    { emit: 'stdout', level: 'error' },
+    { emit: 'stdout', level: 'warn' },
+    { emit: 'event', level: 'query' },
+  ],
+});
+
+prisma.$on('query', (event) => {
+  if (event.duration > 100) {
+    logger.warn(`Slow query: ${event.duration}ms - ${event.query}`);
+  }
+});
 
 // Custom query performance middleware
 app.use((req, res, next) => {
@@ -4808,7 +4576,7 @@ app.use((req, res, next) => {
 
 **Lý do di chuyển lên Level 1:** User cần multiple addresses ngay từ MVP để hỗ trợ checkout flow (địa chỉ nhà, văn phòng, etc.)
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field        | Type         | Decorators                                                                      | Validation                      | Description                  |
 | ------------ | ------------ | ------------------------------------------------------------------------------- | ------------------------------- | ---------------------------- |
@@ -4871,7 +4639,7 @@ order.shippingAddressSnapshot = {
 
 **Lý do thêm vào Level 1:** E-commerce MUST track payment transactions. Không thể chỉ dựa vào `paymentStatus` enum trong Order.
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field              | Type          | Decorators                                                                       | Validation | Description                          |
 | ------------------ | ------------- | -------------------------------------------------------------------------------- | ---------- | ------------------------------------ |
@@ -4894,22 +4662,22 @@ order.shippingAddressSnapshot = {
 
 ```typescript
 enum PaymentMethod {
-  COD = "cod", // Cash on Delivery
-  BANK_TRANSFER = "bank_transfer", // Bank transfer
-  MOMO = "momo", // Momo e-wallet
-  VNPAY = "vnpay", // VNPay gateway
-  ZALOPAY = "zalopay", // ZaloPay
-  CREDIT_CARD = "credit_card", // International cards
-  PAYPAL = "paypal", // PayPal
+  COD = 'cod', // Cash on Delivery
+  BANK_TRANSFER = 'bank_transfer', // Bank transfer
+  MOMO = 'momo', // Momo e-wallet
+  VNPAY = 'vnpay', // VNPay gateway
+  ZALOPAY = 'zalopay', // ZaloPay
+  CREDIT_CARD = 'credit_card', // International cards
+  PAYPAL = 'paypal', // PayPal
 }
 
 enum PaymentStatus {
-  PENDING = "pending", // Awaiting payment
-  PROCESSING = "processing", // Payment being processed
-  PAID = "paid", // Successfully paid
-  FAILED = "failed", // Payment failed
-  CANCELLED = "cancelled", // Payment cancelled
-  REFUNDED = "refunded", // Payment refunded
+  PENDING = 'pending', // Awaiting payment
+  PROCESSING = 'processing', // Payment being processed
+  PAID = 'paid', // Successfully paid
+  FAILED = 'failed', // Payment failed
+  CANCELLED = 'cancelled', // Payment cancelled
+  REFUNDED = 'refunded', // Payment refunded
 }
 ```
 
@@ -4959,7 +4727,7 @@ order: Order;
 
 **Lý do thêm vào Level 2:** Sản phẩm có variants (Size/Color) là rất phổ biến. Schema hiện tại không support.
 
-**TypeORM Entity Specification:**
+**Prisma Model Specification:**
 
 | Field        | Type          | Decorators                                                              | Validation            | Description               |
 | ------------ | ------------- | ----------------------------------------------------------------------- | --------------------- | ------------------------- |
@@ -5006,7 +4774,7 @@ class CartItem {
   variantId: number; // FK to ProductVariant
 
   @ManyToOne(() => ProductVariant, { nullable: true })
-  @JoinColumn({ name: "variantId" })
+  @JoinColumn({ name: 'variantId' })
   variant: ProductVariant;
 }
 ```
@@ -5021,12 +4789,12 @@ class CartItem {
 
 ```typescript
 const DEFAULT_ROLES = [
-  { id: 1, name: "USER", description: "Regular customer", isActive: true },
-  { id: 2, name: "ADMIN", description: "Administrator", isActive: true },
+  { id: 1, name: 'USER', description: 'Regular customer', isActive: true },
+  { id: 2, name: 'ADMIN', description: 'Administrator', isActive: true },
   {
     id: 3,
-    name: "STAFF",
-    description: "Customer support staff",
+    name: 'STAFF',
+    description: 'Customer support staff',
     isActive: true,
   },
 ];
@@ -5036,11 +4804,11 @@ const DEFAULT_ROLES = [
 
 ```typescript
 const ADMIN_ACCOUNT = {
-  email: "admin@example.com",
-  password: "hashed_password", // Must be bcrypt hashed
-  firstName: "System",
-  lastName: "Admin",
-  role: "ADMIN",
+  email: 'admin@example.com',
+  password: 'hashed_password', // Must be bcrypt hashed
+  firstName: 'System',
+  lastName: 'Admin',
+  role: 'ADMIN',
   isActive: true,
   emailVerified: true,
 };
@@ -5050,16 +4818,16 @@ const ADMIN_ACCOUNT = {
 
 ```typescript
 const DEFAULT_CATEGORIES = [
-  { name: "Electronics", slug: "electronics", parentId: null },
-  { name: "Fashion", slug: "fashion", parentId: null },
-  { name: "Home & Garden", slug: "home-garden", parentId: null },
-  { name: "Books", slug: "books", parentId: null },
-  { name: "Sports", slug: "sports", parentId: null },
+  { name: 'Electronics', slug: 'electronics', parentId: null },
+  { name: 'Fashion', slug: 'fashion', parentId: null },
+  { name: 'Home & Garden', slug: 'home-garden', parentId: null },
+  { name: 'Books', slug: 'books', parentId: null },
+  { name: 'Sports', slug: 'sports', parentId: null },
   // Sub-categories
-  { name: "Smartphones", slug: "smartphones", parentId: 1 }, // Electronics
-  { name: "Laptops", slug: "laptops", parentId: 1 },
-  { name: "Men Fashion", slug: "men-fashion", parentId: 2 },
-  { name: "Women Fashion", slug: "women-fashion", parentId: 2 },
+  { name: 'Smartphones', slug: 'smartphones', parentId: 1 }, // Electronics
+  { name: 'Laptops', slug: 'laptops', parentId: 1 },
+  { name: 'Men Fashion', slug: 'men-fashion', parentId: 2 },
+  { name: 'Women Fashion', slug: 'women-fashion', parentId: 2 },
 ];
 ```
 
@@ -5068,14 +4836,14 @@ const DEFAULT_CATEGORIES = [
 ```typescript
 const SAMPLE_PRODUCTS = [
   {
-    name: "iPhone 15 Pro",
-    slug: "iphone-15-pro",
-    description: "Latest Apple smartphone",
+    name: 'iPhone 15 Pro',
+    slug: 'iphone-15-pro',
+    description: 'Latest Apple smartphone',
     price: 27990000, // VND
     stock: 50,
-    sku: "IPHONE-15-PRO",
+    sku: 'IPHONE-15-PRO',
     categoryId: 6, // Smartphones
-    images: ["https://example.com/iphone.jpg"],
+    images: ['https://example.com/iphone.jpg'],
     isActive: true,
     isFeatured: true,
   },
@@ -5088,110 +4856,87 @@ const SAMPLE_PRODUCTS = [
 ```typescript
 const DEFAULT_PERMISSIONS = [
   // Product permissions
-  { name: "product.create", resource: "product", action: "create" },
-  { name: "product.read", resource: "product", action: "read" },
-  { name: "product.update", resource: "product", action: "update" },
-  { name: "product.delete", resource: "product", action: "delete" },
+  { name: 'product.create', resource: 'product', action: 'create' },
+  { name: 'product.read', resource: 'product', action: 'read' },
+  { name: 'product.update', resource: 'product', action: 'update' },
+  { name: 'product.delete', resource: 'product', action: 'delete' },
 
   // Order permissions
-  { name: "order.create", resource: "order", action: "create" },
-  { name: "order.read", resource: "order", action: "read" },
-  { name: "order.update", resource: "order", action: "update" },
-  { name: "order.cancel", resource: "order", action: "cancel" },
-  { name: "order.refund", resource: "order", action: "refund" },
+  { name: 'order.create', resource: 'order', action: 'create' },
+  { name: 'order.read', resource: 'order', action: 'read' },
+  { name: 'order.update', resource: 'order', action: 'update' },
+  { name: 'order.cancel', resource: 'order', action: 'cancel' },
+  { name: 'order.refund', resource: 'order', action: 'refund' },
 
   // User management
-  { name: "user.manage", resource: "user", action: "manage" },
-  { name: "user.ban", resource: "user", action: "ban" },
+  { name: 'user.manage', resource: 'user', action: 'manage' },
+  { name: 'user.ban', resource: 'user', action: 'ban' },
 ];
 ```
 
 ### Seeding Script Structure
 
-**File: `src/database/seeders/seed.ts`**
+**File: `src/database/seed.ts`**
 
 ```typescript
-import { DataSource } from "typeorm";
-import { User } from "../entities/user.entity";
-import { Role } from "../entities/role.entity";
-import { Category } from "../entities/category.entity";
-import * as bcrypt from "bcrypt";
+import { PrismaClient, UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
-export class DatabaseSeeder {
-  constructor(private dataSource: DataSource) {}
+const prisma = new PrismaClient();
 
-  async run() {
-    console.log("🌱 Seeding database...");
+async function seed() {
+  console.log('🌱 Seeding database...');
 
-    // 1. Seed Roles
-    await this.seedRoles();
+  const adminEmail = 'admin@example.com';
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  });
 
-    // 2. Seed Admin Account
-    await this.seedAdminAccount();
-
-    // 3. Seed Categories
-    await this.seedCategories();
-
-    // 4. Seed Sample Products (dev only)
-    if (process.env.NODE_ENV === "development") {
-      await this.seedSampleProducts();
-    }
-
-    console.log("✅ Database seeded successfully!");
-  }
-
-  private async seedRoles() {
-    const roleRepo = this.dataSource.getRepository(Role);
-    const roles = [
-      { name: "USER", description: "Regular customer" },
-      { name: "ADMIN", description: "Administrator" },
-    ];
-
-    for (const role of roles) {
-      const exists = await roleRepo.findOne({ where: { name: role.name } });
-      if (!exists) {
-        await roleRepo.save(role);
-        console.log(`  ✓ Created role: ${role.name}`);
-      }
-    }
-  }
-
-  private async seedAdminAccount() {
-    const userRepo = this.dataSource.getRepository(User);
-    const adminEmail = "admin@example.com";
-
-    const exists = await userRepo.findOne({ where: { email: adminEmail } });
-    if (!exists) {
-      const hashedPassword = await bcrypt.hash("Admin@12345", 10);
-      await userRepo.save({
+  if (!existingAdmin) {
+    const hashedPassword = await bcrypt.hash('Admin@12345', 10);
+    await prisma.user.create({
+      data: {
         email: adminEmail,
         password: hashedPassword,
-        firstName: "System",
-        lastName: "Admin",
-        role: "ADMIN",
+        firstName: 'System',
+        lastName: 'Admin',
+        role: UserRole.admin,
         isActive: true,
-      });
-      console.log(`  ✓ Created admin account: ${adminEmail}`);
-    }
+        emailVerified: true,
+      },
+    });
+    console.log(`  ✓ Created admin account: ${adminEmail}`);
   }
 
-  private async seedCategories() {
-    // Implementation...
+  const categoryCount = await prisma.category.count();
+  if (categoryCount === 0) {
+    await prisma.category.createMany({
+      data: [
+        { name: 'Electronics', slug: 'electronics' },
+        { name: 'Fashion', slug: 'fashion' },
+        { name: 'Books', slug: 'books' },
+      ],
+    });
+    console.log('  ✓ Seeded default categories');
   }
 
-  private async seedSampleProducts() {
-    // Implementation...
-  }
+  console.log('✅ Database seeded successfully!');
 }
+
+void seed()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
 ```
 
 **Run seeder:**
 
 ```bash
-# Add script to package.json
-"seed": "ts-node src/database/seeders/seed.ts"
-
-# Run
+# Seed data
 npm run seed
 ```
 
@@ -5205,33 +4950,29 @@ npm run seed
 
 **Implementation:**
 
-```typescript
-import { Entity, DeleteDateColumn } from "typeorm";
-
-@Entity("products")
-export class Product {
-  // ... existing columns
-
-  @DeleteDateColumn()
-  deletedAt: Date; // NULL = active, có giá trị = soft deleted
+```prisma
+model Product {
+  id        Int       @id @default(autoincrement())
+  name      String
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 ```
 
-**TypeORM Configuration:**
+**Prisma Query Convention:**
 
 ```typescript
-// Enable soft delete globally
-@Entity()
-export abstract class BaseEntity {
-  @CreateDateColumn()
-  createdAt: Date;
+// Read only active products
+const products = await prisma.product.findMany({
+  where: { deletedAt: null, isActive: true },
+});
 
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  @DeleteDateColumn()
-  deletedAt: Date; // Soft delete support
-}
+// Soft delete
+await prisma.product.update({
+  where: { id: productId },
+  data: { deletedAt: new Date(), isActive: false },
+});
 
 // All entities extend BaseEntity
 export class Product extends BaseEntity {
@@ -5286,13 +5027,13 @@ await productRepository.delete(id); // Use with caution!
 
 ```typescript
 enum OrderStatus {
-  PENDING = "pending", // Initial state after order creation
-  CONFIRMED = "confirmed", // Payment confirmed / Admin approved
-  PROCESSING = "processing", // Order being prepared / packed
-  SHIPPED = "shipped", // Order dispatched to customer
-  DELIVERED = "delivered", // Order received by customer
-  CANCELLED = "cancelled", // Order cancelled
-  REFUNDED = "refunded", // Order refunded after delivery
+  PENDING = 'pending', // Initial state after order creation
+  CONFIRMED = 'confirmed', // Payment confirmed / Admin approved
+  PROCESSING = 'processing', // Order being prepared / packed
+  SHIPPED = 'shipped', // Order dispatched to customer
+  DELIVERED = 'delivered', // Order received by customer
+  CANCELLED = 'cancelled', // Order cancelled
+  REFUNDED = 'refunded', // Order refunded after delivery
 }
 ```
 
@@ -5334,26 +5075,17 @@ class OrderService {
     [OrderStatus.REFUNDED]: [], // Terminal state
   };
 
-  async updateOrderStatus(
-    orderId: number,
-    newStatus: OrderStatus,
-    reason?: string
-  ) {
+  async updateOrderStatus(orderId: number, newStatus: OrderStatus, reason?: string) {
     const order = await this.orderRepo.findOne({ where: { id: orderId } });
 
     // Validate transition
     if (!this.ALLOWED_TRANSITIONS[order.status].includes(newStatus)) {
-      throw new BadRequestException(
-        `Cannot transition from ${order.status} to ${newStatus}`
-      );
+      throw new BadRequestException(`Cannot transition from ${order.status} to ${newStatus}`);
     }
 
     // Additional business rules
-    if (
-      newStatus === OrderStatus.CONFIRMED &&
-      order.paymentStatus !== PaymentStatus.PAID
-    ) {
-      throw new BadRequestException("Cannot confirm order without payment");
+    if (newStatus === OrderStatus.CONFIRMED && order.paymentStatus !== PaymentStatus.PAID) {
+      throw new BadRequestException('Cannot confirm order without payment');
     }
 
     if (newStatus === OrderStatus.CANCELLED && reason) {
@@ -5417,7 +5149,7 @@ class OrderService {
 
 **2. Column Names**
 
-- Convention: **camelCase** (TypeORM default)
+- Convention: **camelCase** for Prisma model fields and generated client properties
 - Examples: `firstName`, `createdAt`, `shippingAddress`, `isActive`
 
 **3. Enum Values**
@@ -5427,9 +5159,9 @@ class OrderService {
 
 ```typescript
 enum OrderStatus {
-  PENDING = "pending",
-  CONFIRMED = "confirmed",
-  PROCESSING = "processing",
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  PROCESSING = 'processing',
 }
 ```
 
@@ -5448,17 +5180,17 @@ enum OrderStatus {
 - Convention: `idx_<table>_<column1>_<column2>`
 - Examples: `idx_products_category_active`, `idx_users_email`
 
-**TypeORM Configuration:**
+**Prisma Configuration:**
 
-```typescript
-// src/config/database.config.ts
-export const typeOrmConfig: TypeOrmModuleOptions = {
-  type: "postgres",
-  // ...
-  namingStrategy: new SnakeNamingStrategy(), // Tables in snake_case
-  entities: [__dirname + "/../**/*.entity{.ts,.js}"],
-  // Columns remain camelCase by default
-};
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 ```
 
 ---
@@ -5554,7 +5286,7 @@ Các thuật ngữ database và e-commerce quan trọng.
 **ORM (Object-Relational Mapping)**
 
 - Tool map objects (TypeScript class) sang database tables
-- Example: TypeORM, Sequelize, Prisma
+- Example: Prisma, Sequelize
 
 **Primary Key (PK)**
 
@@ -5686,10 +5418,10 @@ Các thuật ngữ database và e-commerce quan trọng.
 - Open-source relational database
 - Features: JSONB, full-text search, advanced indexing
 
-**TypeORM**
+**Prisma ORM**
 
-- ORM cho TypeScript/JavaScript
-- Supports: Migrations, repositories, query builder
+- ORM schema-first cho TypeScript/JavaScript
+- Supports: Prisma Client, migrations, Studio, typed queries
 
 **Redis**
 
@@ -5717,12 +5449,10 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **Database Fundamentals:**
 
 1. **[Database Design for Beginners](https://www.youtube.com/watch?v=ztHopE5Wnpc)** (YouTube - FreeCodeCamp)
-
    - 4-hour course covering basics
    - Topics: Tables, relationships, normalization, ER diagrams
 
 2. **[SQL Tutorial](https://www.sqltutorial.org/)**
-
    - Interactive SQL learning
    - Practice queries online
 
@@ -5730,16 +5460,17 @@ Tài liệu và khóa học để học sâu hơn về database design.
    - Comprehensive PostgreSQL guide
    - From basics to advanced features
 
-**TypeORM Basics:**
+**Prisma Basics:**
 
-4. **[TypeORM Documentation](https://typeorm.io/)**
+4. **[Prisma Documentation](https://www.prisma.io/docs)**
 
-   - Official docs (bắt đầu từ đây!)
-   - Topics: Entities, relationships, migrations
+- Official docs (bắt đầu từ đây!)
+- Topics: Schema, relations, Prisma Client, migrations
 
 5. **[NestJS Database Guide](https://docs.nestjs.com/techniques/database)**
-   - TypeORM integration với NestJS
-   - Best practices
+
+- Prisma integration patterns cho NestJS
+- Best practices
 
 ---
 
@@ -5748,12 +5479,10 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **Database Design Patterns:**
 
 6. **[Database Design Patterns](https://www.amazon.com/Database-Design-Patterns-Scott-Ambler/dp/0321544641)**
-
    - Book by Scott Ambler
    - Real-world design patterns
 
 7. **[SQL Performance Explained](https://sql-performance-explained.com/)**
-
    - Book by Markus Winand
    - Index optimization, query tuning
 
@@ -5764,7 +5493,6 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **E-commerce Database Design:**
 
 9. **[Designing Data-Intensive Applications](https://dataintensive.net/)**
-
    - Book by Martin Kleppmann (MUST READ!)
    - Topics: Replication, partitioning, transactions
 
@@ -5779,12 +5507,10 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **Performance & Scaling:**
 
 11. **[PostgreSQL Performance Optimization](https://www.postgresql.org/docs/current/performance-tips.html)**
-
     - Official performance tips
     - Query planner, indexes, locks
 
 12. **[High Performance PostgreSQL](https://www.amazon.com/High-Performance-PostgreSQL-Administrators-Developers/dp/1484268261)**
-
     - Book by Gregory Smith
     - Tuning, monitoring, scaling
 
@@ -5795,7 +5521,6 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **Distributed Systems:**
 
 14. **[Designing Distributed Systems](https://www.oreilly.com/library/view/designing-distributed-systems/9781491983638/)**
-
     - Book by Brendan Burns
     - Patterns for scalable systems
 
@@ -5810,18 +5535,17 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **Comprehensive Courses:**
 
 16. **[The Complete Database Design & Modeling Course](https://www.udemy.com/course/database-design/)**
-
     - Udemy course by Stephane Maarek
     - ER diagrams, normalization, SQL
 
 17. **[PostgreSQL Bootcamp](https://www.udemy.com/course/sql-and-postgresql/)**
-
     - Udemy course
     - From zero to advanced
 
-18. **[TypeORM Crash Course](https://www.youtube.com/watch?v=Paz0gnODPE0)**
-    - YouTube by Ben Awad
-    - Quick TypeORM overview
+18. **[Prisma Quickstart](https://www.prisma.io/docs/getting-started/quickstart)**
+
+- Official Prisma quickstart
+- Schema-first workflow overview
 
 ---
 
@@ -5830,12 +5554,10 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **Database Design Tools:**
 
 19. **[dbdiagram.io](https://dbdiagram.io/)**
-
     - Online ERD tool
     - Export to SQL, PNG, PDF
 
 20. **[DrawSQL](https://drawsql.app/)**
-
     - Visual database designer
     - Collaboration features
 
@@ -5846,12 +5568,10 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **PostgreSQL Tools:**
 
 22. **[pgAdmin](https://www.pgadmin.org/)**
-
     - Free PostgreSQL GUI
     - Query editor, schema browser
 
 23. **[DBeaver](https://dbeaver.io/)**
-
     - Universal database tool
     - Supports 80+ databases
 
@@ -5866,15 +5586,12 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **Must-Read Articles:**
 
 25. **[How Shopify Scaled to Millions](https://shopify.engineering/sharding-shopify-postgres)**
-
     - Database sharding real-world case study
 
 26. **[Amazon's DynamoDB Paper](https://www.allthingsdistributed.com/2007/10/amazons_dynamo.html)**
-
     - Distributed key-value store design
 
 27. **[Facebook's MySQL at Scale](https://engineering.fb.com/2021/07/22/data-infrastructure/mysql/)**
-
     - How Facebook manages MySQL clusters
 
 28. **[PostgreSQL vs MySQL Comparison](https://www.postgresqltutorial.com/postgresql-tutorial/postgresql-vs-mysql/)**
@@ -5887,12 +5604,10 @@ Tài liệu và khóa học để học sâu hơn về database design.
 **Interactive Learning:**
 
 29. **[SQL Zoo](https://sqlzoo.net/)**
-
     - Interactive SQL tutorials
     - Practice queries online
 
 30. **[HackerRank SQL Challenges](https://www.hackerrank.com/domains/sql)**
-
     - Gamified SQL learning
     - Easy to hard problems
 
@@ -5910,9 +5625,9 @@ Tài liệu và khóa học để học sâu hơn về database design.
 - Database design concepts (resource #1)
 - PostgreSQL tutorial (resource #3)
 
-**Week 3-4: TypeORM & NestJS**
+**Week 3-4: Prisma & NestJS**
 
-- TypeORM docs (resource #4)
+- Prisma docs (resource #4)
 - NestJS database guide (resource #5)
 - Build simple CRUD app
 
@@ -5949,11 +5664,11 @@ Tài liệu và khóa học để học sâu hơn về database design.
 3. ✅ Setup data seeding script
 4. ✅ Implement soft delete cho core entities
 5. ✅ Implement Order state machine validation
-6. 🔄 Proceed to **TASK-00006: Tạo User Entity**
+6. 🔄 Proceed to **TASK-107: Tạo User Entity**
 
 **✍️ Người thực hiện:** [Your Name]  
 **📅 Ngày cập nhật:** 2026-01-11  
-**✅ Status:** ⏳ In Progress - Enhanced with Critical Improvements
+**✅ Status:** ✅ Ready for phased implementation review
 
 ---
 
