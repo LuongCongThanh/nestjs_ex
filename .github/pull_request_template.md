@@ -1,30 +1,44 @@
 ## Summary
 
-<!-- Mô tả ngắn PR này làm gì và tại sao -->
+<!-- What does this PR do and why? One paragraph max. -->
+
+## Changes
+
+<!-- Bullet list of what changed. No file paths — describe behavior, not implementation. -->
 
 -
--
 
-## Type of change
+## Type
 
-- [ ] `feat` — tính năng mới
-- [ ] `fix` — sửa bug
-- [ ] `refactor` — không thêm tính năng, không sửa bug
-- [ ] `docs` — chỉ thay đổi tài liệu
-- [ ] `chore` — build, config, dependencies
+- [ ] `feat` — new feature
+- [ ] `fix` — bug fix
+- [ ] `refactor` — no behavior change
+- [ ] `perf` — performance improvement
+- [ ] `test` — tests only
+- [ ] `docs` — documentation only
+- [ ] `chore` — build, config, dependencies, CI
 
 ## Test plan
 
-<!-- Các bước để verify PR này hoạt động đúng -->
+<!-- How was this tested? Steps to verify manually if applicable. -->
 
-- [ ]
+- [ ] Unit/integration tests updated or added
+- [ ] Tested locally against a running instance
 - [ ]
 
 ## Breaking changes
 
-<!-- Có thay đổi nào phá vỡ backward compatibility không? -->
+<!-- Does this change the public API, database schema, or env variables? -->
 
-None / _mô tả ở đây_
+- [ ] No breaking changes
+- [ ] Yes — describe impact and migration steps below
+
+## Checklist
+
+- [ ] PR title follows Conventional Commits (`feat: ...`, `fix: ...`)
+- [ ] New code has no `console.log` / debug artifacts
+- [ ] Sensitive data not hardcoded or logged
+- [ ] Related issues linked below
 
 ## Related issues
 
