@@ -4,7 +4,7 @@
 
 - **Task ID**: TASK-00029
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (System Stability)
-- **Phụ thuộc**: TASK-00004.1 (Initial Error Handling)
+- **Phụ thuộc**: TASK-105.1 (Initial Error Handling)
 - **Trạng thái**: ✅ Done
 
 ---

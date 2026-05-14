@@ -4,7 +4,7 @@
 
 - **Task ID**: TASK-00045
 - **Độ ưu tiên**: 🔴 CAO (Business Core)
-- **Phụ thuộc**: TASK-00008 (Product Entity), TASK-00021 (Product CRUD)
+- **Phụ thuộc**: TASK-109 (Product Entity), TASK-00021 (Product CRUD)
 - **Trạng thái**: ✅ Done
 
 ---

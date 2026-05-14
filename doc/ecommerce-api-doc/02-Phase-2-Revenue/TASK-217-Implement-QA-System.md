@@ -4,7 +4,7 @@
 
 - **Task ID**: TASK-00035
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Growth & Support Reduction)
-- **Phụ thuộc**: TASK-00021 (Product CRUD), TASK-00006 (User Entity)
+- **Phụ thuộc**: TASK-00021 (Product CRUD), TASK-107 (User Entity)
 - **Trạng thái**: ✅ Done
 
 ---

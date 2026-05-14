@@ -13,7 +13,7 @@
 
 ### 💡 Tại sao Giỏ hàng quan trọng?
 Giỏ hàng không chỉ là nơi chứa hàng; nó là bằng chứng của ý định mua hàng. Một giỏ hàng không ổn định hoặc hay gặp lỗi sẽ làm mất khách hàng ngay lập tức.
-- **Identity-based Persistence**: Giỏ hàng phải được gắn chặt với danh tính người dùng (TASK-00006), cho phép họ tiếp tục mua sắm trên nhiều thiết bị.
+- **Identity-based Persistence**: Giỏ hàng phải được gắn chặt với danh tính người dùng (TASK-107), cho phép họ tiếp tục mua sắm trên nhiều thiết bị.
 - **Item Aging Policy**: Định nghĩa thời gian tồn tại của vật phẩm trong giỏ hàng nếu không phát sinh đơn hàng (ví dụ: Tự động xóa sau 30 ngày).
 - **Stock Pre-validation**: Kiểm tra tính sẵn có của sản phẩm ngay khi thêm vào giỏ để cung cấp phản hồi tức thì.
 

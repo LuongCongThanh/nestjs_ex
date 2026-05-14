@@ -4,7 +4,7 @@
 
 - **Task ID**: TASK-00019
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Catalog Management)
-- **Phụ thuộc**: TASK-00007 (Category Entity)
+- **Phụ thuộc**: TASK-108 (Category Entity)
 - **Trạng thái**: ✅ Done
 
 ---
