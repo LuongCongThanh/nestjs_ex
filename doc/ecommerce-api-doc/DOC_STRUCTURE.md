@@ -25,25 +25,26 @@ In addition to execution plans, the repository now maintains a canonical busines
 
 ```text
 ecommerce-api/
-├── PLAN_ARCHIVE.md (Original Monolith - Archived)
-├── doc/ecommerce-api-doc/
-│   ├── BUSINESS_REQUIREMENTS_DOCUMENT.md (Canonical BA/PM baseline for scope, KPI, actors, and requirements)
-│   ├── 01-Phase-1-Foundation/
-│   │   ├── TASK-101-Khởi-tạo-Project-NestJS.md
-│   │   ├── TASK-102-Setup-Environment-Configuration.md
-│   │   └── ...
-│   ├── 02-Phase-2-Revenue/
-│   │   ├── TASK-201-Implement-Categories-CRUD.md
-│   │   ├── TASK-202-Category-Tree-Filtering.md
-│   │   └── ...
-│   ├── 03-Phase-3-Scale/
-│   │   ├── TASK-301-Write-Unit-Tests.md
-│   │   ├── TASK-302-Write-E2E-Tests.md
-│   │   └── ...
-│   ├── PROJECT_STATUS.md
-│   ├── PROJECT_ROADMAP.md
-│   ├── DATABASE_SCHEMA.md
-│   └── TASK_INDEX.md
+├── CLAUDE.md                        ← Agent skill configuration
+├── CONTEXT.md                       ← Domain glossary (Order, Cart, User...)
+├── doc/
+│   ├── QUICKSTART.md                ← Start here — navigation guide
+│   ├── be-skills-guide.md           ← Technical skill references
+│   ├── project-conventions.vi.md    ← Coding standards (Vietnamese)
+│   ├── project-conventions.en.md    ← Coding standards (English)
+│   └── ecommerce-api-doc/
+│       ├── TASK_INDEX.md            ← Master index of all 80 tasks
+│       ├── PROJECT_STATUS.md        ← Current status + immediate priorities
+│       ├── PROJECT_ROADMAP.md       ← Critical path dependency graph
+│       ├── BUSINESS_REQUIREMENTS_DOCUMENT.md
+│       ├── DATABASE_SCHEMA.md
+│       ├── DATABASE_SETUP.md
+│       ├── COMMANDS.md
+│       ├── 01-Phase-1-Foundation/   ← 25 tasks (✅ 100% done)
+│       ├── 02-Phase-2-Revenue/      ← 26 tasks (🔄 in progress)
+│       └── 03-Phase-3-Scale/        ← 29 tasks (⏳ not started)
+└── docs/
+    └── agents/                      ← Agent skill config files
 ```
 
 ---
