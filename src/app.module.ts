@@ -4,7 +4,10 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { validationSchema } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CartModule } from './modules/cart/cart.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { OrderModule } from './modules/order/order.module';
+import { PaymentModule } from './modules/payment/payment.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -30,6 +33,9 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     UsersModule,
     CategoriesModule,
     ProductsModule,
+    CartModule,
+    OrderModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

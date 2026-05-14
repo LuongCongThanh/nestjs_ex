@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RefreshToken } from '@prisma/client';
-import * as crypto from 'node:crypto';
+import { hashToken, getTokenLookupVariants } from '@common/utils/token-hash.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 /**
@@ -11,16 +11,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class RefreshTokenService {
   private readonly logger = new Logger(RefreshTokenService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
-
-  private hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
-  }
-
-  private getTokenLookupVariants(token: string): string[] {
-    const hashedToken = this.hashToken(token);
-    return hashedToken === token ? [token] : [token, hashedToken];
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Create and store a new refresh token
@@ -32,7 +23,7 @@ export class RefreshTokenService {
     deviceInfo?: string,
     ipAddress?: string,
   ): Promise<RefreshToken> {
-    const hashedToken = this.hashToken(token);
+    const hashedToken = hashToken(token);
 
     return await this.prisma.refreshToken.create({
       data: {
@@ -50,7 +41,7 @@ export class RefreshTokenService {
    * Find refresh token by token string
    */
   async findByToken(token: string): Promise<RefreshToken | null> {
-    const tokenVariants = this.getTokenLookupVariants(token);
+    const tokenVariants = getTokenLookupVariants(token);
 
     return await this.prisma.refreshToken.findFirst({
       where: {
@@ -89,7 +80,7 @@ export class RefreshTokenService {
    * Revoke a specific refresh token (for logout)
    */
   async revokeToken(token: string): Promise<boolean> {
-    const tokenVariants = this.getTokenLookupVariants(token);
+    const tokenVariants = getTokenLookupVariants(token);
 
     const result = await this.prisma.refreshToken.updateMany({
       where: {
@@ -119,7 +110,7 @@ export class RefreshTokenService {
    * Delete a refresh token from database (for token rotation)
    */
   async deleteToken(token: string): Promise<boolean> {
-    const tokenVariants = this.getTokenLookupVariants(token);
+    const tokenVariants = getTokenLookupVariants(token);
 
     const result = await this.prisma.refreshToken.deleteMany({
       where: {
@@ -139,7 +130,7 @@ export class RefreshTokenService {
    * concurrent refresh requests.
    */
   async consumeRefreshToken(token: string): Promise<boolean> {
-    const tokenVariants = this.getTokenLookupVariants(token);
+    const tokenVariants = getTokenLookupVariants(token);
 
     const result = await this.prisma.refreshToken.updateMany({
       where: {

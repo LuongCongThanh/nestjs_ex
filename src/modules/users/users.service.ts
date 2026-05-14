@@ -1,14 +1,7 @@
-import {
-  BadRequestException,
-  ConflictException,
-  forwardRef,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
+import { PasswordService } from '@common/services/password.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PasswordService } from '../auth/services/password.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -17,7 +10,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => PasswordService))
     private readonly passwordService: PasswordService,
   ) {}
 

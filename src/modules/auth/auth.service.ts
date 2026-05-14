@@ -8,11 +8,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import * as cryptoNode from 'node:crypto';
+import { PasswordService } from '@common/services/password.service';
+import { addDuration, parseDurationMs } from '@common/utils/duration.util';
+import { hashToken, getTokenLookupVariants } from '@common/utils/token-hash.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { EmailVerificationService } from './services/email-verification.service';
-import { PasswordService } from './services/password.service';
 import { RefreshTokenService } from './services/refresh-token.service';
 import { TokenBlacklistService } from './services/token-blacklist.service';
 
@@ -28,19 +30,10 @@ export class AuthService {
     private readonly emailVerificationService: EmailVerificationService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly tokenBlacklistService: TokenBlacklistService,
-  ) { }
+  ) {}
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
-  }
-
-  private hashToken(token: string): string {
-    return cryptoNode.createHash('sha256').update(token).digest('hex');
-  }
-
-  private getTokenLookupVariants(token: string): string[] {
-    const hashedToken = this.hashToken(token);
-    return hashedToken === token ? [token] : [token, hashedToken];
   }
 
   /**
@@ -186,45 +179,13 @@ export class AuthService {
     const refreshExpirationString = this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d';
     const refresh_token = this.jwtService.sign(refreshPayload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: Math.floor(this.parseJwtExpiration(refreshExpirationString) / 1000),
+      expiresIn: Math.floor(parseDurationMs(refreshExpirationString) / 1000),
     });
 
-    const expiresAt = this.calculateExpirationDate(refreshExpirationString);
+    const expiresAt = addDuration(new Date(), refreshExpirationString);
     await this.refreshTokenService.createRefreshToken(refresh_token, user.id, expiresAt, deviceInfo, ipAddress);
 
     return { access_token, refresh_token };
-  }
-
-  private calculateExpirationDate(expirationString: string): Date {
-    const now = new Date();
-    const unit = expirationString.slice(-1);
-    const value = Number.parseInt(expirationString.slice(0, -1), 10);
-
-    switch (unit) {
-      case 'd':
-        return new Date(now.getTime() + value * 24 * 60 * 60 * 1000);
-      case 'h':
-        return new Date(now.getTime() + value * 60 * 60 * 1000);
-      case 'm':
-        return new Date(now.getTime() + value * 60 * 1000);
-      default:
-        return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-  }
-
-  private parseJwtExpiration(expirationString: string): number {
-    const unit = expirationString.slice(-1);
-    const value = Number.parseInt(expirationString.slice(0, -1), 10);
-    switch (unit) {
-      case 'd':
-        return value * 24 * 60 * 60 * 1000;
-      case 'h':
-        return value * 60 * 60 * 1000;
-      case 'm':
-        return value * 60 * 1000;
-      default:
-        return 15 * 60 * 1000;
-    }
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
@@ -241,7 +202,7 @@ export class AuthService {
     }
 
     const token = cryptoNode.randomBytes(32).toString('hex');
-    const hashedToken = this.hashToken(token);
+    const hashedToken = hashToken(token);
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour for reset
 
@@ -274,7 +235,7 @@ export class AuthService {
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
-    const tokenVariants = this.getTokenLookupVariants(resetPasswordDto.token);
+    const tokenVariants = getTokenLookupVariants(resetPasswordDto.token);
 
     const resetToken = await this.prisma.resetToken.findFirst({
       where: {
@@ -357,7 +318,7 @@ export class AuthService {
   async logout(userId: string, accessToken: string, refreshToken: string): Promise<void> {
     await this.refreshTokenService.revokeToken(refreshToken);
     const tokenExpiration = new Date(
-      Date.now() + this.parseJwtExpiration(this.configService.get<string>('JWT_EXPIRATION') || '15m'),
+      Date.now() + parseDurationMs(this.configService.get<string>('JWT_EXPIRATION') || '15m'),
     );
     await this.tokenBlacklistService.addToBlacklist(accessToken, userId, 'logout', tokenExpiration);
   }
@@ -365,7 +326,7 @@ export class AuthService {
   async logoutAll(userId: string, accessToken: string): Promise<void> {
     await this.refreshTokenService.revokeAllUserTokens(userId);
     const tokenExpiration = new Date(
-      Date.now() + this.parseJwtExpiration(this.configService.get<string>('JWT_EXPIRATION') || '15m'),
+      Date.now() + parseDurationMs(this.configService.get<string>('JWT_EXPIRATION') || '15m'),
     );
     await this.tokenBlacklistService.addToBlacklist(accessToken, userId, 'logout', tokenExpiration);
   }

@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { generateSlug } from '@common/utils/slug.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FindProductsQueryDto } from './dto/find-products-query.dto';
@@ -20,7 +21,7 @@ export class ProductsService {
       throw new NotFoundException(`Category with ID ${categoryId} not found`);
     }
 
-    const productSlug = slug || this.generateSlug(name);
+    const productSlug = slug || generateSlug(name);
 
     try {
       return await this.prisma.product.create({
@@ -114,7 +115,7 @@ export class ProductsService {
     await this.findOne(id);
 
     if (updateProductDto.name && !updateProductDto.slug) {
-      updateProductDto.slug = this.generateSlug(updateProductDto.name);
+      updateProductDto.slug = generateSlug(updateProductDto.name);
     }
 
     try {
@@ -186,14 +187,5 @@ export class ProductsService {
         },
       },
     };
-  }
-
-  private generateSlug(text: string): string {
-    return text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^\w ]+/g, '')
-      .replace(/ +/g, '-');
   }
 }

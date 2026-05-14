@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { CommonModule } from '../../common/common.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { EmailVerificationService } from './services/email-verification.service';
-import { PasswordService } from './services/password.service';
 import { RefreshTokenService } from './services/refresh-token.service';
 import { TokenBlacklistService } from './services/token-blacklist.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -14,6 +14,7 @@ import { RefreshStrategy } from './strategies/refresh.strategy';
 
 @Module({
   imports: [
+    CommonModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -30,13 +31,12 @@ import { RefreshStrategy } from './strategies/refresh.strategy';
   controllers: [AuthController],
   providers: [
     AuthService,
-    PasswordService,
     EmailVerificationService,
     RefreshTokenService,
     TokenBlacklistService,
     JwtStrategy,
     RefreshStrategy,
   ],
-  exports: [AuthService, PasswordService, PassportModule],
+  exports: [AuthService, PassportModule],
 })
 export class AuthModule {}

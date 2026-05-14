@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { buildCategoryTree, applyDepthLimit } from '@common/utils/category-tree.util';
+import { generateSlug } from '@common/utils/slug.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CategoryQueryDto } from './dto/category-query.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -13,7 +15,7 @@ export class CategoriesService {
     const { name, slug, description, image, isActive, parentId } = createCategoryDto;
 
     // Generate slug if not provided
-    const categorySlug = slug || this.generateSlug(name);
+    const categorySlug = slug || generateSlug(name);
 
     // Check if slug exists
     const existing = await this.prisma.category.findUnique({
@@ -59,11 +61,8 @@ export class CategoriesService {
   async getTree(query: CategoryQueryDto) {
     const { active, parentId, depth } = query;
 
-    // 1. Fetch all potentially relevant categories
-    const allCategories = await this.prisma.category.findMany({
-      where: {
-        ...(active !== undefined ? { isActive: active } : {}),
-      },
+    const rows = await this.prisma.category.findMany({
+      where: active !== undefined ? { isActive: active } : {},
       orderBy: { name: 'asc' },
       select: {
         id: true,
@@ -76,50 +75,11 @@ export class CategoriesService {
       },
     });
 
-    // 2. Build the full map
-    const categoryMap = new Map<number, any>();
-    allCategories.forEach((cat) => {
-      categoryMap.set(cat.id, { ...cat, children: [] });
-    });
-
-    // 3. Assemble tree and identify roots
-    const roots: any[] = [];
-    allCategories.forEach((cat) => {
-      const node = categoryMap.get(cat.id);
-      if (cat.parentId && categoryMap.has(cat.parentId)) {
-        categoryMap.get(cat.parentId).children.push(node);
-      } else {
-        if (!parentId || cat.id === parentId || !cat.parentId) {
-          roots.push(node);
-        }
-      }
-    });
-
-    // 4. Sub-branch filtering
-    let result = roots;
-    if (parentId) {
-      const specificBranch = categoryMap.get(parentId);
-      result = specificBranch ? [specificBranch] : [];
-    } else {
-      result = roots.filter((r) => !r.parentId || (parentId && r.id === parentId));
-    }
-
-    // 5. Apply Depth Control
+    let tree = buildCategoryTree(rows, parentId);
     if (depth !== undefined) {
-      this.applyDepthLimit(result, depth);
+      tree = applyDepthLimit(tree, depth);
     }
-
-    return result;
-  }
-
-  private applyDepthLimit(nodes: any[], maxDepth: number, currentDepth = 1) {
-    nodes.forEach((node) => {
-      if (currentDepth >= maxDepth) {
-        node.children = [];
-      } else if (node.children && node.children.length > 0) {
-        this.applyDepthLimit(node.children, maxDepth, currentDepth + 1);
-      }
-    });
+    return tree;
   }
 
   async findOne(id: number) {
@@ -150,7 +110,7 @@ export class CategoriesService {
     await this.findOne(id);
 
     if (updateCategoryDto.name && !updateCategoryDto.slug) {
-      updateCategoryDto.slug = this.generateSlug(updateCategoryDto.name);
+      updateCategoryDto.slug = generateSlug(updateCategoryDto.name);
     }
 
     if (updateCategoryDto.parentId) {
@@ -181,11 +141,15 @@ export class CategoriesService {
     const category = (await this.findOne(id)) as any;
 
     if (category._count.products > 0) {
-      throw new BadRequestException(`Cannot delete category with ${category._count.products} products. Move them first.`);
+      throw new BadRequestException(
+        `Cannot delete category with ${category._count.products} products. Move them first.`,
+      );
     }
 
     if (category.children && category.children.length > 0) {
-      throw new BadRequestException('Cannot delete category with active children. Delete or move sub-categories first.');
+      throw new BadRequestException(
+        'Cannot delete category with active children. Delete or move sub-categories first.',
+      );
     }
 
     return await this.prisma.category.update({
@@ -222,16 +186,5 @@ export class CategoriesService {
       createdAt: true,
       updatedAt: true,
     };
-  }
-
-  private generateSlug(text: string): string {
-    return text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[đĐ]/g, 'd')
-      .replace(/[^\w ]+/g, '')
-      .trim()
-      .replace(/ +/g, '-');
   }
 }

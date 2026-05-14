@@ -11,7 +11,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegistrationResponseDto } from './dto/registration-response.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')

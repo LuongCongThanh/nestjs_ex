@@ -3,12 +3,6 @@ import { Reflector } from '@nestjs/core';
 import { UserRole } from '@prisma/client';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
-/**
- * Roles Guard
- *
- * Checks if the authenticated user has the required roles to access a route.
- * Works in combination with @Roles() decorator.
- */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

@@ -2,9 +2,9 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query,
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
+import { RolesGuard } from '@common/guards/roles.guard';
 import { CategoriesService } from './categories.service';
 import { CategoryResponseDto } from './dto/category-response.dto';
 import { CategoryQueryDto } from './dto/category-query.dto';
