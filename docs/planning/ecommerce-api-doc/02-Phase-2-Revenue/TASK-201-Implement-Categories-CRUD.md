@@ -1,8 +1,8 @@
-# TASK-00019: Vòng đời Danh mục: Quản trị Phân loại & Vận hành (Catalog Lifecycle: Category Governance & Operations)
+# TASK-201: Vòng đời Danh mục: Quản trị Phân loại & Vận hành (Catalog Lifecycle: Category Governance & Operations)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00019
+- **Task ID**: TASK-201
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Catalog Management)
 - **Phụ thuộc**: TASK-108 (Category Entity)
 - **Trạng thái**: ✅ Done

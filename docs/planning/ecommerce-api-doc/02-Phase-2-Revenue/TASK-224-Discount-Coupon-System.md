@@ -1,10 +1,10 @@
-# TASK-00057: Động lực Tăng trưởng: Quản trị Giảm giá & Mã khuyến mãi (Growth Engine: Discount & Coupon Governance)
+# TASK-224: Động lực Tăng trưởng: Quản trị Giảm giá & Mã khuyến mãi (Growth Engine: Discount & Coupon Governance)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00057
+- **Task ID**: TASK-224
 - **Độ ưu tiên**: 🔴 CAO (Marketing & Sales)
-- **Phụ thuộc**: TASK-00025 (Cart Calculations), TASK-00026 (Order Creation)
+- **Phụ thuộc**: TASK-208 (Cart Calculations), TASK-209 (Order Creation)
 - **Trạng thái**: ✅ Done
 
 ---

@@ -1,10 +1,10 @@
-# TASK-00032: Đặc tả Giao diện: Tài liệu Sống & Khám phá API (Interface Specification: Living Documentation & API Exploration)
+# TASK-215: Đặc tả Giao diện: Tài liệu Sống & Khám phá API (Interface Specification: Living Documentation & API Exploration)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00032
+- **Task ID**: TASK-215
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Developer Experience)
-- **Phụ thuộc**: TASK-00031 (Response Contract), TASK-00012 (Authentication)
+- **Phụ thuộc**: TASK-214 (Response Contract), TASK-114 (Authentication)
 - **Trạng thái**: ✅ Done
 
 ---

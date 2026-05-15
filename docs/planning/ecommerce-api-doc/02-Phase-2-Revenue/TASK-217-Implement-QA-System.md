@@ -1,10 +1,10 @@
-# TASK-00035: Trao đổi Kiến thức: Nền tảng Hỏi đáp Khách hàng (Knowledge Exchange: Customer Q&A Platform)
+# TASK-217: Trao đổi Kiến thức: Nền tảng Hỏi đáp Khách hàng (Knowledge Exchange: Customer Q&A Platform)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00035
+- **Task ID**: TASK-217
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Growth & Support Reduction)
-- **Phụ thuộc**: TASK-00021 (Product CRUD), TASK-107 (User Entity)
+- **Phụ thuộc**: TASK-203 (Product CRUD), TASK-107 (User Entity)
 - **Trạng thái**: ✅ Done
 
 ---

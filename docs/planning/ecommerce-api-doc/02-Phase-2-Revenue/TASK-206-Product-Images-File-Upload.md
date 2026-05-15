@@ -1,10 +1,10 @@
-# TASK-00023.5: Quản trị Tài sản: Hạ tầng Truyền thông & Tối ưu hóa (Asset Management: Media Infrastructure & Optimization)
+# TASK-206: Quản trị Tài sản: Hạ tầng Truyền thông & Tối ưu hóa (Asset Management: Media Infrastructure & Optimization)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00023.5
+- **Task ID**: TASK-206
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Visual Experience)
-- **Phụ thuộc**: TASK-00021 (Product Governance)
+- **Phụ thuộc**: TASK-203 (Product Governance)
 - **Trạng thái**: ✅ Done
 
 ---

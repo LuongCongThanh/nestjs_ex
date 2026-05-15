@@ -1,10 +1,10 @@
-# TASK-00059: Giám sát Chủ động: Cảnh báo Kho hàng & Duy trì Vận hành (Proactive Monitoring: Inventory Alerts & Business Continuity)
+# TASK-226: Giám sát Chủ động: Cảnh báo Kho hàng & Duy trì Vận hành (Proactive Monitoring: Inventory Alerts & Business Continuity)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00059
+- **Task ID**: TASK-226
 - **Độ ưu tiên**: 🔴 CAO (Operations)
-- **Phụ thuộc**: TASK-00023 (Stock Management)
+- **Phụ thuộc**: TASK-205 (Stock Management)
 - **Trạng thái**: ✅ Done
 
 ---

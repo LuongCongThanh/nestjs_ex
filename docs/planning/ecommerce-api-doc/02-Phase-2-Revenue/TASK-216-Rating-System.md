@@ -1,10 +1,10 @@
-# TASK-00034: Niềm tin Cộng đồng: Quản trị Đánh giá & Xếp hạng (Community Trust: Review & Rating Governance)
+# TASK-216: Niềm tin Cộng đồng: Quản trị Đánh giá & Xếp hạng (Community Trust: Review & Rating Governance)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00034 (Review System)
+- **Task ID**: TASK-216
 - **Độ ưu tiên**: 🟡 TRUNG BÌNH (Growth & Conversion)
-- **Phụ thuộc**: TASK-00027 (Order Management), TASK-00021 (Product CRUD)
+- **Phụ thuộc**: TASK-210 (Order Management), TASK-203 (Product CRUD)
 - **Trạng thái**: ✅ Done
 
 ---

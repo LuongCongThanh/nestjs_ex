@@ -1,10 +1,10 @@
-# TASK-00028: Thấu hiểu Kinh doanh: Phân tích Đơn hàng & Báo cáo Doanh thu (Business Insight: Order Analytics & Revenue Reporting)
+# TASK-211: Thấu hiểu Kinh doanh: Phân tích Đơn hàng & Báo cáo Doanh thu (Business Insight: Order Analytics & Revenue Reporting)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00028
+- **Task ID**: TASK-211
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Management)
-- **Phụ thuộc**: TASK-00027 (Order Lifecycle)
+- **Phụ thuộc**: TASK-210 (Order Lifecycle)
 - **Trạng thái**: ✅ Done
 
 ---

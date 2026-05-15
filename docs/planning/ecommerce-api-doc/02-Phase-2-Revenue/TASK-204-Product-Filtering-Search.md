@@ -1,10 +1,10 @@
-# TASK-00022: Khám phá Thị trường: Kiến trúc Tìm kiếm & Điều hướng (Marketplace Discovery: Search & Navigation Architecture)
+# TASK-204: Khám phá Thị trường: Kiến trúc Tìm kiếm & Điều hướng (Marketplace Discovery: Search & Navigation Architecture)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00022
+- **Task ID**: TASK-204
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (User Experience)
-- **Phụ thuộc**: TASK-00021 (Product Governance)
+- **Phụ thuộc**: TASK-203 (Product Governance)
 - **Trạng thái**: ✅ Done
 
 ---

@@ -1,10 +1,10 @@
-# TASK-00026: Thương mại Giao dịch: Đặt hàng & Giữ chỗ Tồn kho (Transactional Commerce: Order Placement & Reservation)
+# TASK-209: Thương mại Giao dịch: Đặt hàng & Giữ chỗ Tồn kho (Transactional Commerce: Order Placement & Reservation)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00026
+- **Task ID**: TASK-209
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Revenue Path)
-- **Phụ thuộc**: TASK-00025 (Calculation Logic), TASK-00023 (Inventory)
+- **Phụ thuộc**: TASK-208 (Calculation Logic), TASK-205 (Inventory)
 - **Trạng thái**: ✅ Done
 
 ---
@@ -16,7 +16,7 @@
 Đây là khoảnh khắc chuyển đổi từ "người xem" thành "người mua". Mọi sự cố tại bước này đều trực tiếp làm mất doanh thu.
 
 - **ACID Transaction**: Toàn bộ quá trình (Tạo đơn -> Giữ kho -> Xóa giỏ hàng) phải diễn ra nguyên tử. Nếu một bước lỗi, tất cả phải hoàn tác.
-- **Stock Commitment**: Chuyển trạng thái tồn kho từ `Available` sang `Committed` (TASK-00023).
+- **Stock Commitment**: Chuyển trạng thái tồn kho từ `Available` sang `Committed` (TASK-205).
 - **Idempotency**: Ngăn chặn việc tạo đơn hàng trùng lặp nếu người dùng bấm nút "Đặt hàng" nhiều lần do mạng chậm.
 
 ---

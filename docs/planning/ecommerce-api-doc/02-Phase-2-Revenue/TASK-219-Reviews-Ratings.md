@@ -1,10 +1,10 @@
-# TASK-00046: Minh chứng Cộng đồng: Quản trị Đánh giá & Xếp hạng (Community Proof: Reviews & Ratings Governance)
+# TASK-219: Minh chứng Cộng đồng: Quản trị Đánh giá & Xếp hạng (Community Proof: Reviews & Ratings Governance)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00046
+- **Task ID**: TASK-219
 - **Độ ưu tiên**: 🔴 CAO (Trust & Conversion)
-- **Phụ thuộc**: TASK-00021 (Product CRUD), TASK-00027 (Order Management)
+- **Phụ thuộc**: TASK-203 (Product CRUD), TASK-210 (Order Management)
 - **Trạng thái**: ✅ Done
 
 ---

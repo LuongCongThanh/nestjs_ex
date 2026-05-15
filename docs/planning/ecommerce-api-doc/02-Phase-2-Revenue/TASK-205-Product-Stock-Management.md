@@ -1,10 +1,10 @@
-# TASK-00023: Toàn vẹn Tồn kho: Quản trị Lưu kho & Tính liên tục (Inventory Integrity: Stock Governance & Continuity)
+# TASK-205: Toàn vẹn Tồn kho: Quản trị Lưu kho & Tính liên tục (Inventory Integrity: Stock Governance & Continuity)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00023
+- **Task ID**: TASK-205
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Financial Impact)
-- **Phụ thuộc**: TASK-00021 (Product Governance)
+- **Phụ thuộc**: TASK-203 (Product Governance)
 - **Trạng thái**: ✅ Done
 
 ---
@@ -35,7 +35,7 @@ Tồn kho là tài sản. Sai lệch tồn kho dẫn đến mất doanh thu (H�
 ### 2. Quản trị Ngưỡng an toàn (Safety Thresholds)
 
 - **Low-stock Alert**: Khi tồn kho xuống dưới X đơn vị, hệ thống tự động gửi thông báo cho quản trị viên.
-- **Auto-visibility**: Khi tồn kho = 0, sản phẩm tự động chuyển trạng thái `OUT_OF_STOCK` (TASK-00021).
+- **Auto-visibility**: Khi tồn kho = 0, sản phẩm tự động chuyển trạng thái `OUT_OF_STOCK` (TASK-203).
 
 ---
 

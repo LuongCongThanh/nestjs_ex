@@ -1,10 +1,10 @@
-# TASK-00058: Hạ tầng Logistics: Đa phương thức Vận chuyển & Hoàn tất (Logistics Infrastructure: Multiple Shipping & Fulfillment)
+# TASK-225: Hạ tầng Logistics: Đa phương thức Vận chuyển & Hoàn tất (Logistics Infrastructure: Multiple Shipping & Fulfillment)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00058
+- **Task ID**: TASK-225
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Logistics & UX)
-- **Phụ thuộc**: TASK-00026 (Order Creation)
+- **Phụ thuộc**: TASK-209 (Order Creation)
 - **Trạng thái**: ✅ Done
 
 ---

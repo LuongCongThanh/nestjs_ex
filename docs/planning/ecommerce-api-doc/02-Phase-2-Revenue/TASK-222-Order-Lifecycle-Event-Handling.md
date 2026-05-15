@@ -1,10 +1,10 @@
-# TASK-00049: Điều phối Bất đồng bộ: Vòng đời Đơn hàng & Sự kiện (Asynchronous Coordination: Order Lifecycle & Event Orchestration)
+# TASK-222: Điều phối Bất đồng bộ: Vòng đời Đơn hàng & Sự kiện (Asynchronous Coordination: Order Lifecycle & Event Orchestration)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00049
+- **Task ID**: TASK-222
 - **Độ ưu tiên**: 🔴 CAO (Architecture & Scalability)
-- **Phụ thuộc**: TASK-00026 (Order Creation), TASK-00048 (Payments)
+- **Phụ thuộc**: TASK-209 (Order Creation), TASK-221 (Payments)
 - **Trạng thái**: ✅ Done
 
 ---

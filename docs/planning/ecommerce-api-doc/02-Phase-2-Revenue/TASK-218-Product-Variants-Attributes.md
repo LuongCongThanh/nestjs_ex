@@ -1,10 +1,10 @@
-# TASK-00045: Đa dạng hóa Sản phẩm: Quản trị Biến thể & Thuộc tính (Product Diversification: Variant & Attribute Governance)
+# TASK-218: Đa dạng hóa Sản phẩm: Quản trị Biến thể & Thuộc tính (Product Diversification: Variant & Attribute Governance)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00045
+- **Task ID**: TASK-218
 - **Độ ưu tiên**: 🔴 CAO (Business Core)
-- **Phụ thuộc**: TASK-109 (Product Entity), TASK-00021 (Product CRUD)
+- **Phụ thuộc**: TASK-109 (Product Entity), TASK-203 (Product CRUD)
 - **Trạng thái**: ✅ Done
 
 ---

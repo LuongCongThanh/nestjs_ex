@@ -1,10 +1,10 @@
-# TASK-00020: Khám phá Phân cấp: Cây Danh mục & Lọc Nâng cao (Hierarchical Discovery: Category Tree & Advanced Filtering)
+# TASK-202: Khám phá Phân cấp: Cây Danh mục & Lọc Nâng cao (Hierarchical Discovery: Category Tree & Advanced Filtering)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00020
+- **Task ID**: TASK-202
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Discovery)
-- **Phụ thuộc**: TASK-00019 (Category Governance)
+- **Phụ thuộc**: TASK-201 (Category Governance)
 - **Trạng thái**: ✅ Done
 
 ---

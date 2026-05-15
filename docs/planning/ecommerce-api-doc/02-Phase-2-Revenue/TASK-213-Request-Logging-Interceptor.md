@@ -1,10 +1,10 @@
-# TASK-00030: Khả năng Quan sát: Ghi log Yêu cầu & Truy vết Kiểm toán (Observability: Request Logging & Audit Trails)
+# TASK-213: Khả năng Quan sát: Ghi log Yêu cầu & Truy vết Kiểm toán (Observability: Request Logging & Audit Trails)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00030
+- **Task ID**: TASK-213
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Operations)
-- **Phụ thuộc**: TASK-00029 (Error Handling)
+- **Phụ thuộc**: TASK-212 (Error Handling)
 - **Trạng thái**: ✅ Done
 
 ---

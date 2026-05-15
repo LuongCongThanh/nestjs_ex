@@ -1,10 +1,10 @@
-# TASK-00056: Hạ tầng Nội dung: Quản trị Tài sản & Lưu trữ Đám mây (Content Infrastructure: Asset Management & Cloud Storage)
+# TASK-223: Hạ tầng Nội dung: Quản trị Tài sản & Lưu trữ Đám mây (Content Infrastructure: Asset Management & Cloud Storage)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00056
+- **Task ID**: TASK-223
 - **Độ ưu tiên**: 🔴 CAO (Infrastructure)
-- **Phụ thuộc**: TASK-00021 (Product CRUD)
+- **Phụ thuộc**: TASK-203 (Product CRUD)
 - **Trạng thái**: ✅ Done
 
 ---
