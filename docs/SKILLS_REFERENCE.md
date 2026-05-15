@@ -33,4 +33,266 @@ Tài liệu mô tả 24 skill cục bộ trong dự án.
 
 ---
 
-_Cập nhật lần cuối: 2026-05-15_
+## Hướng dẫn sử dụng Skills
+
+### Cú pháp gọi skill
+
+```
+/gsd-<tên-skill>
+```
+
+Ví dụ:
+
+```
+/gsd-plan-phase
+/gsd-debug
+/gsd-code-review
+```
+
+### Khi nào dùng skill nào?
+
+**Bắt đầu dự án mới**
+
+```
+/gsd-new-project
+```
+
+Dùng khi: chưa có gì, muốn tạo roadmap, chia phases, định nghĩa milestone từ đầu.
+
+**Làm việc trong 1 phase — luồng chuẩn**
+
+```
+1. /gsd-spec-phase     → viết đặc tả kỹ thuật
+2. /gsd-plan-phase     → lập kế hoạch task chi tiết
+3. /gsd-execute-phase  → thực thi từng task
+4. /gsd-verify-work    → kiểm tra đã đạt mục tiêu chưa
+5. /gsd-ship           → đẩy lên production
+```
+
+**Làm nhanh không cần ceremony**
+
+| Tình huống                      | Skill        |
+| ------------------------------- | ------------ |
+| Task nhỏ, fix lẹ                | `/gsd-quick` |
+| Biết làm gì rồi, muốn chạy ngay | `/gsd-fast`  |
+| Research kỹ thuật chưa biết     | `/gsd-spike` |
+
+**Debug & sửa lỗi**
+
+| Tình huống                    | Skill            |
+| ----------------------------- | ---------------- |
+| Có bug, chưa biết nguyên nhân | `/gsd-debug`     |
+| Muốn tìm root cause sâu hơn   | `/gsd-forensics` |
+
+**Review & kiểm tra chất lượng**
+
+| Tình huống                     | Skill                  |
+| ------------------------------ | ---------------------- |
+| Review code trước khi merge    | `/gsd-code-review`     |
+| Kiểm tra UI đạt chuẩn chưa     | `/gsd-ui-review`       |
+| Kiểm tra toàn bộ milestone     | `/gsd-audit-milestone` |
+| UAT với user/stakeholder       | `/gsd-audit-uat`       |
+| Xác minh phase đã xong thật sự | `/gsd-verify-work`     |
+
+**Quản lý tiến độ**
+
+| Tình huống                   | Skill              |
+| ---------------------------- | ------------------ |
+| Xem đang làm đến đâu         | `/gsd-progress`    |
+| Dừng giữa chừng, lưu context | `/gsd-pause-work`  |
+| Tiếp tục hôm qua             | `/gsd-resume-work` |
+| Lỡ làm sai, muốn quay lại    | `/gsd-undo`        |
+
+**Hiểu codebase**
+
+| Tình huống                     | Skill               |
+| ------------------------------ | ------------------- |
+| Mới vào project, muốn overview | `/gsd-map-codebase` |
+| Muốn đào sâu 1 module cụ thể   | `/gsd-explore`      |
+
+**Git & triển khai**
+
+| Tình huống                   | Skill            |
+| ---------------------------- | ---------------- |
+| Tạo PR từ công việc hiện tại | `/gsd-pr-branch` |
+| Deploy lên production        | `/gsd-ship`      |
+| Dọn dẹp sau khi xong phase   | `/gsd-cleanup`   |
+
+**Tài liệu**
+
+| Tình huống                     | Skill              |
+| ------------------------------ | ------------------ |
+| Cập nhật docs sau khi thay đổi | `/gsd-docs-update` |
+| Phác thảo ý tưởng nhanh        | `/gsd-sketch`      |
+| Ghi lại quyết định quan trọng  | `/gsd-capture`     |
+
+### Ví dụ thực tế trong project này
+
+**Scenario: Implement Shopping Cart (TASK-207)**
+
+```
+/gsd-spec-phase    → đặc tả cart API, rules, edge cases
+/gsd-plan-phase    → chia task: entity → service → controller → tests
+/gsd-execute-phase → thực thi từng bước
+/gsd-add-tests     → thêm unit/e2e tests
+/gsd-code-review   → review trước khi merge
+/gsd-pr-branch     → tạo PR
+```
+
+**Scenario: Bug production — giỏ hàng tính sai giá**
+
+```
+/gsd-debug        → reproduce → hypothesize → fix → test
+/gsd-code-review  → review fix
+/gsd-ship         → deploy hotfix
+```
+
+**Scenario: Bắt đầu Phase 3 Scale**
+
+```
+/gsd-new-milestone      → tạo milestone mới
+/gsd-plan-phase         → plan toàn bộ phase
+/gsd-execute-phase      → chạy từng task
+/gsd-verify-work        → verify đạt goal
+/gsd-complete-milestone → đóng milestone
+```
+
+### Nguyên tắc chọn skill
+
+1. **Không biết bắt đầu từ đâu** → `/gsd-help`
+2. **Dự án mới** → `new-project` → `plan-phase` → `execute-phase`
+3. **Trong phase đang chạy** → `execute-phase` hoặc `quick`/`fast`
+4. **Có vấn đề** → `debug` hoặc `forensics`
+5. **Sắp xong** → `verify-work` → `pr-branch` → `ship`
+
+---
+
+## GSD Skills (Get Stuff Done Framework)
+
+GSD là framework quản lý toàn vòng đời phần mềm tích hợp với Claude Code — từ ý tưởng đến production. Luồng điển hình: `new-project` → `plan-phase` → `execute-phase` → `verify-work` → `ship`.
+
+### Project Lifecycle (Vòng đời dự án)
+
+| Skill                    | Chức năng                                          |
+| ------------------------ | -------------------------------------------------- |
+| `gsd-new-project`        | Khởi tạo dự án mới: tạo roadmap, cấu trúc planning |
+| `gsd-new-milestone`      | Tạo milestone mới trong dự án                      |
+| `gsd-complete-milestone` | Hoàn thành và đóng một milestone                   |
+| `gsd-milestone-summary`  | Tóm tắt trạng thái và kết quả của milestone        |
+
+### Planning & Phases (Lập kế hoạch)
+
+| Skill                      | Chức năng                                              |
+| -------------------------- | ------------------------------------------------------ |
+| `gsd-phase`                | Xem/quản lý phase hiện tại                             |
+| `gsd-plan-phase`           | Lập kế hoạch chi tiết cho một phase                    |
+| `gsd-spec-phase`           | Viết spec (đặc tả kỹ thuật) cho phase                  |
+| `gsd-discuss-phase`        | Thảo luận và phân tích assumptions/decisions cho phase |
+| `gsd-execute-phase`        | Thực thi plan của phase                                |
+| `gsd-validate-phase`       | Kiểm tra phase đã đạt mục tiêu chưa                    |
+| `gsd-ui-phase`             | Phase dành riêng cho UI/frontend                       |
+| `gsd-ai-integration-phase` | Phase tích hợp AI/LLM vào ứng dụng                     |
+| `gsd-secure-phase`         | Phase kiểm tra bảo mật                                 |
+| `gsd-mvp-phase`            | Phase xây dựng MVP nhanh                               |
+| `gsd-ultraplan-phase`      | Lập kế hoạch cực kỳ chi tiết (ultra-detailed planning) |
+| `gsd-spike`                | Research nhanh một vấn đề kỹ thuật cụ thể              |
+
+### Execution & Development (Thực thi)
+
+| Skill              | Chức năng                               |
+| ------------------ | --------------------------------------- |
+| `gsd-fast`         | Thực thi nhanh, ít ceremony             |
+| `gsd-quick`        | Làm task nhỏ, không cần planning đầy đủ |
+| `gsd-add-tests`    | Thêm tests cho code hiện có             |
+| `gsd-map-codebase` | Phân tích và map kiến trúc codebase     |
+| `gsd-explore`      | Khám phá codebase để hiểu context       |
+| `gsd-import`       | Import/tích hợp tài liệu vào dự án      |
+| `gsd-ingest-docs`  | Nhập và phân loại tài liệu planning     |
+
+### Review & Audit (Đánh giá)
+
+| Skill                         | Chức năng                                  |
+| ----------------------------- | ------------------------------------------ |
+| `gsd-review`                  | Review tổng quan phase/milestone           |
+| `gsd-code-review`             | Review code cho bugs, security, chất lượng |
+| `gsd-audit-fix`               | Áp dụng các fix từ kết quả audit           |
+| `gsd-audit-milestone`         | Audit toàn bộ milestone                    |
+| `gsd-audit-uat`               | Kiểm thử chấp nhận người dùng (UAT)        |
+| `gsd-ui-review`               | Đánh giá UI theo 6 tiêu chí chất lượng     |
+| `gsd-eval-review`             | Review coverage của AI evaluation          |
+| `gsd-plan-review-convergence` | Đảm bảo plan hội tụ về mục tiêu            |
+| `gsd-verify-work`             | Xác minh công việc đã đạt mục tiêu phase   |
+
+### Debug & Fix (Gỡ lỗi)
+
+| Skill           | Chức năng                                |
+| --------------- | ---------------------------------------- |
+| `gsd-debug`     | Debug có hệ thống theo scientific method |
+| `gsd-forensics` | Điều tra nguyên nhân gốc rễ của vấn đề   |
+
+### Workflow & Progress (Quản lý tiến độ)
+
+| Skill             | Chức năng                          |
+| ----------------- | ---------------------------------- |
+| `gsd-progress`    | Xem tiến độ hiện tại               |
+| `gsd-pause-work`  | Tạm dừng công việc, lưu checkpoint |
+| `gsd-resume-work` | Tiếp tục công việc từ checkpoint   |
+| `gsd-undo`        | Hoàn tác hành động vừa thực hiện   |
+| `gsd-update`      | Cập nhật trạng thái task/phase     |
+| `gsd-workstreams` | Quản lý nhiều workstream song song |
+| `gsd-workspace`   | Xem/quản lý workspace hiện tại     |
+
+### Git & Deployment (Git & triển khai)
+
+| Skill           | Chức năng                                         |
+| --------------- | ------------------------------------------------- |
+| `gsd-pr-branch` | Tạo branch và PR từ phase hiện tại                |
+| `gsd-ship`      | Đẩy code lên production                           |
+| `gsd-cleanup`   | Dọn dẹp sau khi hoàn thành (xóa temp files, v.v.) |
+
+### Intelligence & Analysis (Phân tích thông minh)
+
+| Skill                   | Chức năng                                  |
+| ----------------------- | ------------------------------------------ |
+| `gsd-stats`             | Thống kê và metrics của dự án              |
+| `gsd-health`            | Kiểm tra "sức khỏe" dự án                  |
+| `gsd-surface`           | Làm nổi bật những vấn đề tiềm ẩn           |
+| `gsd-profile-user`      | Phân tích hành vi developer để cá nhân hóa |
+| `gsd-extract-learnings` | Rút ra bài học từ session/phase            |
+
+### Content & Docs (Tài liệu)
+
+| Skill             | Chức năng                           |
+| ----------------- | ----------------------------------- |
+| `gsd-docs-update` | Cập nhật tài liệu dự án             |
+| `gsd-sketch`      | Phác thảo ý tưởng/design nhanh      |
+| `gsd-capture`     | Ghi lại ý tưởng/context nhanh       |
+| `gsd-thread`      | Quản lý thread/conversation context |
+
+### NS Skills — Autonomous Mode (Chế độ tự động)
+
+| Skill             | Chức năng                                |
+| ----------------- | ---------------------------------------- |
+| `gsd-ns-context`  | Cung cấp context cho chế độ autonomous   |
+| `gsd-ns-ideate`   | Ideation trong autonomous mode           |
+| `gsd-ns-manage`   | Quản lý tác vụ trong autonomous mode     |
+| `gsd-ns-project`  | Project management trong autonomous mode |
+| `gsd-ns-review`   | Review trong autonomous mode             |
+| `gsd-ns-workflow` | Điều phối workflow tự động               |
+| `gsd-autonomous`  | Chạy GSD hoàn toàn tự động               |
+
+### Meta & Configuration (Cấu hình)
+
+| Skill                | Chức năng                         |
+| -------------------- | --------------------------------- |
+| `gsd-help`           | Hiển thị help về GSD              |
+| `gsd-config`         | Cấu hình GSD settings             |
+| `gsd-settings`       | Xem/thay đổi settings             |
+| `gsd-inbox`          | Quản lý inbox tasks chưa xử lý    |
+| `gsd-review-backlog` | Review và prioritize backlog      |
+| `gsd-manager`        | Orchestrator chính của GSD system |
+| `gsd-graphify`       | Tạo knowledge graph từ GSD data   |
+
+---
+
+_Cập nhật lần cuối: 2026-05-16_
