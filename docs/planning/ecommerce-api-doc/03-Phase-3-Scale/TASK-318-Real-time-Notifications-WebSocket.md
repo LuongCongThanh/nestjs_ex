@@ -1,10 +1,10 @@
-# TASK-00062: Tương tác Tức thời: Thông báo Real-time & WebSockets (Instant Engagement: Real-time Notifications & WebSockets)
+# TASK-318: Tương tác Tức thời: Thông báo Real-time & WebSockets (Instant Engagement: Real-time Notifications & WebSockets)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00062
+- **Task ID**: TASK-318
 - **Độ ưu tiên**: 🔴 SIÊU CAO (User Engagement)
-- **Phụ thuộc**: TASK-00049 (Event Handling), TASK-00012 (JWT Auth)
+- **Phụ thuộc**: TASK-222 (Event Handling), TASK-114 (JWT Auth)
 - **Trạng thái**: ✅ Done
 
 ---

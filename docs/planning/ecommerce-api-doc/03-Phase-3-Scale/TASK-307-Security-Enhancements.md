@@ -1,10 +1,10 @@
-# TASK-00038: Gia cố Hệ thống: Bảo mật Đa lớp & Phòng thủ Chủ động (System Hardening: Multi-Layer Security & Defense)
+# TASK-307: Gia cố Hệ thống: Bảo mật Đa lớp & Phòng thủ Chủ động (System Hardening: Multi-Layer Security & Defense)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00038
+- **Task ID**: TASK-307
 - **Độ ưu tiên**: 🔴 NGHIÊM TRỌNG (Governance & Safety)
-- **Phụ thuộc**: TASK-00012 (JWT Auth), TASK-00029 (Error Handling)
+- **Phụ thuộc**: TASK-114 (JWT Auth), TASK-212 (Error Handling)
 - **Trạng thái**: ✅ Done
 
 ---

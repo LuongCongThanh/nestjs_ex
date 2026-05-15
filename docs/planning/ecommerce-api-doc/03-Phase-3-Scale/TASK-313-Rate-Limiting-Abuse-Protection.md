@@ -1,10 +1,10 @@
-# TASK-00052: Hệ thống Phòng thủ: Giới hạn Tốc độ & Chống lạm dụng (System Defense: Rate Limiting & Abuse Protection)
+# TASK-313: Hệ thống Phòng thủ: Giới hạn Tốc độ & Chống lạm dụng (System Defense: Rate Limiting & Abuse Protection)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00052
+- **Task ID**: TASK-313
 - **Độ ưu tiên**: 🔴 CAO (Security & Availability)
-- **Phụ thuộc**: TASK-00038 (Security Enhancements), TASK-00050 (Redis)
+- **Phụ thuộc**: TASK-307 (Security Enhancements), TASK-311 (Redis)
 - **Trạng thái**: ✅ Done
 
 ---

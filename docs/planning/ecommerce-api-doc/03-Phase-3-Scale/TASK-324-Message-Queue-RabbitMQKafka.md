@@ -1,10 +1,10 @@
-# TASK-00068: Giao tiếp Đáng tin cậy: Hàng đợi Thông điệp (Reliable Communication: Message Queues & Event Streaming)
+# TASK-324: Giao tiếp Đáng tin cậy: Hàng đợi Thông điệp (Reliable Communication: Message Queues & Event Streaming)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00068
+- **Task ID**: TASK-324
 - **Độ ưu tiên**: 🔴 SIÊU CAO (System Reliability)
-- **Phụ thuộc**: TASK-00049 (Event Handling), TASK-00067 (Microservices)
+- **Phụ thuộc**: TASK-222 (Event Handling), TASK-323 (Microservices)
 - **Trạng thái**: ✅ Done
 
 ---

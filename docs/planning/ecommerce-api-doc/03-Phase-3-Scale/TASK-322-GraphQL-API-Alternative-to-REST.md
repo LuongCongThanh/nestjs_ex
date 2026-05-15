@@ -1,10 +1,10 @@
-# TASK-00066: Giao diện Truy vấn: Hệ thống GraphQL Linh hoạt (Modern Data Delivery: Flexible GraphQL API)
+# TASK-322: Giao diện Truy vấn: Hệ thống GraphQL Linh hoạt (Modern Data Delivery: Flexible GraphQL API)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00066
+- **Task ID**: TASK-322
 - **Độ ưu tiên**: 🟡 TRUNG BÌNH (Advanced API)
-- **Phụ thuộc**: TASK-00021 (Product CRUD), TASK-00027 (Order Management)
+- **Phụ thuộc**: TASK-203 (Product CRUD), TASK-210 (Order Management)
 - **Trạng thái**: ✅ Done
 
 ---

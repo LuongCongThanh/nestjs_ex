@@ -1,10 +1,10 @@
-# TASK-00065: Hạ tầng Đám mây: Đóng gói Container & Điều phối (Cloud Infrastructure: Containerization & Orchestration)
+# TASK-321: Hạ tầng Đám mây: Đóng gói Container & Điều phối (Cloud Infrastructure: Containerization & Orchestration)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00065
+- **Task ID**: TASK-321
 - **Độ ưu tiên**: 🔴 SIÊU CAO (Scalability & DevOps)
-- **Phụ thuộc**: TASK-00040 (Production Deployment), TASK-00039 (CI/CD)
+- **Phụ thuộc**: TASK-309 (Production Deployment), TASK-308 (CI/CD)
 - **Trạng thái**: ✅ Done
 
 ---

@@ -1,10 +1,10 @@
-# TASK-00071: Định danh Không ma sát: Đăng nhập Mạng xã hội & OAuth (Frictionless Identity: Social Login & OAuth Integration)
+# TASK-327: Định danh Không ma sát: Đăng nhập Mạng xã hội & OAuth (Frictionless Identity: Social Login & OAuth Integration)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00071
+- **Task ID**: TASK-327
 - **Độ ưu tiên**: 🔴 SIÊU CAO (User Friction Reduction)
-- **Phụ thuộc**: TASK-00012 (JWT Auth), TASK-00014 (Implem Register/Login)
+- **Phụ thuộc**: TASK-114 (JWT Auth), TASK-116 (Register/Login)
 - **Trạng thái**: ✅ Done
 
 ---

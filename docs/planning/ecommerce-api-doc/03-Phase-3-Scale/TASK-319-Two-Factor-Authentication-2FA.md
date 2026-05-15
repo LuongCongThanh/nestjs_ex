@@ -1,10 +1,10 @@
-# TASK-00063: Bảo mật Cấp độ 1: Quản trị Xác thực 2 Lớp (Tier-1 Security: Two-Factor Authentication Governance)
+# TASK-319: Bảo mật Cấp độ 1: Quản trị Xác thực 2 Lớp (Tier-1 Security: Two-Factor Authentication Governance)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00063
+- **Task ID**: TASK-319
 - **Độ ưu tiên**: 🔴 SIÊU CAO (Account Security)
-- **Phụ thuộc**: TASK-00012 (JWT Auth), TASK-00044 (Identity Recovery)
+- **Phụ thuộc**: TASK-114 (JWT Auth), TASK-124 (Identity Recovery)
 - **Trạng thái**: ✅ Done
 
 ---

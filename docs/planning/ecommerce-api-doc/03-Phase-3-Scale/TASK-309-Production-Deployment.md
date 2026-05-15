@@ -1,10 +1,10 @@
-# TASK-00040: Sẵn sàng Vận hành: Triển khai Đám mây Mở rộng (Production Readiness: Scalable Cloud Deployment)
+# TASK-309: Sẵn sàng Vận hành: Triển khai Đám mây Mở rộng (Production Readiness: Scalable Cloud Deployment)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00040
+- **Task ID**: TASK-309
 - **Độ ưu tiên**: 🔴 NGHIÊM TRỌNG (Release Readiness)
-- **Phụ thuộc**: TASK-00039 (CI/CD), TASK-00003 (Database Setup)
+- **Phụ thuộc**: TASK-308 (CI/CD), TASK-103 (Database Setup)
 - **Trạng thái**: ✅ Done
 
 ---

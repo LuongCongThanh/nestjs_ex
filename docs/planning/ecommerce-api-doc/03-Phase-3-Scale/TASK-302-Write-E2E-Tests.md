@@ -1,10 +1,10 @@
-# TASK-00034: Xác thực Hệ thống: Hành trình Người dùng Cuối (System Validation: End-to-End Consumer Journeys)
+# TASK-302: Xác thực Hệ thống: Hành trình Người dùng Cuối (System Validation: End-to-End Consumer Journeys)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00034 (E2E)
+- **Task ID**: TASK-302
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (System Reliability)
-- **Phụ thuộc**: TASK-00033 (Unit Tests), Core Features (Batch 1-4)
+- **Phụ thuộc**: TASK-301 (Unit Tests), Phase 1 + Phase 2 Core Features
 - **Trạng thái**: ✅ Done
 
 ---

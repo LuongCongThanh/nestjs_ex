@@ -1,10 +1,10 @@
-# TASK-00041: Ranh giới Kiến trúc Sạch: Phân tách Trách nhiệm & Mở rộng Team (Clean Architecture Boundaries: Separation of Concerns & Team Scalability)
+# TASK-310: Ranh giới Kiến trúc Sạch: Phân tách Trách nhiệm & Mở rộng Team (Clean Architecture Boundaries: Separation of Concerns & Team Scalability)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00041
+- **Task ID**: TASK-310
 - **Độ ưu tiên**: 🔴 CAO (Architectural Integrity)
-- **Phụ thuộc**: TASK-00001 (General Architecture)
+- **Phụ thuộc**: TASK-101 (NestJS Project Setup)
 - **Trạng thái**: ✅ Done
 
 ---

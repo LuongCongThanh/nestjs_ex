@@ -1,10 +1,10 @@
-# TASK-00036: Hệ thống Khách hàng Thân thiết: Tích điểm & Hạng thành viên (Loyalty Engine: Reward Points & Membership Tiers)
+# TASK-303: Hệ thống Khách hàng Thân thiết: Tích điểm & Hạng thành viên (Loyalty Engine: Reward Points & Membership Tiers)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00036
+- **Task ID**: TASK-303
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Retention & Growth)
-- **Phụ thuộc**: TASK-00027 (Order Management), TASK-00006 (User Entity)
+- **Phụ thuộc**: TASK-210 (Order Management), TASK-107 (User Entity)
 - **Trạng thái**: ✅ Done
 
 ---

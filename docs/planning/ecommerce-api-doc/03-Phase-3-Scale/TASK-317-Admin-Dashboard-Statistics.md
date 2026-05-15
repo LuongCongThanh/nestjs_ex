@@ -1,10 +1,10 @@
-# TASK-00061: Trung tâm Điều hành: Dashboard Quản trị & Thống kê (Operational Center: Admin Dashboard & Statistics)
+# TASK-317: Trung tâm Điều hành: Dashboard Quản trị & Thống kê (Operational Center: Admin Dashboard & Statistics)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00061
+- **Task ID**: TASK-317
 - **Độ ưu tiên**: 🔴 SIÊU CAO (Business Intelligence)
-- **Phụ thuộc**: TASK-00028 (Order Statistics)
+- **Phụ thuộc**: TASK-211 (Order Statistics)
 - **Trạng thái**: ✅ Done
 
 ---

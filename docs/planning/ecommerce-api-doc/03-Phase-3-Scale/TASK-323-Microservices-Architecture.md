@@ -1,10 +1,10 @@
-# TASK-00067: Kiến trúc Phân tán: Hệ thống Microservices (Distributed Systems: Microservices Architecture)
+# TASK-323: Kiến trúc Phân tán: Hệ thống Microservices (Distributed Systems: Microservices Architecture)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00067
+- **Task ID**: TASK-323
 - **Độ ưu tiên**: 🟡 THẤP (Future Scaling)
-- **Phụ thuộc**: TASK-00065 (Docker/K8s), TASK-00049 (Event Handling)
+- **Phụ thuộc**: TASK-321 (Docker/K8s), TASK-222 (Event Handling)
 - **Trạng thái**: ✅ Done
 
 ---

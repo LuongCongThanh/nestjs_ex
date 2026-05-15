@@ -1,10 +1,10 @@
-# TASK-00070: Thương mại Toàn cầu: Đa tiền tệ & Giá động (Global Commerce: Multi-currency & Dynamic Pricing)
+# TASK-326: Thương mại Toàn cầu: Đa tiền tệ & Giá động (Global Commerce: Multi-currency & Dynamic Pricing)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00070
+- **Task ID**: TASK-326
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Scalability)
-- **Phụ thuộc**: TASK-00069 (i18n), TASK-00027 (Order Management)
+- **Phụ thuộc**: TASK-325 (i18n), TASK-210 (Order Management)
 - **Trạng thái**: ✅ Done
 
 ---

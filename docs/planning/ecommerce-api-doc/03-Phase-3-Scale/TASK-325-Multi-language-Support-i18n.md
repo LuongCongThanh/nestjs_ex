@@ -1,10 +1,10 @@
-# TASK-00069: Tầm nhìn Toàn cầu: Đa ngôn ngữ & Nội địa hóa (Global Reach: Multi-language & Localization)
+# TASK-325: Tầm nhìn Toàn cầu: Đa ngôn ngữ & Nội địa hóa (Global Reach: Multi-language & Localization)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00069
+- **Task ID**: TASK-325
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Scalability)
-- **Phụ thuộc**: TASK-00008 (Product Entity)
+- **Phụ thuộc**: TASK-109 (Product Entity)
 - **Trạng thái**: ✅ Done
 
 ---
