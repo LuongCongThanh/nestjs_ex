@@ -7,7 +7,7 @@
 
 ## Architecture Update
 
-Historically, this 3,800+ line document contained the entire system blueprint. To adhere to agile engineering principles and facilitate autonomous AI-driven development (using the `executing-plans` skill), this monolith has been atomized into 76 distinct, isolated execution plans.
+Historically, this 3,800+ line document contained the entire system blueprint. To adhere to agile engineering principles and facilitate autonomous AI-driven development (using the `executing-plans` skill), this monolith has been atomized into 80 distinct, isolated execution plans.
 
 ## Where to find the new plans
 
@@ -17,7 +17,7 @@ The new source of truth for the project timeline, database architecture, and gra
 > **To see what to build next:** Read `docs/planning/ecommerce-api-doc/PROJECT_STATUS.md`
 > **To see the critical path dependency graph:** Read `docs/planning/ecommerce-api-doc/PROJECT_ROADMAP.md`
 > **To view the database schema:** Read `docs/planning/ecommerce-api-doc/DATABASE_SCHEMA.md`
-> **To view all 76 individual execution plans:** List the `docs/planning/ecommerce-api-doc/tasks/` directory.
+> **To view all 80 individual execution plans:** Browse the `docs/planning/ecommerce-api-doc/01-Phase-1-Foundation/`, `02-Phase-2-Revenue/`, and `03-Phase-3-Scale/` directories.
 
 ---
 
