@@ -14,8 +14,8 @@
 
 ### Address Management
 
-- [ ] **ADDR-01**: User có thể tạo, xem danh sách, cập nhật và xóa các địa chỉ của mình (`/users/me/addresses`)
-- [ ] **ADDR-02**: User có thể đánh dấu một address là mặc định (atomic — tự động bỏ `isDefault` trên address cũ)
+- [x] **ADDR-01**: User có thể tạo, xem danh sách, cập nhật và xóa các địa chỉ của mình (`/users/me/addresses`)
+- [x] **ADDR-02**: User có thể đánh dấu một address là mặc định (atomic — tự động bỏ `isDefault` trên address cũ)
 - [ ] **ADDR-03**: Order creation chấp nhận `addressId` thay vì freeform JSON, và snapshot các fields địa chỉ vào Order tại thời điểm đặt hàng
 
 ### Email & Auth Completion
@@ -80,8 +80,8 @@
 | ORD-02      | Phase 2 | Pending |
 | ORD-03      | Phase 2 | Pending |
 | CART-01     | Phase 2 | Pending |
-| ADDR-01     | Phase 2 | Pending |
-| ADDR-02     | Phase 2 | Pending |
+| ADDR-01     | Phase 2 | Complete |
+| ADDR-02     | Phase 2 | Complete |
 | ADDR-03     | Phase 2 | Pending |
 | EMAIL-01    | Phase 3 | Pending |
 | AUTH-01     | Phase 3 | Pending |

@@ -39,12 +39,12 @@
 3. Order numbers remain unique under concurrent creation (format `ORD-{Date.now()}-{nanoid(6)}`); `GET /orders` returns paginated `{ data, page, limit, total }`.
 4. `PATCH /cart/items/:id` with `quantity: 0` removes the item and returns `204 No Content` (never naked `null`).
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 
 - [ ] 02-01-PLAN.md — Infra: install nanoid@3 + TransformResponseInterceptor 204 bypass
-- [ ] 02-02-PLAN.md — AddressModule CRUD + atomic isDefault toggle + delete-default guard
+- [x] 02-02-PLAN.md — AddressModule CRUD + atomic isDefault toggle + delete-default guard
 - [ ] 02-03-PLAN.md — OrderService bug fixes: stock decrement + nanoid orderNumber + addressId snapshot + paginated findAll
 - [ ] 02-04-PLAN.md — Cart PATCH /cart/items/:id qty=0 → 204 via @Res passthrough
 
@@ -78,7 +78,7 @@ Plans:
 | Phase                                  | Plans Complete | Status      | Completed |
 | -------------------------------------- | -------------- | ----------- | --------- |
 | 1. Quick Wins — Security Gates & Infra | 0/0            | Not started | -         |
-| 2. Order, Cart & Address               | 0/4            | Not started | -         |
+| 2. Order, Cart & Address               | 1/4 | In Progress|  |
 | 3. Email Transport & Auth Completion   | 0/0            | Not started | -         |
 | 4. Test Coverage — Unit + E2E          | 0/0            | Not started | -         |
 
