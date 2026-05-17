@@ -1,10 +1,10 @@
-# TASK-00064: Quản trị Quyền hạn: Kiểm soát Truy cập Dựa trên Vai trò (Governance Core: Role-Based Access Control - RBAC)
+# TASK-320: Quản trị Quyền hạn: Kiểm soát Truy cập Dựa trên Vai trò (Governance Core: Role-Based Access Control - RBAC)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00064
+- **Task ID**: TASK-320
 - **Độ ưu tiên**: 🔴 SIÊU CAO (Enterprise Security)
-- **Phụ thuộc**: TASK-00015 (Guards & Decorators)
+- **Phụ thuộc**: TASK-117 (Guards & Decorators)
 - **Trạng thái**: ✅ Done
 
 ---

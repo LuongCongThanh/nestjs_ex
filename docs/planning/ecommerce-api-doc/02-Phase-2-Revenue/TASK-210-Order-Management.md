@@ -1,10 +1,10 @@
-# TASK-00027: Vòng đời Đơn hàng: Vận hành & Theo dõi Sau mua (Order Lifecycle: Post-Purchase Operations & Tracking)
+# TASK-210: Vòng đời Đơn hàng: Vận hành & Theo dõi Sau mua (Order Lifecycle: Post-Purchase Operations & Tracking)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00027
+- **Task ID**: TASK-210
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Operations)
-- **Phụ thuộc**: TASK-00026 (Order Placement)
+- **Phụ thuộc**: TASK-209 (Order Placement)
 - **Trạng thái**: ✅ Done
 
 ---
@@ -47,7 +47,7 @@ stateDiagram-v2
 
 ### 2. Logic Bù trừ (Compensation Logic)
 
-- Khi đơn hàng bị `CANCELLED` hoặc `RETURNED`, hệ thống phải tự động kích hoạt tiến trình hoàn trả tồn kho (TASK-00023) để đảm bảo số liệu thực tế luôn khớp.
+- Khi đơn hàng bị `CANCELLED` hoặc `RETURNED`, hệ thống phải tự động kích hoạt tiến trình hoàn trả tồn kho (TASK-205) để đảm bảo số liệu thực tế luôn khớp.
 
 ---
 

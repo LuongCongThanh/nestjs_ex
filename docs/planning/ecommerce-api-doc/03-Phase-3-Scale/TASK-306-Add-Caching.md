@@ -1,10 +1,10 @@
-# TASK-00037: Tốc độ & Quy mô: Chiến lược Caching Dữ liệu Thông minh (Speed & Scale: Intelligent Data Caching Strategy)
+# TASK-306: Tốc độ & Quy mô: Chiến lược Caching Dữ liệu Thông minh (Speed & Scale: Intelligent Data Caching Strategy)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00037 (Caching)
+- **Task ID**: TASK-306
 - **Độ ưu tiên**: 🔴 CAO (Latency & Performance)
-- **Phụ thuộc**: TASK-00021 (Product CRUD), TASK-00020 (Category Tree)
+- **Phụ thuộc**: TASK-203 (Product CRUD), TASK-202 (Category Tree)
 - **Trạng thái**: ✅ Done
 
 ---

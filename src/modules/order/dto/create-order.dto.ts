@@ -1,10 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateOrderDto {
-  @ApiProperty({ description: 'Shipping address snapshot' })
-  @IsObject()
-  shippingAddress: Record<string, unknown>;
+  @ApiProperty({ description: 'UUID of the shipping address', example: 'uuid-here' })
+  @IsUUID()
+  addressId: string;
 
   @ApiPropertyOptional({ example: 'Please leave at the door' })
   @IsOptional()

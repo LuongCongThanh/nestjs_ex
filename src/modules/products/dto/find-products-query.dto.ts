@@ -1,23 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
-export class FindProductsQueryDto {
-  @ApiPropertyOptional({ minimum: 1, default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 10 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
-
+export class FindProductsQueryDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Search term for product name or description' })
   @IsOptional()
   @IsString()

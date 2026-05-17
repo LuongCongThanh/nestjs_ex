@@ -1,10 +1,10 @@
-# TASK-00051: Hệ thống Quan sát: Logging, Giám sát & Truy vết (Observability: Logging, Monitoring & Tracing)
+# TASK-312: Hệ thống Quan sát: Logging, Giám sát & Truy vết (Observability: Logging, Monitoring & Tracing)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00051
+- **Task ID**: TASK-312
 - **Độ ưu tiên**: 🔴 CAO (Production Reliability)
-- **Phụ thuộc**: TASK-00030 (Logging Interceptor), TASK-00040 (Production Deployment)
+- **Phụ thuộc**: TASK-213 (Logging Interceptor), TASK-309 (Production Deployment)
 - **Trạng thái**: ✅ Done
 
 ---

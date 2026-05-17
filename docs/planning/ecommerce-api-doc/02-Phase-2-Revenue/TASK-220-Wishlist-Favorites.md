@@ -1,10 +1,10 @@
-# TASK-00047: Điểm chạm Gắn kết: Quản trị Danh sách Yêu thích & Quan tâm (Engagement Hooks: Wishlist & Interest Management)
+# TASK-220: Điểm chạm Gắn kết: Quản trị Danh sách Yêu thích & Quan tâm (Engagement Hooks: Wishlist & Interest Management)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00047
+- **Task ID**: TASK-220
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Retention & Conversion)
-- **Phụ thuộc**: TASK-00016 (User CRUD), TASK-00021 (Product CRUD)
+- **Phụ thuộc**: TASK-118 (User CRUD), TASK-203 (Product CRUD)
 - **Trạng thái**: ✅ Done
 
 ---

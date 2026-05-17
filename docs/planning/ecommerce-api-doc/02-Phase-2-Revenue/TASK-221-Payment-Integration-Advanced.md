@@ -1,10 +1,10 @@
-# TASK-00048: Chính trực Tài chính: Cổng Thanh toán Nâng cao (Financial Integrity: Advanced Payment Gateway)
+# TASK-221: Chính trực Tài chính: Cổng Thanh toán Nâng cao (Financial Integrity: Advanced Payment Gateway)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00048
+- **Task ID**: TASK-221
 - **Độ ưu tiên**: 🔴 KHẨN CẤP (Financial Integrity)
-- **Phụ thuộc**: TASK-00026 (Order Creation)
+- **Phụ thuộc**: TASK-209 (Order Creation)
 - **Trạng thái**: ✅ Done
 
 ---

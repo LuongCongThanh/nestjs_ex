@@ -1,10 +1,10 @@
-# TASK-00053: Thiết kế Tiến hóa: Chiến lược Phiên bản hóa API (Evolutionary Design: API Versioning & Compatibility Strategy)
+# TASK-314: Thiết kế Tiến hóa: Chiến lược Phiên bản hóa API (Evolutionary Design: API Versioning & Compatibility Strategy)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00053
-- **Độ ưu tiêu**: 🔵 TRUNG BÌNH (Maintenance & Scalability)
-- **Phụ thuộc**: TASK-00032 (Swagger Documentation)
+- **Task ID**: TASK-314
+- **Độ ưu tiên**: 🔵 TRUNG BÌNH (Maintenance & Scalability)
+- **Phụ thuộc**: TASK-215 (Swagger Documentation)
 - **Trạng thái**: ✅ Done
 
 ---

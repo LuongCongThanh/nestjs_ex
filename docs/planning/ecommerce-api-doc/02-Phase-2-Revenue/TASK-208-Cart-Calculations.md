@@ -1,10 +1,10 @@
-# TASK-00025: Trí tuệ Thanh toán: Logic Giá cả, Ưu đãi & Thuế (Checkout Intelligence: Pricing, Coupons & Tax Logic)
+# TASK-208: Trí tuệ Thanh toán: Logic Giá cả, Ưu đãi & Thuế (Checkout Intelligence: Pricing, Coupons & Tax Logic)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00025
+- **Task ID**: TASK-208
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Financial Accuracy)
-- **Phụ thuộc**: TASK-00024 (Shopping Persistence)
+- **Phụ thuộc**: TASK-207 (Shopping Cart)
 - **Trạng thái**: ✅ Done
 
 ---

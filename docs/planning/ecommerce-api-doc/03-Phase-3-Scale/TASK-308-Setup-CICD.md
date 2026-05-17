@@ -1,10 +1,10 @@
-# TASK-00039: Giao hàng Tự động: Hạ tầng Đường ống CI/CD (Automated Delivery: CI/CD Pipeline Infrastructure)
+# TASK-308: Giao hàng Tự động: Hạ tầng Đường ống CI/CD (Automated Delivery: CI/CD Pipeline Infrastructure)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00039
+- **Task ID**: TASK-308
 - **Độ ưu tiên**: 🔴 CAO (Operational Excellence)
-- **Phụ thuộc**: TASK-00033 (Unit Tests), TASK-00034 (E2E Tests)
+- **Phụ thuộc**: TASK-301 (Unit Tests), TASK-302 (E2E Tests)
 - **Trạng thái**: ✅ Done
 
 ---

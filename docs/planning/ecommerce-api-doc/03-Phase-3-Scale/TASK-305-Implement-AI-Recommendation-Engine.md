@@ -1,10 +1,10 @@
-# TASK-00037: Động cơ Cá nhân hóa: Khám phá dựa trên AI (Personalization Engine: AI-Driven Discovery)
+# TASK-305: Động cơ Cá nhân hóa: Khám phá dựa trên AI (Personalization Engine: AI-Driven Discovery)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00037
+- **Task ID**: TASK-305
 - **Độ ưu tiên**: 🔴 CAO (Revenue Driver)
-- **Phụ thuộc**: TASK-00021 (Product CRUD), TASK-00027 (Order Management)
+- **Phụ thuộc**: TASK-203 (Product CRUD), TASK-210 (Order Management)
 - **Trạng thái**: ✅ Done
 
 ---

@@ -1,10 +1,10 @@
-# TASK-00050: Chiến lược Tăng tốc: Caching Nâng cao & Redis (Speed Strategy: Advanced Caching & Redis)
+# TASK-311: Chiến lược Tăng tốc: Caching Nâng cao & Redis (Speed Strategy: Advanced Caching & Redis)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00050
+- **Task ID**: TASK-311
 - **Độ ưu tiên**: 🔴 CAO (Performance & Scale)
-- **Phụ thuộc**: TASK-00003 (PostgreSQL), TASK-00037 (Basic Caching)
+- **Phụ thuộc**: TASK-103 (PostgreSQL), TASK-306 (Basic Caching)
 - **Trạng thái**: ✅ Done
 
 ---

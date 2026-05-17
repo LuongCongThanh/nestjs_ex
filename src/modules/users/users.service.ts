@@ -1,10 +1,26 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PasswordService } from '@common/services/password.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+
+const userSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  role: true,
+  isActive: true,
+  emailVerified: true,
+  lastLoginAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+type SafeUser = Prisma.UserGetPayload<{ select: typeof userSelect }>;
 
 @Injectable()
 export class UsersService {
@@ -16,7 +32,7 @@ export class UsersService {
   /**
    * Tạo user mới
    */
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<SafeUser> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
     });
@@ -32,15 +48,15 @@ export class UsersService {
         ...createUserDto,
         password: hashedPassword,
       },
-      select: this.getUserSelect(),
-    })) as unknown as User;
+      select: userSelect,
+    })) as SafeUser;
   }
 
   /**
    * Lấy danh sách users với pagination và filters
    */
   async findAll(query: FindUsersQueryDto) {
-    const { page = 1, limit = 10, search, role, isActive } = query;
+    const { search, role, isActive } = query;
 
     const where: Prisma.UserWhereInput = {};
 
@@ -63,14 +79,16 @@ export class UsersService {
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: query.skip,
+        take: query.take,
         orderBy: { createdAt: 'desc' },
-        select: this.getUserSelect(),
+        select: userSelect,
       }),
       this.prisma.user.count({ where }),
     ]);
 
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
     const totalPages = Math.ceil(total / limit);
 
     return {
@@ -89,7 +107,7 @@ export class UsersService {
   /**
    * Tìm user theo ID
    */
-  async findOne(id: string): Promise<User> {
+  async findOne(id: string): Promise<SafeUser> {
     // Validate UUID format to prevent Prisma from crashing
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
       throw new BadRequestException(`Invalid UUID format: ${id}`);
@@ -97,38 +115,38 @@ export class UsersService {
 
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: this.getUserSelect(),
+      select: userSelect,
     });
 
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return user as unknown as User;
+    return user as SafeUser;
   }
 
   /**
    * Tìm user theo email (dùng cho authentication)
    */
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<SafeUser | null> {
     const user = await this.prisma.user.findUnique({
       where: { email },
-      select: this.getUserSelect(),
+      select: userSelect,
     });
-    return user ? (user as unknown as User) : null;
+    return user ? (user as SafeUser) : null;
   }
 
   /**
    * Cập nhật thông tin user
    */
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<SafeUser> {
     await this.findOne(id);
 
     return (await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
-      select: this.getUserSelect(),
-    })) as unknown as User;
+      select: userSelect,
+    })) as SafeUser;
   }
 
   /**
@@ -146,14 +164,14 @@ export class UsersService {
   /**
    * Đánh dấu email đã được verified
    */
-  async verifyEmail(id: string): Promise<User> {
+  async verifyEmail(id: string): Promise<SafeUser> {
     await this.findOne(id);
 
     return (await this.prisma.user.update({
       where: { id },
       data: { emailVerified: true },
-      select: this.getUserSelect(),
-    })) as unknown as User;
+      select: userSelect,
+    })) as SafeUser;
   }
 
   /**
@@ -181,19 +199,4 @@ export class UsersService {
     });
   }
 
-  private getUserSelect() {
-    return {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      phone: true,
-      role: true,
-      isActive: true,
-      emailVerified: true,
-      lastLoginAt: true,
-      createdAt: true,
-      updatedAt: true,
-    };
-  }
 }

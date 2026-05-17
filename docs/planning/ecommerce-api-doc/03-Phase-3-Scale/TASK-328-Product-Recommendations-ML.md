@@ -1,10 +1,10 @@
-# TASK-00072: Thương mại Thông minh: Gợi ý Sản phẩm bằng AI/ML (Intelligent Commerce: AI-Powered Product Recommendations)
+# TASK-328: Thương mại Thông minh: Gợi ý Sản phẩm bằng AI/ML (Intelligent Commerce: AI-Powered Product Recommendations)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00072
+- **Task ID**: TASK-328
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Business Intelligence)
-- **Phụ thuộc**: TASK-00060 (Elasticsearch), TASK-00021 (Product CRUD)
+- **Phụ thuộc**: TASK-316 (Elasticsearch), TASK-203 (Product CRUD)
 - **Trạng thái**: ✅ Done
 
 ---

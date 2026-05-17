@@ -1,5 +1,4 @@
 import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Ip, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -15,7 +14,6 @@ import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

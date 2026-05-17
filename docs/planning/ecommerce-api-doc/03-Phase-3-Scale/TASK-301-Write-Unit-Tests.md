@@ -1,10 +1,10 @@
-# TASK-00033: Đảm bảo Đơn vị: Logic Dịch vụ & Trường hợp Biên (Unit Assurance: Service Logic & Edge Cases)
+# TASK-301: Đảm bảo Đơn vị: Logic Dịch vụ & Trường hợp Biên (Unit Assurance: Service Logic & Edge Cases)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00033
+- **Task ID**: TASK-301
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Quality)
-- **Phụ thuộc**: Batch 1 -> Batch 4 (Core Logic)
+- **Phụ thuộc**: Phase 1 + Phase 2 Core Logic
 - **Trạng thái**: ✅ Done
 
 ---

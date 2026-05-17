@@ -44,6 +44,10 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
       map((data: unknown) => {
         const statusCode = response.statusCode;
 
+        if (statusCode === 204) {
+          return undefined as unknown as Response<T>;
+        }
+
         // If data is null or undefined, return simple success message
         if (data === null || data === undefined) {
           return {

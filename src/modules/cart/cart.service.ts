@@ -41,12 +41,12 @@ export class CartService {
     });
   }
 
-  async updateItemQuantity(userId: string, itemId: number, dto: UpdateCartItemDto) {
+  async updateItemQuantity(userId: string, itemId: number, dto: UpdateCartItemDto): Promise<object | void> {
     const item = await this.findItemBelongingToUser(userId, itemId);
 
     if (dto.quantity === 0) {
       await this.prisma.cartItem.delete({ where: { id: item.id } });
-      return null;
+      return;
     }
 
     return this.prisma.cartItem.update({

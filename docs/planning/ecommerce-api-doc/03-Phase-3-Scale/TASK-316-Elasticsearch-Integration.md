@@ -1,10 +1,10 @@
-# TASK-00060: Công cụ Khám phá: Tìm kiếm Hiệu năng cao & Elasticsearch (Discovery Engine: High-Performance Search & Elasticsearch)
+# TASK-316: Công cụ Khám phá: Tìm kiếm Hiệu năng cao & Elasticsearch (Discovery Engine: High-Performance Search & Elasticsearch)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00060
+- **Task ID**: TASK-316
 - **Độ ưu tiên**: 🔴 SIÊU CAO (Business Core)
-- **Phụ thuộc**: TASK-00021 (Product CRUD), TASK-00049 (Event Handling)
+- **Phụ thuộc**: TASK-203 (Product CRUD), TASK-222 (Event Handling)
 - **Trạng thái**: ✅ Done
 
 ---

@@ -1,10 +1,10 @@
-# TASK-00073: Tăng trưởng bằng Dữ liệu: Phân tích Hành vi & Google Analytics (Data-Driven Growth: Advanced Marketing Analytics)
+# TASK-329: Tăng trưởng bằng Dữ liệu: Phân tích Hành vi & Google Analytics (Data-Driven Growth: Advanced Marketing Analytics)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00073
+- **Task ID**: TASK-329
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Marketing Intelligence)
-- **Phụ thuộc**: TASK-00061 (Admin Dashboard), TASK-00026 (Order Creation)
+- **Phụ thuộc**: TASK-317 (Admin Dashboard), TASK-209 (Order Creation)
 - **Trạng thái**: ✅ Done
 
 ---

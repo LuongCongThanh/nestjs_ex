@@ -1,10 +1,10 @@
-# TASK-00031: Tầng Nhất quán: Thống nhất Hợp đồng Phản hồi API (Consistency Layer: Unifying API Response Contracts)
+# TASK-214: Tầng Nhất quán: Thống nhất Hợp đồng Phản hồi API (Consistency Layer: Unifying API Response Contracts)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00031
+- **Task ID**: TASK-214
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Developer Experience)
-- **Phụ thuộc**: TASK-00030 (Logging)
+- **Phụ thuộc**: TASK-213 (Logging)
 - **Trạng thái**: ✅ Done
 
 ---
@@ -59,7 +59,7 @@ Hệ thống cam kết mọi API thành công sẽ có cấu trúc JSON như sau
 
 - [x] **Zero Manual Wrapping**: Lập trình viên không phải viết tay cấu trúc `success: true` trong mỗi Controller.
 - [x] **Client-Ready Format**: Dữ liệu trả về sẵn sàng để Frontend map trực tiếp vào UI components mà không cần xử lý phức tạp.
-- [x] **Localization Friendly**: Trường `message` sẵn sàng cho việc hỗ trợ đa ngôn ngữ (TASK-00069).
+- [x] **Localization Friendly**: Trường `message` sẵn sàng cho việc hỗ trợ đa ngôn ngữ (TASK-325).
 
 ---
 

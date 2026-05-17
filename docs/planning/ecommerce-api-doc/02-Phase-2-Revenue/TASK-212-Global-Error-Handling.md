@@ -1,10 +1,10 @@
-# TASK-00029: Chống chịu Lỗi: Quản trị Ngoại lệ & Tính phục hồi (Fault Tolerance: Global Error Handling & Resilience)
+# TASK-212: Chống chịu Lỗi: Quản trị Ngoại lệ & Tính phục hồi (Fault Tolerance: Global Error Handling & Resilience)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00029
+- **Task ID**: TASK-212
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (System Stability)
-- **Phụ thuộc**: TASK-105.1 (Initial Error Handling)
+- **Phụ thuộc**: TASK-105 (Initial Error Handling)
 - **Trạng thái**: ✅ Done
 
 ---
@@ -47,7 +47,7 @@ Hệ thống cam kết trả về một cấu trúc duy nhất cho mọi lỗi:
 
 - [x] **Information Masking**: 100% lỗi 500 không được chứa chi tiết về bảng DB hoặc cấu trúc code trong môi trường Production.
 - [x] **Global Enforcement**: Mọi Controller mới được thêm vào sau này đều tự động được áp dụng cơ chế xử lý lỗi này.
-- [x] **Log Correlation**: Mỗi lỗi phát sinh phải đi kèm với một `Request ID` để dễ dàng tra cứu trong hệ thống Log (TASK-00030).
+- [x] **Log Correlation**: Mỗi lỗi phát sinh phải đi kèm với một `Request ID` để dễ dàng tra cứu trong hệ thống Log (TASK-213).
 
 ---
 

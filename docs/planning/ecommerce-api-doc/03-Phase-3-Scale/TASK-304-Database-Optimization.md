@@ -1,10 +1,10 @@
-# TASK-00036: Hiệu năng Cơ sở Dữ liệu: Chiến lược Chỉ mục & Truy vấn (Database Performance: Indexing & Query Strategy)
+# TASK-304: Hiệu năng Cơ sở Dữ liệu: Chiến lược Chỉ mục & Truy vấn (Database Performance: Indexing & Query Strategy)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00036 (Optimization)
+- **Task ID**: TASK-304
 - **Độ ưu tiên**: 🔴 CAO (System Efficiency)
-- **Phụ thuộc**: TASK-00005 (Database Schema), TASK-00021 (Product CRUD)
+- **Phụ thuộc**: TASK-106 (Database Schema), TASK-203 (Product CRUD)
 - **Trạng thái**: ✅ Done
 
 ---

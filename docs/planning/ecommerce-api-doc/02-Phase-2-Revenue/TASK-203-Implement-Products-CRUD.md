@@ -1,10 +1,10 @@
-# TASK-00021: Vòng đời Catalog: Quản trị Sản phẩm & Vận hành (Catalog Lifecycle: Product Governance & Operations)
+# TASK-203: Vòng đời Catalog: Quản trị Sản phẩm & Vận hành (Catalog Lifecycle: Product Governance & Operations)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00021
+- **Task ID**: TASK-203
 - **Độ ưu tiên**: 🔴 CHÍ TRỌNG (Inventory Foundation)
-- **Phụ thuộc**: TASK-00019 (Category Governance)
+- **Phụ thuộc**: TASK-201 (Category Governance)
 - **Trạng thái**: ✅ Done
 
 ---
@@ -17,7 +17,7 @@ Sản phẩm không chỉ là một hàng dữ liệu; nó là sự kết hợp 
 
 - **SKU Mapping**: Mỗi sản phẩm phải được định danh bằng mã SKU (Stock Keeping Unit) duy nhất để đồng bộ với hệ thống kho vận.
 - **URL SEO Stability**: Slugs phải được duy trì ổn định ngay cả khi tên sản phẩm thay đổi nhẹ để tránh làm hỏng các liên kết (Broken links) trên công cụ tìm kiếm.
-- **Relational Integrity**: Sản phẩm phải luôn thuộc về ít nhất một danh mục hợp lệ (TASK-00019).
+- **Relational Integrity**: Sản phẩm phải luôn thuộc về ít nhất một danh mục hợp lệ (TASK-201).
 
 ---
 

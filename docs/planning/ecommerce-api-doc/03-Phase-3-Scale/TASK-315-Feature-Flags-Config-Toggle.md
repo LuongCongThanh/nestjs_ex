@@ -1,10 +1,10 @@
-# TASK-00054: Cấu hình Linh hoạt: Feature Flags & Bật/Tắt Tính năng (Ops Flexibility: Feature Flags & Config Toggle)
+# TASK-315: Cấu hình Linh hoạt: Feature Flags & Bật/Tắt Tính năng (Ops Flexibility: Feature Flags & Config Toggle)
 
 ## 📋 Metadata
 
-- **Task ID**: TASK-00054
+- **Task ID**: TASK-315
 - **Độ ưu tiên**: 🔵 TRUNG BÌNH (Operational Excellence)
-- **Phụ thuộc**: TASK-00002 (Environment Config)
+- **Phụ thuộc**: TASK-102 (Environment Config)
 - **Trạng thái**: ✅ Done
 
 ---
