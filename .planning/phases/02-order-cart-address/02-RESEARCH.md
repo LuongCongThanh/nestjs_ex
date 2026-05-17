@@ -603,7 +603,7 @@ Thêm `AddressModule` vào cuối list (sau `PaymentModule`) hoặc sau `UsersMo
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`updateItem` controller handler — dùng `@HttpCode` hay conditional return?**
    - What we know: SPEC yêu cầu qty=0 → 204, qty>0 → 200. Một handler không thể return hai status code khác nhau qua decorator.
@@ -612,12 +612,13 @@ Thêm `AddressModule` vào cuối list (sau `PaymentModule`) hoặc sau `UsersMo
      - Option A: Controller kiểm tra `dto.quantity === 0` và dùng `res.status(204).send()` (inject `@Res()`) — phức tạp, bypass interceptor.
      - Option B: Dùng `@HttpCode(200)` mặc định, nhưng service trả về `void` khi qty=0, và interceptor check `statusCode === 204` không trigger vì status vẫn là 200. Kết quả: trả về `{ statusCode: 200, success: true, message: '...' }` — không khớp SPEC.
      - **Option C (recommended):** Inject `@Res({ passthrough: true })` và `response.status(HttpStatus.NO_CONTENT)` khi qty=0, giữ passthrough để interceptor vẫn chạy. Interceptor sẽ thấy statusCode=204 và return empty.
-     - Planner cần quyết định approach này.
+   - **RESOLVED:** Option C — `@Res({ passthrough: true })` + `res.status(HttpStatus.NO_CONTENT)` khi qty=0, được chọn trong Plan 02-04.
 
 2. **`GET /orders` — user thấy gì?**
    - What we know: SPEC nói "user sees own orders, admin/staff see all" (line 59). `OrderService.findAll` đã có `role === UserRole.user ? { userId } : {}` logic.
    - What's unclear: Không cần thay đổi filtering logic, chỉ thêm pagination.
    - Recommendation: Giữ nguyên where clause, chỉ thêm `skip/take/count`.
+   - **RESOLVED:** Giữ nguyên role-based `where` clause hiện tại; chỉ thêm `skip`/`take`/`count` cho pagination. Không thay đổi filtering logic.
 
 ---
 
