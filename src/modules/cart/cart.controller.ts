@@ -9,8 +9,10 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { GetUser } from '@common/decorators/get-user.decorator';
@@ -40,8 +42,18 @@ export class CartController {
 
   @Patch('items/:id')
   @ApiOperation({ summary: 'Update cart item quantity (0 = remove)' })
-  updateItem(@GetUser() user: User, @Param('id', ParseIntPipe) itemId: number, @Body() dto: UpdateCartItemDto) {
-    return this.cartService.updateItemQuantity(user.id, itemId, dto);
+  async updateItem(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) itemId: number,
+    @Body() dto: UpdateCartItemDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.cartService.updateItemQuantity(user.id, itemId, dto);
+    if (result === undefined) {
+      res.status(HttpStatus.NO_CONTENT);
+      return;
+    }
+    return result;
   }
 
   @Delete('items/:id')
