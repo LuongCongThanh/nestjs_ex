@@ -138,7 +138,7 @@ export class CategoriesService {
   }
 
   async remove(id: number) {
-    const category = (await this.findOne(id)) as any;
+    const category = await this.findOne(id);
 
     if (category._count.products > 0) {
       throw new BadRequestException(
