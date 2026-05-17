@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { validationSchema } from './config/env.validation';
 import { HealthModule } from './health/health.module';
+import { AddressModule } from './modules/addresses/addresses.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -31,6 +32,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     HealthModule,
     AuthModule,
     UsersModule,
+    AddressModule,
     CategoriesModule,
     ProductsModule,
     CartModule,
