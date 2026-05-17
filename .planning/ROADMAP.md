@@ -38,7 +38,15 @@
 2. Creating an order with `addressId` decrements product stock atomically — if any item's stock is insufficient, the order fails and no stock is changed; the order persists a snapshot of the shipping address.
 3. Order numbers remain unique under concurrent creation (format `ORD-{Date.now()}-{nanoid(6)}`); `GET /orders` returns paginated `{ data, page, limit, total }`.
 4. `PATCH /cart/items/:id` with `quantity: 0` removes the item and returns `204 No Content` (never naked `null`).
-   **Plans**: TBD
+
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] 02-01-PLAN.md — Infra: install nanoid@3 + TransformResponseInterceptor 204 bypass
+- [ ] 02-02-PLAN.md — AddressModule CRUD + atomic isDefault toggle + delete-default guard
+- [ ] 02-03-PLAN.md — OrderService bug fixes: stock decrement + nanoid orderNumber + addressId snapshot + paginated findAll
+- [ ] 02-04-PLAN.md — Cart PATCH /cart/items/:id qty=0 → 204 via @Res passthrough
 
 ### Phase 3: Email Transport & Auth Completion
 
@@ -70,7 +78,7 @@
 | Phase                                  | Plans Complete | Status      | Completed |
 | -------------------------------------- | -------------- | ----------- | --------- |
 | 1. Quick Wins — Security Gates & Infra | 0/0            | Not started | -         |
-| 2. Order, Cart & Address               | 0/0            | Not started | -         |
+| 2. Order, Cart & Address               | 0/4            | Not started | -         |
 | 3. Email Transport & Auth Completion   | 0/0            | Not started | -         |
 | 4. Test Coverage — Unit + E2E          | 0/0            | Not started | -         |
 
